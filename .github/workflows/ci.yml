@@ -1,0 +1,41 @@
+name: Test and Lint
+on:
+  push:
+    branches-ignore: [wip/**]
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [[🐧, Ubuntu], [🍎, macOS], [🪟, Windows]]
+    name: ${{ matrix.os[0] }} Test ${{ matrix.os[1] }}
+    runs-on: ${{ matrix.os[1] }}-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with: { submodules: true }
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with: { go-version-file: go.mod, check-latest: true }
+      - name: Run Tests
+        run: make test
+  lint:
+    name: 📊 Lint and Cover
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with: { submodules: true }
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with: { go-version-file: go.mod, check-latest: true }
+      - name: Install Dependencies
+        run: make debian-lint-depends
+      - name: Run pre-commit
+        uses: pre-commit/action@v3.0.1
+      - name: Run Test Coverage
+        run: go test -race -coverprofile coverage.txt -covermode atomic ./...
+      - name: Upload Coverage
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: cover.out
