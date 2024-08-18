@@ -1,7 +1,6 @@
 package jsonpath
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -11,9 +10,6 @@ import (
 
 	"github.com/smasher164/xid"
 )
-
-// ErrPathParse errors are returned for path parse errors.
-var ErrPathParse = errors.New("jsonpath")
 
 // token represents a single token in the input stream.
 // Name: mnemonic name (numeric).
@@ -78,7 +74,7 @@ func (tok token) name() string {
 	case goString:
 		return "string"
 	case blankSpace:
-		return "blankSpace"
+		return "blank space"
 	default:
 		return strconv.QuoteRune(tok.tok)
 	}
@@ -142,6 +138,10 @@ func (lex *lexer) scan() token {
 	switch {
 	case lex.r < 0:
 		return token{eof, "", lex.rPos}
+	case lex.r == '$':
+		if isIdentRune(lex.peek(), 0) {
+			return lex.scanIdentifier()
+		}
 	case isIdentRune(lex.r, 0):
 		return lex.scanIdentifier()
 	case isDigit(lex.r) || lex.r == '-':
@@ -150,11 +150,11 @@ func (lex *lexer) scan() token {
 		return lex.scanString()
 	case blanks&(1<<uint(lex.r)) != 0:
 		return lex.scanBlankSpace()
-	default:
-		ret := token{lex.r, "", lex.rPos}
-		lex.next()
-		return ret
 	}
+
+	ret := token{lex.r, "", lex.rPos}
+	lex.next()
+	return ret
 }
 
 // next advances the lexer's internal state to point to the next rune in the
@@ -180,12 +180,13 @@ func (lex *lexer) next() rune {
 
 // peek returns the next byte in the stream (the one after lex.r).
 // Note: a single byte is peeked at - if there's a rune longer than a byte
-// there, only its first byte is returned.
+// there, only its first byte is returned. Returns eof if there is no next
+// byte.
 func (lex *lexer) peek() rune {
 	if lex.nextPos < len(lex.buf) {
 		return rune(lex.buf[lex.nextPos])
 	}
-	return rune(invalid)
+	return rune(eof)
 }
 
 // scanBlankSpace scan and returns a token of blank spaces.
@@ -240,8 +241,8 @@ func (lex *lexer) scanIdentifier() token {
 // support for \u0000 and \u{000000} unicode escapes.
 //
 // [identifier syntax]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#identifiers
-func isIdentRune(ch rune, i int) bool {
-	return ch == '_' || ch == '\\' || (i == 0 && xid.Start(ch)) || (i > 0 && xid.Continue(ch))
+func isIdentRune(r rune, i int) bool {
+	return r == '_' || r == '\\' || r == '$' || (i == 0 && xid.Start(r)) || (i > 0 && xid.Continue(r))
 }
 
 // scanNumber scans an integer or decimal number.

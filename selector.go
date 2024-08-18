@@ -88,8 +88,13 @@ func (i Index) String() string { return strconv.FormatInt(int64(i), 10) }
 // bounds of input.
 func (i Index) Select(input any) []any {
 	if val, ok := input.([]any); ok {
-		if int(i) < len(val) {
-			return []any{val[i]}
+		idx := int(i)
+		if idx < 0 {
+			if idx = len(val) + idx; idx >= 0 {
+				return []any{val[idx]}
+			}
+		} else if idx < len(val) {
+			return []any{val[idx]}
 		}
 	}
 	return make([]any, 0)

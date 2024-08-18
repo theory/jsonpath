@@ -346,8 +346,26 @@ func TestIndexSelect(t *testing.T) {
 			exp:  []any{"hi"},
 		},
 		{
+			name: "index_neg_one",
+			sel:  Index(-1),
+			src:  []any{42, true, "hi"},
+			exp:  []any{"hi"},
+		},
+		{
+			name: "index_neg_two",
+			sel:  Index(-2),
+			src:  []any{42, true, "hi"},
+			exp:  []any{true},
+		},
+		{
 			name: "out_of_range",
 			sel:  Index(4),
+			src:  []any{42, true, "hi"},
+			exp:  []any{},
+		},
+		{
+			name: "neg_out_of_range",
+			sel:  Index(-4),
 			src:  []any{42, true, "hi"},
 			exp:  []any{},
 		},

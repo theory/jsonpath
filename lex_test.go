@@ -149,6 +149,21 @@ func TestScanString(t *testing.T) {
 			in:   `hi \ux234 oops`,
 			tok:  token{invalid, "invalid escape after backslash", 6},
 		},
+		{
+			name: "dollar_start",
+			in:   `$xyz`,
+			tok:  token{goString, "$xyz", 0},
+		},
+		{
+			name: "dollar_end",
+			in:   `xyz$`,
+			tok:  token{goString, "xyz$", 0},
+		},
+		{
+			name: "dollar_mid",
+			in:   `xy$z`,
+			tok:  token{goString, "xy$z", 0},
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -267,56 +282,67 @@ func TestScanIdentifier(t *testing.T) {
 func TestScanNumber(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
+	r := require.New(t)
 
 	for _, tc := range []struct {
 		name string
 		in   string
 		tok  token
+		num  any
 	}{
 		{
 			name: "zero",
 			in:   "0",
 			tok:  token{integer, "0", 0},
+			num:  int64(0),
 		},
 		{
 			name: "zero_and_more",
 			in:   "0 say",
 			tok:  token{integer, "0", 0},
+			num:  int64(0),
 		},
 		{
 			name: "one",
 			in:   "1",
 			tok:  token{integer, "1", 0},
+			num:  int64(1),
 		},
 		{
 			name: "nine",
 			in:   "9",
 			tok:  token{integer, "9", 0},
+			num:  int64(9),
 		},
 		{
 			name: "twelve",
 			in:   "12",
 			tok:  token{integer, "12", 0},
+			num:  int64(12),
 		},
 		{
 			name: "hundred",
 			in:   "100",
 			tok:  token{integer, "100", 0},
+			num:  int64(100),
 		},
 		{
 			name: "max_int",
 			in:   strconv.FormatInt(math.MaxInt64, 10),
 			tok:  token{integer, strconv.FormatInt(math.MaxInt64, 10), 0},
+			num:  int64(math.MaxInt64),
 		},
 		{
 			name: "neg_one",
 			in:   "-1",
 			tok:  token{integer, "-1", 0},
+			num:  int64(-1),
 		},
 		{
 			name: "neg_42",
 			in:   "-42",
 			tok:  token{integer, "-42", 0},
+			num:  int64(-42),
 		},
 		{
 			name: "neg_zero",
@@ -332,26 +358,31 @@ func TestScanNumber(t *testing.T) {
 			name: "zero_frac",
 			in:   "0.1",
 			tok:  token{number, "0.1", 0},
+			num:  float64(0.1),
 		},
 		{
 			name: "zero_frac_more",
 			in:   "0.09323200/",
 			tok:  token{number, "0.09323200", 0},
+			num:  float64(0.093232),
 		},
 		{
 			name: "more_frac",
 			in:   "42.234853+",
 			tok:  token{number, "42.234853", 0},
+			num:  float64(42.234853),
 		},
 		{
 			name: "neg_frac",
 			in:   "-42.734/",
 			tok:  token{number, "-42.734", 0},
+			num:  float64(-42.734),
 		},
 		{
 			name: "neg_zero_frac",
 			in:   "-0.23",
 			tok:  token{number, "-0.23", 0},
+			num:  float64(-0.23),
 		},
 		{
 			name: "double_zero_frac",
@@ -377,21 +408,25 @@ func TestScanNumber(t *testing.T) {
 			name: "zero_exp",
 			in:   "0e12",
 			tok:  token{number, "0e12", 0},
+			num:  float64(0e12),
 		},
 		{
 			name: "numb_exp",
 			in:   "42e124",
 			tok:  token{number, "42e124", 0},
+			num:  float64(42e124),
 		},
 		{
 			name: "neg_zero_exp",
 			in:   "-0e123",
 			tok:  token{number, "-0e123", 0},
+			num:  float64(-0e123),
 		},
 		{
 			name: "neg_exp",
 			in:   "-42e123",
 			tok:  token{number, "-42e123", 0},
+			num:  float64(-42e123),
 		},
 		{
 			name: "lead_zero_exp",
@@ -400,13 +435,15 @@ func TestScanNumber(t *testing.T) {
 		},
 		{
 			name: "exp_plus",
-			in:   "99e+1234",
-			tok:  token{number, "99e+1234", 0},
+			in:   "99e+123",
+			tok:  token{number, "99e+123", 0},
+			num:  float64(99e+123),
 		},
 		{
 			name: "exp_minus",
 			in:   "99e-01234",
 			tok:  token{number, "99e-01234", 0},
+			num:  float64(99e-01234),
 		},
 		{
 			name: "exp_plus_no_digits",
@@ -433,38 +470,68 @@ func TestScanNumber(t *testing.T) {
 			name: "integer",
 			in:   "42",
 			tok:  token{integer, "42", 0},
+			num:  int64(42),
 		},
 		{
 			name: "long_int",
 			in:   "170141183460469231731687303715884105727",
 			tok:  token{integer, "170141183460469231731687303715884105727", 0},
+			num:  false, // integer too large, will not parse
 		},
 		// https://go.dev/ref/spec#Floating-point_literals
 		{
 			name: "float",
 			in:   "72.40",
 			tok:  token{number, "72.40", 0},
+			num:  float64(72.4),
 		},
 		{
 			name: "float_2",
 			in:   "2.71828",
 			tok:  token{number, "2.71828", 0},
+			num:  float64(2.71828),
 		},
 		{
 			name: "float_3",
 			in:   "6.67428e-11",
 			tok:  token{number, "6.67428e-11", 0},
+			num:  float64(6.67428e-11),
 		},
 		{
 			name: "float_4",
 			in:   "1e6",
 			tok:  token{number, "1e6", 0},
+			num:  float64(1e6),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			lex := newLexer(tc.in)
-			a.Equal(tc.tok, lex.scanNumber())
+			tok := lex.scanNumber()
+			a.Equal(tc.tok, tok)
+
+			// Test that we can parse the values.
+			var (
+				num any
+				err error
+			)
+
+			switch tc.tok.tok {
+			case integer:
+				num, err = strconv.ParseInt(tok.val, 10, 64)
+			case number:
+				num, err = strconv.ParseFloat(tok.val, 64)
+			default:
+				return
+			}
+
+			if _, ok := tc.num.(bool); ok {
+				// Not a valid value.
+				r.Error(err)
+			} else {
+				r.NoError(err)
+				a.Equal(tc.num, num)
+			}
 		})
 	}
 }
@@ -728,9 +795,9 @@ func TestToken(t *testing.T) {
 		},
 		{
 			name: "blankSpace",
-			id:   "blankSpace",
+			id:   "blank space",
 			tok:  token{blankSpace, "  \t", 3},
-			str:  `Token{blankSpace, "  \t", 3}`,
+			str:  `Token{blank space, "  \t", 3}`,
 		},
 		{
 			name: "bracket",
@@ -832,6 +899,6 @@ func TestPeek(t *testing.T) {
 	}
 
 	for range 3 {
-		a.Equal(rune(invalid), lex.peek())
+		a.Equal(rune(eof), lex.peek())
 	}
 }

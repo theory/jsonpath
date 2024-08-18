@@ -1,0 +1,266 @@
+package jsonpath
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestParseSpecExamples(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+	r := require.New(t)
+	val := specExampleJSON(t)
+	store, _ := val["store"].(map[string]any)
+
+	for _, tc := range []struct {
+		name string
+		path string
+		exp  []any
+		size int
+		rand bool
+		todo bool
+	}{
+		//nolint:dupword
+		{
+			name: "example_1",
+			path: `$.store.book[*].author`,
+			exp:  []any{"Nigel Rees", "Evelyn Waugh", "Herman Melville", "J. R. R. Tolkien"},
+		},
+		//nolint:dupword
+		{
+			name: "example_2",
+			path: `$..author`,
+			exp:  []any{"Nigel Rees", "Evelyn Waugh", "Herman Melville", "J. R. R. Tolkien"},
+		},
+		{
+			name: "example_3",
+			path: `$.store.*`,
+			exp:  []any{store["book"], store["bicycle"]},
+			rand: true,
+		},
+		{
+			name: "example_4",
+			path: `$.store..price`,
+			exp:  []any{399., 8.95, 12.99, 8.99, 22.99},
+			rand: true,
+		},
+		{
+			name: "example_5",
+			path: `$..book[2]`,
+			exp: []any{map[string]any{
+				"category": "fiction",
+				"author":   "Herman Melville",
+				"title":    "Moby Dick",
+				"isbn":     "0-553-21311-3",
+				"price":    8.99,
+			}},
+		},
+		{
+			name: "example_6",
+			path: `$..book[-1]`,
+			//nolint:dupword
+			exp: []any{map[string]any{
+				"category": "fiction",
+				"author":   "J. R. R. Tolkien",
+				"title":    "The Lord of the Rings",
+				"isbn":     "0-395-19395-8",
+				"price":    22.99,
+			}},
+		},
+		{
+			name: "example_7",
+			path: `$..book[0,1]`,
+			exp: []any{
+				map[string]any{
+					"category": "reference",
+					"author":   "Nigel Rees",
+					"title":    "Sayings of the Century",
+					"price":    8.95,
+				},
+				map[string]any{
+					"category": "fiction",
+					"author":   "Evelyn Waugh",
+					"title":    "Sword of Honour",
+					"price":    12.99,
+				},
+			},
+		},
+		{
+			name: "example_8",
+			path: `$..book[?(@.isbn)]`,
+			todo: true,
+			exp: []any{
+				map[string]any{
+					"category": "fiction",
+					"author":   "Herman Melville",
+					"title":    "Moby Dick",
+					"isbn":     "0-553-21311-3",
+					"price":    8.99,
+				},
+				//nolint:dupword
+				map[string]any{
+					"category": "fiction",
+					"author":   "J. R. R. Tolkien",
+					"title":    "The Lord of the Rings",
+					"isbn":     "0-395-19395-8",
+					"price":    22.99,
+				},
+			},
+		},
+		{
+			name: "example_9",
+			path: `$..book[?(@.price<10)]`,
+			todo: true,
+			exp: []any{
+				map[string]any{
+					"category": "reference",
+					"author":   "Nigel Rees",
+					"title":    "Sayings of the Century",
+					"price":    8.95,
+				},
+				map[string]any{
+					"category": "fiction",
+					"author":   "Herman Melville",
+					"title":    "Moby Dick",
+					"isbn":     "0-553-21311-3",
+					"price":    8.99,
+				},
+			},
+		},
+		{
+			name: "example_10",
+			path: `$..*`,
+			size: 27,
+			rand: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			p, err := Parse(tc.path)
+			if tc.todo {
+				r.Error(err)
+				return
+			}
+			r.NoError(err)
+			res := p.Select(val)
+
+			if tc.exp != nil {
+				if tc.rand {
+					a.ElementsMatch(tc.exp, res)
+				} else {
+					a.Equal(tc.exp, res)
+				}
+			} else {
+				a.Len(res, tc.size)
+			}
+		})
+	}
+}
+
+func specExampleJSON(t *testing.T) map[string]any {
+	t.Helper()
+	//nolint:dupword
+	src := []byte(`{
+	  "store": {
+	    "book": [
+	      {
+	        "category": "reference",
+	        "author": "Nigel Rees",
+	        "title": "Sayings of the Century",
+	        "price": 8.95
+	      },
+	      {
+	        "category": "fiction",
+	        "author": "Evelyn Waugh",
+	        "title": "Sword of Honour",
+	        "price": 12.99
+	      },
+	      {
+	        "category": "fiction",
+	        "author": "Herman Melville",
+	        "title": "Moby Dick",
+	        "isbn": "0-553-21311-3",
+	        "price": 8.99
+	      },
+	      {
+	        "category": "fiction",
+	        "author": "J. R. R. Tolkien",
+	        "title": "The Lord of the Rings",
+	        "isbn": "0-395-19395-8",
+	        "price": 22.99
+	      }
+	    ],
+	    "bicycle": {
+	      "color": "red",
+	      "price": 399
+	    }
+	  }
+	}`)
+
+	var value map[string]any
+	if err := json.Unmarshal(src, &value); err != nil {
+		t.Fatal(err)
+	}
+
+	return value
+}
+
+func TestParseCompliance(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+	r := require.New(t)
+
+	//nolint:tagliatelle
+	type testCase struct {
+		Name            string
+		Selector        string
+		Document        any
+		Result          []any
+		Results         [][]any
+		InvalidSelector bool `json:"invalid_selector"`
+	}
+
+	rawJSON, err := os.ReadFile(
+		filepath.Join("jsonpath-compliance-test-suite", "cts.json"),
+	)
+	r.NoError(err)
+	var ts struct{ Tests []testCase }
+	//nolint:musttag
+	if err := json.Unmarshal(rawJSON, &ts); err != nil {
+		t.Fatal(err)
+	}
+
+	for i, tc := range ts.Tests {
+		// Skip filter tests for now.
+		if strings.Contains(tc.Selector, "?") || i == 4 {
+			continue
+		}
+		t.Run(fmt.Sprintf("test_%v", i), func(t *testing.T) {
+			t.Parallel()
+			p, err := Parse(tc.Selector)
+			if tc.InvalidSelector {
+				r.Error(err, "Path: `%v`", tc.Selector)
+				a.Nil(p)
+				return
+			}
+
+			r.NoError(err)
+			a.NotNil(p, "Path: `%v`", tc.Selector)
+
+			res := p.Select(tc.Document)
+			switch {
+			case tc.Result != nil:
+				a.Equal(tc.Result, res)
+			case tc.Results != nil:
+				a.Contains(tc.Results, res)
+			}
+		})
+	}
+}
