@@ -20,6 +20,7 @@ func TestSelectorInterface(t *testing.T) {
 		{"index", Index(42)},
 		{"slice", Slice()},
 		{"wildcard", Wildcard},
+		{"filter", &Filter{}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -36,46 +37,55 @@ func TestSelectorString(t *testing.T) {
 		name string
 		tok  Selector
 		str  string
+		sing bool
 	}{
 		{
 			name: "name",
 			tok:  Name("hi"),
 			str:  `"hi"`,
+			sing: true,
 		},
 		{
 			name: "name_space",
 			tok:  Name("hi there"),
 			str:  `"hi there"`,
+			sing: true,
 		},
 		{
 			name: "name_quote",
 			tok:  Name(`hi "there"`),
 			str:  `"hi \"there\""`,
+			sing: true,
 		},
 		{
 			name: "name_unicode",
 			tok:  Name(`hi 😀`),
 			str:  `"hi 😀"`,
+			sing: true,
 		},
 		{
 			name: "name_digits",
 			tok:  Name(`42`),
 			str:  `"42"`,
+			sing: true,
 		},
 		{
 			name: "index",
 			tok:  Index(42),
 			str:  "42",
+			sing: true,
 		},
 		{
 			name: "index_big",
 			tok:  Index(math.MaxUint32),
 			str:  "4294967295",
+			sing: true,
 		},
 		{
 			name: "index_zero",
 			tok:  Index(0),
 			str:  "0",
+			sing: true,
 		},
 		{
 			name: "slice_0_4",
@@ -125,6 +135,7 @@ func TestSelectorString(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a.Equal(tc.sing, tc.tok.isSingular())
 			buf := new(strings.Builder)
 			tc.tok.writeTo(buf)
 			a.Equal(tc.str, buf.String())
@@ -250,6 +261,7 @@ func TestSliceBounds(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a.False(tc.slice.isSingular())
 			for _, lc := range tc.cases {
 				lower, upper := tc.slice.bounds(lc.length)
 				a.Equal(lc.lower, lower)
@@ -318,7 +330,7 @@ func TestNameSelect(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			a.Equal(tc.exp, tc.sel.Select(tc.src))
+			a.Equal(tc.exp, tc.sel.Select(tc.src, nil))
 		})
 	}
 }
@@ -378,7 +390,7 @@ func TestIndexSelect(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			a.Equal(tc.exp, tc.sel.Select(tc.src))
+			a.Equal(tc.exp, tc.sel.Select(tc.src, nil))
 		})
 	}
 }
@@ -406,9 +418,9 @@ func TestWildcardSelect(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			if _, ok := tc.src.(map[string]any); ok {
-				a.ElementsMatch(tc.exp, Wildcard.Select(tc.src))
+				a.ElementsMatch(tc.exp, Wildcard.Select(tc.src, nil))
 			} else {
-				a.Equal(tc.exp, Wildcard.Select(tc.src))
+				a.Equal(tc.exp, Wildcard.Select(tc.src, nil))
 			}
 		})
 	}
@@ -499,7 +511,119 @@ func TestSliceSelect(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			a.Equal(tc.exp, tc.sel.Select(tc.src))
+			a.Equal(tc.exp, tc.sel.Select(tc.src, nil))
+		})
+	}
+}
+
+func TestFilterSelector(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+
+	for _, tc := range []struct {
+		name    string
+		filter  *Filter
+		root    any
+		current any
+		exp     []any
+		str     string
+		rand    bool
+	}{
+		{
+			name:   "no_filter",
+			filter: &Filter{LogicalOrExpr{}},
+			exp:    []any{},
+			str:    "",
+		},
+		{
+			name: "array_root",
+			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]basicExpr{&ExistExpr{
+				&Query{segments: []*Segment{Child(Index(0))}, root: true},
+			}})})},
+			root:    []any{42, true, "hi"},
+			current: map[string]any{"x": 2},
+			exp:     []any{2},
+			str:     `$[0]`,
+		},
+		{
+			name: "array_root_false",
+			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]basicExpr{&ExistExpr{
+				&Query{segments: []*Segment{Child(Index(4))}, root: true},
+			}})})},
+			root:    []any{42, true, "hi"},
+			current: map[string]any{"x": 2},
+			exp:     []any{},
+			str:     `$[4]`,
+		},
+		{
+			name: "object_root",
+			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]basicExpr{&ExistExpr{
+				&Query{segments: []*Segment{Child(Name("y"))}, root: true},
+			}})})},
+			root:    map[string]any{"x": 42, "y": "hi"},
+			current: map[string]any{"a": 2, "b": 3},
+			exp:     []any{2, 3},
+			str:     `$["y"]`,
+			rand:    true,
+		},
+		{
+			name: "object_root_false",
+			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]basicExpr{&ExistExpr{
+				&Query{segments: []*Segment{Child(Name("z"))}, root: true},
+			}})})},
+			root:    map[string]any{"x": 42, "y": "hi"},
+			current: map[string]any{"a": 2, "b": 3},
+			exp:     []any{},
+			str:     `$["z"]`,
+			rand:    true,
+		},
+		{
+			name: "array_current",
+			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]basicExpr{&ExistExpr{
+				&Query{segments: []*Segment{Child(Index(0))}},
+			}})})},
+			current: []any{[]any{42}},
+			exp:     []any{[]any{42}},
+			str:     `@[0]`,
+		},
+		{
+			name: "array_current_false",
+			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]basicExpr{&ExistExpr{
+				&Query{segments: []*Segment{Child(Index(1))}},
+			}})})},
+			current: []any{[]any{42}},
+			exp:     []any{},
+			str:     `@[1]`,
+		},
+		{
+			name: "object_current",
+			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]basicExpr{&ExistExpr{
+				&Query{segments: []*Segment{Child(Name("x"))}},
+			}})})},
+			current: []any{map[string]any{"x": 42}},
+			exp:     []any{map[string]any{"x": 42}},
+			str:     `@["x"]`,
+		},
+		{
+			name: "object_current_false",
+			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]basicExpr{&ExistExpr{
+				&Query{segments: []*Segment{Child(Name("y"))}},
+			}})})},
+			current: []any{map[string]any{"x": 42}},
+			exp:     []any{},
+			str:     `@["y"]`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if tc.rand {
+				a.ElementsMatch(tc.exp, tc.filter.Select(tc.current, tc.root))
+			} else {
+				a.Equal(tc.exp, tc.filter.Select(tc.current, tc.root))
+			}
+			a.Equal(tc.str, tc.filter.String())
+			a.Equal(tc.str, bufString(tc.filter))
+			a.False(tc.filter.isSingular())
 		})
 	}
 }

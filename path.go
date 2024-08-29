@@ -25,5 +25,5 @@ func (p *Path) Query() *Query {
 
 // Select executes the p query against input and returns the results.
 func (p *Path) Select(input any) []any {
-	return p.q.Select(input)
+	return p.q.Select(nil, input)
 }

@@ -32,17 +32,35 @@ func (q *Query) String() string {
 	return buf.String()
 }
 
-// Select selects q.segments from input and returns the result. Returns just
-// input if q has no segments.
-func (q *Query) Select(input any) []any {
-	res := []any{input}
+// Select selects q.segments from current or root and returns the result.
+// Returns just input if q has no segments. Defined by the [Selector]
+// interface.
+func (q *Query) Select(current, root any) []any {
+	res := []any{current}
+	if q.root {
+		res[0] = root
+	}
 	for _, seg := range q.segments {
 		segRes := []any{}
 		for _, v := range res {
-			segRes = append(segRes, seg.Select(v)...)
+			segRes = append(segRes, seg.Select(v, root)...)
 		}
 		res = segRes
 	}
 
 	return res
+}
+
+// isSingular returns true if q always returns a singular value. Defined by
+// the [Selector] interface.
+func (q *Query) isSingular() bool {
+	for _, s := range q.segments {
+		if s.descendant {
+			return false
+		}
+		if !s.isSingular() {
+			return false
+		}
+	}
+	return true
 }

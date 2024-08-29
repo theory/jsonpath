@@ -47,31 +47,41 @@ func (s *Segment) String() string {
 	return buf.String()
 }
 
-// Select selects and returns values from input for each of seg's selectors.
-func (s *Segment) Select(input any) []any {
+// Select selects and returns values from current or root for each of seg's
+// selectors. Defined by the [Selector] interface.
+func (s *Segment) Select(current, root any) []any {
 	ret := []any{}
 	for _, sel := range s.selectors {
-		ret = append(ret, sel.Select(input)...)
+		ret = append(ret, sel.Select(current, root)...)
 	}
 	if s.descendant {
-		ret = append(ret, s.descend(input)...)
+		ret = append(ret, s.descend(current, root)...)
 	}
 	return ret
 }
 
-// descend recursively executes seg.Select for each value in input and returns
-// the results.
-func (s *Segment) descend(input any) []any {
+// descend recursively executes seg.Select for each value in current and/or
+// root and returns the results.
+func (s *Segment) descend(current, root any) []any {
 	ret := []any{}
-	switch val := input.(type) {
+	switch val := current.(type) {
 	case []any:
 		for _, v := range val {
-			ret = append(ret, s.Select(v)...)
+			ret = append(ret, s.Select(v, root)...)
 		}
 	case map[string]any:
 		for _, v := range val {
-			ret = append(ret, s.Select(v)...)
+			ret = append(ret, s.Select(v, root)...)
 		}
 	}
 	return ret
+}
+
+// isSingular returns true if the segment selects at most one node. Defined by
+// the [Selector] interface.
+func (s *Segment) isSingular() bool {
+	if s.descendant || len(s.selectors) != 1 {
+		return false
+	}
+	return s.selectors[0].isSingular()
 }

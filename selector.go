@@ -8,17 +8,32 @@ import (
 	"strings"
 )
 
+// stringWriter defines the interface for JSONPath objects to write string
+// representations of themselves to a string buffer.
+type stringWriter interface {
+	// writeTo writes a string to buf.
+	writeTo(buf *strings.Builder)
+}
+
 // Selector represents a single Selector in an RFC 9535 JSONPath query.
 type Selector interface {
 	fmt.Stringer
-	// writeTo writes a string representation of a selector to buf.
-	writeTo(buf *strings.Builder)
-	// Select selects values from input and returns them.
-	Select(input any) []any
+	stringWriter
+
+	// Select selects values from current and/or root and returns them.
+	Select(current, root any) []any
+
+	// isSingular returns true for selectors that can only return a single
+	// value.
+	isSingular() bool
 }
 
 // Name is a key name selector, e.g., .name or ["name"].
 type Name string
+
+// isSingular returns true because Name selects a single value from an object.
+// Defined by the [Selector] interface.
+func (Name) isSingular() bool { return true }
 
 // String returns a quoted string representation of n.
 func (n Name) String() string {
@@ -32,8 +47,8 @@ func (n Name) writeTo(buf *strings.Builder) {
 
 // Select selects n from input and returns it as a single value in a slice.
 // Returns an empty slice if input is not a map[string]any or if it does not
-// contain n.
-func (n Name) Select(input any) []any {
+// contain n. Defined by the [Selector] interface.
+func (n Name) Select(input, _ any) []any {
 	if obj, ok := input.(map[string]any); ok {
 		if val, ok := obj[string(n)]; ok {
 			return []any{val}
@@ -56,9 +71,14 @@ func (wc) writeTo(buf *strings.Builder) { buf.WriteByte('*') }
 // String returns "*".
 func (wc) String() string { return "*" }
 
+// isSingular returns false because a wild card can select more than one value
+// from an object or array. Defined by the [Selector] interface.
+func (wc) isSingular() bool { return false }
+
 // Select selects the values from input and returns them in a slice. Returns
-// an empty slice if input is not []any map[string]any.
-func (wc) Select(input any) []any {
+// an empty slice if input is not []any map[string]any. Defined by the
+// [Selector] interface.
+func (wc) Select(input, _ any) []any {
 	switch val := input.(type) {
 	case []any:
 		return val
@@ -75,6 +95,10 @@ func (wc) Select(input any) []any {
 // Index is an array index selector, e.g., [3].
 type Index int
 
+// isSingular returns true because Index selects a single value from an array.
+// Defined by the [Selector] interface.
+func (Index) isSingular() bool { return true }
+
 // writeTo writes a string representation of i to buf.
 func (i Index) writeTo(buf *strings.Builder) {
 	buf.WriteString(i.String())
@@ -85,8 +109,8 @@ func (i Index) String() string { return strconv.FormatInt(int64(i), 10) }
 
 // Select selects i from input and returns it as a single value in a slice.
 // Returns an empty slice if input is not a slice or if i it outside the
-// bounds of input.
-func (i Index) Select(input any) []any {
+// bounds of input. Defined by the [Selector] interface.
+func (i Index) Select(input, _ any) []any {
 	if val, ok := input.([]any); ok {
 		idx := int(i)
 		if idx < 0 {
@@ -109,6 +133,10 @@ type SliceSelector struct {
 	// Steps between start and end; defaults to 0.
 	step int
 }
+
+// isSingular returns false because a slice selector can select more than one
+// value from an array. Defined by the [Selector] interface.
+func (SliceSelector) isSingular() bool { return false }
 
 // Slice creates a new SliceSelector. Pass up to three integers or nils for
 // the start, end, and step arguments. Subsequent arguments are ignored.
@@ -184,8 +212,9 @@ func (s SliceSelector) String() string {
 
 // Select selects and returns the values from input for the indexes specified
 // by s. Returns an empty slice if input is not a slice. Indexes outside the
-// bounds of input will not be included in the return value.
-func (s SliceSelector) Select(input any) []any {
+// bounds of input will not be included in the return value. Defined by the
+// [Selector] interface.
+func (s SliceSelector) Select(input, _ any) []any {
 	if val, ok := input.([]any); ok {
 		lower, upper := s.bounds(len(val))
 		res := make([]any, 0, len(val))
@@ -242,3 +271,47 @@ func normalize(i, length int) int {
 
 	return length + i
 }
+
+// Filter is a filter selector, e.g., ?().
+type Filter struct {
+	LogicalOrExpr
+}
+
+// String returns a string representation of f.
+func (f *Filter) String() string {
+	buf := new(strings.Builder)
+	f.writeTo(buf)
+	return buf.String()
+}
+
+// writeTo writes a string representation of f to buf.
+func (f *Filter) writeTo(buf *strings.Builder) {
+	f.LogicalOrExpr.writeTo(buf)
+}
+
+// Select selects and returns values that f filters from current. Filter
+// expressions may evaluate the current value (@), the root value ($), or any
+// path expression. Defined by the [Selector] interface.
+func (f *Filter) Select(current, root any) []any {
+	ret := []any{}
+	switch current := current.(type) {
+	case []any:
+		for _, v := range current {
+			if f.LogicalOrExpr.testFilter(v, root) {
+				ret = append(ret, v)
+			}
+		}
+	case map[string]any:
+		for _, v := range current {
+			if f.LogicalOrExpr.testFilter(v, root) {
+				ret = append(ret, v)
+			}
+		}
+	}
+
+	return ret
+}
+
+// isSingular returns false because Filters can return more than one value.
+// Defined by the [Selector] interface.
+func (f *Filter) isSingular() bool { return false }

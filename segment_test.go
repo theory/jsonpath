@@ -14,6 +14,7 @@ func TestSegmentString(t *testing.T) {
 		name string
 		seg  *Segment
 		str  string
+		sing bool
 	}{
 		{
 			name: "no_selectors",
@@ -29,11 +30,13 @@ func TestSegmentString(t *testing.T) {
 			name: "name",
 			seg:  Child(Name("hi")),
 			str:  `["hi"]`,
+			sing: true,
 		},
 		{
 			name: "index",
 			seg:  Child(Index(2)),
 			str:  `[2]`,
+			sing: true,
 		},
 		{
 			name: "wildcard",
@@ -79,6 +82,7 @@ func TestSegmentString(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			a.Equal(tc.str, tc.seg.String())
+			a.Equal(tc.sing, tc.seg.isSingular())
 		})
 	}
 }
@@ -93,6 +97,7 @@ func TestSegmentQuery(t *testing.T) {
 		src  any
 		exp  []any
 		rand bool
+		sing bool
 	}{
 		{
 			name: "no_selectors",
@@ -105,6 +110,7 @@ func TestSegmentQuery(t *testing.T) {
 			seg:  Child(Name("hi")),
 			src:  map[string]any{"hi": 42, "go": 98.6, "x": true},
 			exp:  []any{42},
+			sing: true,
 		},
 		{
 			name: "two_names",
@@ -138,6 +144,7 @@ func TestSegmentQuery(t *testing.T) {
 			seg:  Child(Index(1)),
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{42},
+			sing: true,
 		},
 		{
 			name: "two_indexes",
@@ -229,10 +236,11 @@ func TestSegmentQuery(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			a.Equal(tc.seg.selectors, tc.seg.Selectors())
+			a.Equal(tc.sing, tc.seg.isSingular())
 			if tc.rand {
-				a.ElementsMatch(tc.exp, tc.seg.Select(tc.src))
+				a.ElementsMatch(tc.exp, tc.seg.Select(tc.src, nil))
 			} else {
-				a.Equal(tc.exp, tc.seg.Select(tc.src))
+				a.Equal(tc.exp, tc.seg.Select(tc.src, nil))
 			}
 		})
 	}
@@ -424,10 +432,11 @@ func TestDescendantSegmentQuery(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a.False(tc.seg.isSingular())
 			if tc.rand {
-				a.ElementsMatch(tc.exp, tc.seg.Select(tc.src))
+				a.ElementsMatch(tc.exp, tc.seg.Select(tc.src, nil))
 			} else {
-				a.Equal(tc.exp, tc.seg.Select(tc.src))
+				a.Equal(tc.exp, tc.seg.Select(tc.src, nil))
 			}
 		})
 	}
