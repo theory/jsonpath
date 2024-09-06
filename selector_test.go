@@ -537,7 +537,7 @@ func TestFilterSelector(t *testing.T) {
 		},
 		{
 			name: "array_root",
-			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]basicExpr{&ExistExpr{
+			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]BasicExpr{&ExistExpr{
 				&Query{segments: []*Segment{Child(Index(0))}, root: true},
 			}})})},
 			root:    []any{42, true, "hi"},
@@ -547,7 +547,7 @@ func TestFilterSelector(t *testing.T) {
 		},
 		{
 			name: "array_root_false",
-			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]basicExpr{&ExistExpr{
+			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]BasicExpr{&ExistExpr{
 				&Query{segments: []*Segment{Child(Index(4))}, root: true},
 			}})})},
 			root:    []any{42, true, "hi"},
@@ -557,7 +557,7 @@ func TestFilterSelector(t *testing.T) {
 		},
 		{
 			name: "object_root",
-			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]basicExpr{&ExistExpr{
+			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]BasicExpr{&ExistExpr{
 				&Query{segments: []*Segment{Child(Name("y"))}, root: true},
 			}})})},
 			root:    map[string]any{"x": 42, "y": "hi"},
@@ -568,7 +568,7 @@ func TestFilterSelector(t *testing.T) {
 		},
 		{
 			name: "object_root_false",
-			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]basicExpr{&ExistExpr{
+			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]BasicExpr{&ExistExpr{
 				&Query{segments: []*Segment{Child(Name("z"))}, root: true},
 			}})})},
 			root:    map[string]any{"x": 42, "y": "hi"},
@@ -579,7 +579,7 @@ func TestFilterSelector(t *testing.T) {
 		},
 		{
 			name: "array_current",
-			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]basicExpr{&ExistExpr{
+			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]BasicExpr{&ExistExpr{
 				&Query{segments: []*Segment{Child(Index(0))}},
 			}})})},
 			current: []any{[]any{42}},
@@ -588,7 +588,7 @@ func TestFilterSelector(t *testing.T) {
 		},
 		{
 			name: "array_current_false",
-			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]basicExpr{&ExistExpr{
+			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]BasicExpr{&ExistExpr{
 				&Query{segments: []*Segment{Child(Index(1))}},
 			}})})},
 			current: []any{[]any{42}},
@@ -597,7 +597,7 @@ func TestFilterSelector(t *testing.T) {
 		},
 		{
 			name: "object_current",
-			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]basicExpr{&ExistExpr{
+			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]BasicExpr{&ExistExpr{
 				&Query{segments: []*Segment{Child(Name("x"))}},
 			}})})},
 			current: []any{map[string]any{"x": 42}},
@@ -606,7 +606,7 @@ func TestFilterSelector(t *testing.T) {
 		},
 		{
 			name: "object_current_false",
-			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]basicExpr{&ExistExpr{
+			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]BasicExpr{&ExistExpr{
 				&Query{segments: []*Segment{Child(Name("y"))}},
 			}})})},
 			current: []any{map[string]any{"x": 42}},

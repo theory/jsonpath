@@ -177,6 +177,611 @@ func TestParseSimple(t *testing.T) {
 	}
 }
 
+func TestParseFilter(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+	r := require.New(t)
+
+	for _, tc := range []struct {
+		name   string
+		query  string
+		filter *Filter
+		err    string
+	}{
+		// ExistExpr
+		{
+			name:  "current_exists",
+			query: "@",
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&ExistExpr{&Query{segments: []*Segment{}}},
+			})}},
+		},
+		{
+			name:  "root_exists",
+			query: "$",
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&ExistExpr{&Query{segments: []*Segment{}, root: true}},
+			})}},
+		},
+		{
+			name:  "current_name_exists",
+			query: "@.x",
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&ExistExpr{&Query{segments: []*Segment{Child(Name("x"))}}},
+			})}},
+		},
+		{
+			name:  "root_name_exists",
+			query: "$.x",
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&ExistExpr{&Query{segments: []*Segment{Child(Name("x"))}, root: true}},
+			})}},
+		},
+		{
+			name:  "current_two_segment_exists",
+			query: "@.x[1]",
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&ExistExpr{&Query{segments: []*Segment{Child(Name("x")), Child(Index(1))}}},
+			})}},
+		},
+		{
+			name:  "root_two_selector_exists",
+			query: `$["x", 1]`,
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&ExistExpr{&Query{segments: []*Segment{Child(Name("x"), Index(1))}, root: true}},
+			})}},
+		},
+		// NotExistExpr
+		{
+			name:  "current_not_exists",
+			query: "!@",
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&NotExistsExpr{&Query{segments: []*Segment{}}},
+			})}},
+		},
+		{
+			name:  "root_not_exists",
+			query: "!$",
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&NotExistsExpr{&Query{segments: []*Segment{}, root: true}},
+			})}},
+		},
+		{
+			name:  "current_name_not_exists",
+			query: "!@.x",
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&NotExistsExpr{&Query{segments: []*Segment{Child(Name("x"))}}},
+			})}},
+		},
+		{
+			name:  "root_name_not_exists",
+			query: "!$.x",
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&NotExistsExpr{&Query{segments: []*Segment{Child(Name("x"))}, root: true}},
+			})}},
+		},
+		{
+			name:  "current_two_segment_not_exists",
+			query: "!@.x[1]",
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&NotExistsExpr{&Query{segments: []*Segment{Child(Name("x")), Child(Index(1))}}},
+			})}},
+		},
+		{
+			name:  "root_two_selector_not_exists",
+			query: `!$["x", 1]`,
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&NotExistsExpr{&Query{segments: []*Segment{Child(Name("x"), Index(1))}, root: true}},
+			})}},
+		},
+		// ParenExistExpr
+		{
+			name:  "paren_current_exists",
+			query: "(@)",
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&ParenExpr{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+					&ExistExpr{&Query{segments: []*Segment{}}},
+				})}},
+			})}},
+		},
+		{
+			name:  "paren_root_exists",
+			query: "($)",
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&ParenExpr{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+					&ExistExpr{&Query{segments: []*Segment{}, root: true}},
+				})}},
+			})}},
+		},
+		{
+			name:  "paren_current_exists_name_index",
+			query: `(@["x", 1])`,
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&ParenExpr{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+					&ExistExpr{&Query{segments: []*Segment{Child(Name("x"), Index(1))}}},
+				})}},
+			})}},
+		},
+		{
+			name:  "paren_logical_and",
+			query: `(  @["x", 1] && $["y"]  )`,
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&ParenExpr{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+					&ExistExpr{&Query{segments: []*Segment{Child(Name("x"), Index(1))}}},
+					&ExistExpr{&Query{segments: []*Segment{Child(Name("y"))}, root: true}},
+				})}},
+			})}},
+		},
+		{
+			name:  "paren_logical_or",
+			query: `(@["x", 1] || $["y"])`,
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&ParenExpr{LogicalOrExpr{
+					LogicalAndExpr([]BasicExpr{
+						&ExistExpr{&Query{segments: []*Segment{Child(Name("x"), Index(1))}}},
+					}),
+					LogicalAndExpr([]BasicExpr{
+						&ExistExpr{&Query{segments: []*Segment{Child(Name("y"))}, root: true}},
+					}),
+				}},
+			})}},
+		},
+		// NotParenExistExpr
+		{
+			name:  "not_paren_current_exists",
+			query: "!(@)",
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&NotParenExpr{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+					&ExistExpr{&Query{segments: []*Segment{}}},
+				})}},
+			})}},
+		},
+		{
+			name:  "not_paren_root_exists",
+			query: "!($)",
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&NotParenExpr{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+					&ExistExpr{&Query{segments: []*Segment{}, root: true}},
+				})}},
+			})}},
+		},
+		{
+			name:  "not_paren_current_exists_name_index",
+			query: `!(@["x", 1])`,
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&NotParenExpr{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+					&ExistExpr{&Query{segments: []*Segment{Child(Name("x"), Index(1))}}},
+				})}},
+			})}},
+		},
+		{
+			name:  "not_paren_logical_and",
+			query: `!(  @["x", 1] && $["y"]  )`,
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&NotParenExpr{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+					&ExistExpr{&Query{segments: []*Segment{Child(Name("x"), Index(1))}}},
+					&ExistExpr{&Query{segments: []*Segment{Child(Name("y"))}, root: true}},
+				})}},
+			})}},
+		},
+		{
+			name:  "not_paren_logical_or",
+			query: `!(@["x", 1] || $["y"])`,
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&NotParenExpr{LogicalOrExpr{
+					LogicalAndExpr([]BasicExpr{
+						&ExistExpr{&Query{segments: []*Segment{Child(Name("x"), Index(1))}}},
+					}),
+					LogicalAndExpr([]BasicExpr{
+						&ExistExpr{&Query{segments: []*Segment{Child(Name("y"))}, root: true}},
+					}),
+				}},
+			})}},
+		},
+		// FunctionExpr
+		{
+			name:  "function_current",
+			query: "__true(@)",
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&FunctionExpr{fn: GetFunction("__true"), args: []FunctionExprArg{
+					&singularQuery{selectors: []Selector{}, relative: true},
+				}},
+			})}},
+		},
+		{
+			name:  "function_match_current_integer",
+			query: "match( @,  42  )",
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&FunctionExpr{fn: GetFunction("match"), args: []FunctionExprArg{
+					&singularQuery{selectors: []Selector{}, relative: true},
+					&literalArg{int64(42)},
+				}},
+			})}},
+		},
+		{
+			name:  "function_search_two_queries",
+			query: "search( $.x,  @[0]  )",
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&FunctionExpr{fn: GetFunction("search"), args: []FunctionExprArg{
+					&singularQuery{selectors: []Selector{Name("x")}},
+					&singularQuery{selectors: []Selector{Index(0)}, relative: true},
+				}},
+			})}},
+		},
+		{
+			name:  "function_length_string",
+			query: `length("hi") == 2`,
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&ComparisonExpr{
+					Left: &FunctionExpr{fn: GetFunction("length"), args: []FunctionExprArg{
+						&literalArg{"hi"},
+					}},
+					Op:    EqualTo,
+					Right: &literalArg{int64(2)},
+				},
+			})}},
+		},
+		{
+			name:  "function_length_true",
+			query: `length(true) == 1`,
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&ComparisonExpr{
+					Left: &FunctionExpr{fn: GetFunction("length"), args: []FunctionExprArg{
+						&literalArg{true},
+					}},
+					Op:    EqualTo,
+					Right: &literalArg{int64(1)},
+				},
+			})}},
+		},
+		{
+			name:  "function_length_false",
+			query: `length(false)==1`,
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&ComparisonExpr{
+					Left: &FunctionExpr{fn: GetFunction("length"), args: []FunctionExprArg{
+						&literalArg{false},
+					}},
+					Op:    EqualTo,
+					Right: &literalArg{int64(1)},
+				},
+			})}},
+		},
+		{
+			name:  "function_value_null",
+			query: `__true(null)`, // defined in function_test.go
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&FunctionExpr{fn: GetFunction("__true"), args: []FunctionExprArg{
+					&literalArg{},
+				}},
+			})}},
+		},
+		{
+			name:  "nested_function",
+			query: `__true(count(@))`, // defined in function_test.go
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&FunctionExpr{fn: GetFunction("__true"), args: []FunctionExprArg{
+					&FunctionExpr{fn: GetFunction("count"), args: []FunctionExprArg{
+						&singularQuery{selectors: []Selector{}, relative: true},
+					}},
+				}},
+			})}},
+		},
+		{
+			name:  "function_paren_logical_expr",
+			query: `__true((@.x))`, // defined in function_test.go
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&FunctionExpr{fn: GetFunction("__true"), args: []FunctionExprArg{
+					LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+						&ExistExpr{&Query{segments: []*Segment{Child(Name("x"))}}},
+					})},
+				}},
+			})}},
+		},
+		{
+			name:  "function_paren_logical_not_expr",
+			query: `__true((!@.x))`, // defined in function_test.go
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&FunctionExpr{fn: GetFunction("__true"), args: []FunctionExprArg{
+					LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+						&NotExistsExpr{&Query{segments: []*Segment{Child(Name("x"))}}},
+					})},
+				}},
+			})}},
+		},
+		{
+			name:  "function_lots_of_literals",
+			query: `__true("hi", 42, true, false, null, 98.6)`,
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&FunctionExpr{fn: GetFunction("__true"), args: []FunctionExprArg{
+					&literalArg{"hi"},
+					&literalArg{int64(42)},
+					&literalArg{true},
+					&literalArg{false},
+					&literalArg{nil},
+					&literalArg{float64(98.6)},
+				}},
+			})}},
+		},
+		{
+			name:  "function_no_args",
+			query: `__true()`,
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&FunctionExpr{fn: GetFunction("__true"), args: []FunctionExprArg{}},
+			})}},
+		},
+		{
+			name:  "function_no_args_space",
+			query: `__true(    )`,
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&FunctionExpr{fn: GetFunction("__true"), args: []FunctionExprArg{}},
+			})}},
+		},
+		// ComparisonExpr
+		{
+			name:  "literal_comparison",
+			query: `42 == 42`,
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&ComparisonExpr{&literalArg{int64(42)}, EqualTo, &literalArg{int64(42)}},
+			})}},
+		},
+		{
+			name:  "literal_singular_comparison",
+			query: `42 != $.a.b`,
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&ComparisonExpr{
+					Left:  &literalArg{int64(42)},
+					Op:    NotEqualTo,
+					Right: &singularQuery{selectors: []Selector{Name("a"), Name("b")}},
+				},
+			})}},
+		},
+		{
+			name:  "literal_comparison_function",
+			query: `42 > length("hi")`,
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&ComparisonExpr{
+					Left: &literalArg{int64(42)},
+					Op:   GreaterThan,
+					Right: &FunctionExpr{fn: GetFunction("length"), args: []FunctionExprArg{
+						&literalArg{"hi"},
+					}},
+				},
+			})}},
+		},
+		{
+			name:  "function_cmp_singular",
+			query: `length("hi") <=   @[0]["a"]`,
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&ComparisonExpr{
+					Left: &FunctionExpr{fn: GetFunction("length"), args: []FunctionExprArg{
+						&literalArg{"hi"},
+					}},
+					Op:    LessThanEqualTo,
+					Right: &singularQuery{selectors: []Selector{Index(0), Name("a")}, relative: true},
+				},
+			})}},
+		},
+		{
+			name:  "singular_cmp_literal",
+			query: `$.a.b >= 98.6`,
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&ComparisonExpr{
+					Left:  &singularQuery{selectors: []Selector{Name("a"), Name("b")}},
+					Op:    GreaterThanEqualTo,
+					Right: &literalArg{float64(98.6)},
+				},
+			})}},
+		},
+		{
+			name:  "function_cmp_literal",
+			query: `length("hi") <   42 `,
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&ComparisonExpr{
+					Left: &FunctionExpr{fn: GetFunction("length"), args: []FunctionExprArg{
+						&literalArg{"hi"},
+					}},
+					Op:    LessThan,
+					Right: &literalArg{int64(42)},
+				},
+			})}},
+		},
+		{
+			name:  "not_function",
+			query: `!__true()`,
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				NotFuncExpr{
+					&FunctionExpr{fn: GetFunction("__true"), args: []FunctionExprArg{}},
+				},
+			})}},
+		},
+		{
+			name:  "singular_cmp_literal_no_space",
+			query: `@.x<42`,
+			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+				&ComparisonExpr{
+					Left:  &singularQuery{selectors: []Selector{Name("x")}, relative: true},
+					Op:    LessThan,
+					Right: &literalArg{int64(42)},
+				},
+			})}},
+		},
+		{
+			name:  "invalid_logical_or",
+			query: `(@["x", 1] || hi)`,
+			err:   `jsonpath: unexpected identifier at position 15`,
+		},
+		{
+			name:  "invalid_logical_or",
+			query: `(@["x", 1] || hi)`,
+			err:   `jsonpath: unexpected identifier at position 15`,
+		},
+		{
+			name:  "incomplete_logical_or",
+			query: `(@["x", 1] | $["y"])`,
+			err:   `jsonpath: expected '|' but found blank space at position 13`,
+		},
+		{
+			name:  "incomplete_logical_and",
+			query: `(@["x", 1] &? $["y"])`,
+			err:   `jsonpath: expected '&' but found '?' at position 13`,
+		},
+		{
+			name:  "invalid_and_expression",
+			query: `(@["x", 1] && nope(@))`,
+			err:   `jsonpath: unknown function "nope" at position 15`,
+		},
+		{
+			name:  "nonexistent_function",
+			query: `nonesuch(@)`,
+			err:   `jsonpath: unknown function "nonesuch" at position 1`,
+		},
+		{
+			name:  "not_nonexistent_function",
+			query: `!nonesuch(@)`,
+			err:   `jsonpath: unknown function "nonesuch" at position 2`,
+		},
+		{
+			name:  "invalid_literal",
+			query: `99e+1234`,
+			err:   `jsonpath: cannot parse "99e+1234", value out of range at position 1`,
+		},
+		{
+			name:  "invalid_query",
+			query: `@["x", hi]`,
+			err:   `jsonpath: unexpected identifier at position 8`,
+		},
+		{
+			name:  "invalid_function_comparison",
+			query: `length(@.x) == hi`,
+			err:   `jsonpath: unexpected identifier at position 16`,
+		},
+		{
+			name:  "function_without_comparison",
+			query: `length(@.x)`,
+			err:   `jsonpath: missing comparison to function result at position 12`,
+		},
+		{
+			name:  "invalid_not_exists_query",
+			query: `!@.0`,
+			err:   `jsonpath: unexpected integer at position 4`,
+		},
+		{
+			name:  "unclosed_paren_expr",
+			query: `(@["x", 1]`,
+			err:   `jsonpath: expected ')' but found eof at position 11`,
+		},
+		{
+			name:  "unclosed_not_paren_expr",
+			query: `!(@["x", 1]`,
+			err:   `jsonpath: expected ')' but found eof at position 12`,
+		},
+		{
+			name:  "bad_function_arg",
+			query: `length(xyz)`,
+			err:   `jsonpath: unexpected identifier at position 8`,
+		},
+		{
+			name:  "invalid_function_arg",
+			query: `length(@[1, 2])`,
+			err:   `jsonpath: cannot convert length() argument to ValueType at position 7`,
+		},
+		{
+			name:  "too_many_function_args",
+			query: `length(@, $)`,
+			err:   `jsonpath: expected 1 argument but found 2 at position 7`,
+		},
+		{
+			name:  "function_literal_parse_error",
+			query: `length(99e+1234)`,
+			err:   `jsonpath: cannot parse "99e+1234", value out of range at position 8`,
+		},
+		{
+			name:  "function_query_parse_error",
+			query: `length(@[foo])`,
+			err:   `jsonpath: unexpected identifier at position 10`,
+		},
+		{
+			name:  "unknown_function_in_function_arg",
+			query: `length(nonesuch())`,
+			err:   `jsonpath: unknown function "nonesuch" at position 8`,
+		},
+		{
+			name:  "invalid_not_function_arg",
+			query: `length(!@[foo])`,
+			err:   `jsonpath: unexpected identifier at position 11`,
+		},
+		{
+			name:  "invalid_second_arg",
+			query: `length("foo" == "bar")`,
+			err:   `jsonpath: unexpected '=' at position 14`,
+		},
+		{
+			name:  "invalid_comparable_expression",
+			query: `"foo" => "bar"`,
+			err:   `jsonpath: invalid comparison operator at position 7`,
+		},
+		{
+			name:  "invalid_comparable_function",
+			query: `42 == nonesuch()`,
+			err:   `jsonpath: unknown function "nonesuch" at position 7`,
+		},
+		{
+			name:  "cannot_compare_logical_func",
+			query: `42 == __true()`,
+			err:   `jsonpath: cannot compare result of logical function at position 7`,
+		},
+		{
+			name:  "function_wrong_arg_count",
+			query: `match("foo")`,
+			err:   `jsonpath: expected 2 arguments but found 1 at position 6`,
+		},
+		{
+			name:  "function_second_arg_parse_error",
+			query: `search("foo", @[foo])`,
+			err:   `jsonpath: unexpected identifier at position 17`,
+		},
+		{
+			name:  "cmp_query_invalid_index",
+			query: `42 == $[-0]`,
+			err:   `jsonpath: invalid integer path value "-0" at position 9`,
+		},
+		{
+			name:  "cmp_val_not_valid",
+			query: `42 == {}`,
+			err:   `jsonpath: unexpected '{' at position 7`,
+		},
+		{
+			name:  "cmp_query_unclosed_bracket",
+			query: `42 == $[0`,
+			err:   `jsonpath: unexpected eof at position 10`,
+		},
+		{
+			name:  "cmp_query_invalid_selector",
+			query: `42 == $[foo]`,
+			err:   `jsonpath: unexpected identifier at position 9`,
+		},
+		{
+			name:  "cmp_query_invalid_ident",
+			query: `42 == $.42`,
+			err:   `jsonpath: unexpected integer at position 9`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			filter, err := parseFilter(newLexer(tc.query))
+			if tc.err == "" {
+				r.NoError(err)
+				a.Equal(tc.filter, filter)
+			} else {
+				a.Nil(filter)
+				r.EqualError(err, tc.err)
+				r.ErrorIs(err, ErrPathParse)
+			}
+		})
+	}
+}
+
 func TestParseSelectors(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
@@ -329,9 +934,50 @@ func TestParseSelectors(t *testing.T) {
 			exp:  NewQuery([]*Segment{Child(Index(3), Name("🦀"), Slice(nil, 3), Wildcard)}),
 		},
 		{
-			name: "filter_unsupported",
+			name: "filter_eq",
 			path: `$[?@.x == 'y']`,
-			err:  `jsonpath: filter selectors not yet supported at position 3`,
+			exp: NewQuery([]*Segment{Child(
+				&Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+					&ComparisonExpr{
+						Left:  &singularQuery{selectors: []Selector{Name("x")}, relative: true},
+						Op:    EqualTo,
+						Right: &literalArg{"y"},
+					},
+				})}},
+			)}),
+		},
+		{
+			name: "filter_exists",
+			path: `$[?@.x]`,
+			exp: NewQuery([]*Segment{Child(
+				&Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+					&ExistExpr{&Query{segments: []*Segment{Child(Name("x"))}}},
+				})}},
+			)}),
+		},
+		{
+			name: "filter_not_exists",
+			path: `$[?!@[0]]`,
+			exp: NewQuery([]*Segment{Child(
+				&Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+					&NotExistsExpr{&Query{segments: []*Segment{Child(Index(0))}}},
+				})}},
+			)}),
+		},
+		{
+			name: "filter_current_and_root",
+			path: `$[? @ && $[0]]`,
+			exp: NewQuery([]*Segment{Child(
+				&Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
+					&ExistExpr{&Query{segments: []*Segment{}}},
+					&ExistExpr{&Query{segments: []*Segment{Child(Index(0))}, root: true}},
+				})}},
+			)}),
+		},
+		{
+			name: "filter_err",
+			path: `$[?`,
+			err:  `jsonpath: unexpected eof at position 4`,
 		},
 		{
 			name: "slice_bad_start",
@@ -541,4 +1187,121 @@ func TestMakeNumErr(t *testing.T) {
 		r.EqualError(err, `jsonpath: oops at position 20`)
 		r.ErrorIs(err, ErrPathParse)
 	})
+}
+
+func TestParsePathInt(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+	r := require.New(t)
+
+	for _, tc := range []struct {
+		name  string
+		input string
+		exp   int64
+		err   string
+	}{
+		{"zero", "0", 0, ""},
+		{"1000", "1000", 1000, ""},
+		{"neg_1000", "-1000", -1000, ""},
+		{
+			name:  "neg_zero",
+			input: "-0",
+			err:   `jsonpath: invalid integer path value "-0" at position 4`,
+		},
+		{
+			name:  "too_big",
+			input: "9007199254740992",
+			err:   `jsonpath: cannot parse "9007199254740992", value out of range at position 4`,
+		},
+		{
+			name:  "too_small",
+			input: "-9007199254740992",
+			err:   `jsonpath: cannot parse "-9007199254740992", value out of range at position 4`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			num, err := parsePathInt(token{integer, tc.input, 3})
+			if tc.err == "" {
+				r.NoError(err)
+				a.Equal(tc.exp, num)
+			} else {
+				a.Zero(num)
+				r.EqualError(err, tc.err)
+				r.ErrorIs(err, ErrPathParse)
+			}
+		})
+	}
+}
+
+func TestParseLiteral(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+	r := require.New(t)
+
+	for _, tc := range []struct {
+		name string
+		tok  token
+		exp  any
+		err  string
+	}{
+		{
+			name: "string",
+			tok:  token{goString, "hello", 0},
+			exp:  "hello",
+		},
+		{
+			name: "integer",
+			tok:  token{integer, "42", 0},
+			exp:  int64(42),
+		},
+		{
+			name: "float",
+			tok:  token{number, "98.6", 0},
+			exp:  float64(98.6),
+		},
+		{
+			name: "true",
+			tok:  token{boolTrue, "", 0},
+			exp:  true,
+		},
+		{
+			name: "false",
+			tok:  token{boolFalse, "", 0},
+			exp:  false,
+		},
+		{
+			name: "null",
+			tok:  token{jsonNull, "", 0},
+			exp:  nil,
+		},
+		{
+			name: "invalid_int",
+			tok:  token{integer, "170141183460469231731687303715884105727", 5},
+			err:  `jsonpath: cannot parse "170141183460469231731687303715884105727", value out of range at position 6`,
+		},
+		{
+			name: "invalid_float",
+			tok:  token{number, "99e+1234", 3},
+			err:  `jsonpath: cannot parse "99e+1234", value out of range at position 4`,
+		},
+		{
+			name: "non_literal_token",
+			tok:  token{eof, "", 3},
+			err:  `jsonpath: unexpected eof at position 4`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			lit, err := parseLiteral(tc.tok)
+			if tc.err == "" {
+				r.NoError(err)
+				a.Equal(&literalArg{tc.exp}, lit)
+			} else {
+				a.Nil(lit)
+				r.EqualError(err, tc.err)
+				r.ErrorIs(err, ErrPathParse)
+			}
+		})
+	}
 }

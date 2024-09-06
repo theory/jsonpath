@@ -25,7 +25,6 @@ func TestParseSpecExamples(t *testing.T) {
 		exp  []any
 		size int
 		rand bool
-		todo bool
 	}{
 		//nolint:dupword
 		{
@@ -95,7 +94,6 @@ func TestParseSpecExamples(t *testing.T) {
 		{
 			name: "example_8",
 			path: `$..book[?(@.isbn)]`,
-			todo: true,
 			exp: []any{
 				map[string]any{
 					"category": "fiction",
@@ -117,7 +115,6 @@ func TestParseSpecExamples(t *testing.T) {
 		{
 			name: "example_9",
 			path: `$..book[?(@.price<10)]`,
-			todo: true,
 			exp: []any{
 				map[string]any{
 					"category": "reference",
@@ -144,10 +141,6 @@ func TestParseSpecExamples(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			p, err := Parse(tc.path)
-			if tc.todo {
-				r.Error(err)
-				return
-			}
 			r.NoError(err)
 			res := p.Select(val)
 
@@ -238,28 +231,37 @@ func TestParseCompliance(t *testing.T) {
 	}
 
 	for i, tc := range ts.Tests {
-		// Skip filter tests for now.
-		if strings.Contains(tc.Selector, "?") || i == 4 {
-			continue
-		}
-		t.Run(fmt.Sprintf("test_%v", i), func(t *testing.T) {
+		t.Run(fmt.Sprintf("test_%03d", i), func(t *testing.T) {
 			t.Parallel()
+
+			// Replace invalid JSON start character in test case 4.
+			if i == 4 {
+				tc.Selector = strings.ReplaceAll(tc.Selector, "☺", "々")
+				if doc, ok := tc.Document.(map[string]any); ok {
+					doc["々"] = doc["☺"]
+					delete(doc, "☺")
+				} else {
+					t.Fatalf("expected map[string]any but got %T", tc.Document)
+				}
+			}
+
+			description := fmt.Sprintf("%v: `%v`", tc.Name, tc.Selector)
 			p, err := Parse(tc.Selector)
 			if tc.InvalidSelector {
-				r.Error(err, "Path: `%v`", tc.Selector)
-				a.Nil(p)
+				r.Error(err, description)
+				a.Nil(p, description)
 				return
 			}
 
-			r.NoError(err)
-			a.NotNil(p, "Path: `%v`", tc.Selector)
+			r.NoError(err, description)
+			a.NotNil(p, description)
 
 			res := p.Select(tc.Document)
 			switch {
 			case tc.Result != nil:
-				a.Equal(tc.Result, res)
+				a.Equal(tc.Result, res, description)
 			case tc.Results != nil:
-				a.Contains(tc.Results, res)
+				a.Contains(tc.Results, res, description)
 			}
 		})
 	}

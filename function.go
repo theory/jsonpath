@@ -3,8 +3,10 @@ package jsonpath
 //go:generate stringer -linecomment -output function_string.go -type LogicalType,PathType,FuncType
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
+	"regexp/syntax"
 	"strings"
 	"sync"
 	"unicode/utf8"
@@ -169,9 +171,8 @@ func newValueTypeFrom(value JSONPathValue) *ValueType {
 		return v
 	case nil:
 		return nil
-	default:
-		panic(fmt.Sprintf("unexpected argument of type %T", v))
 	}
+	panic(fmt.Sprintf("unexpected argument of type %T", value))
 }
 
 // Returns true if vt.any is truthy.
@@ -235,6 +236,15 @@ func Register(fn *Function) {
 	registry[fn.Name] = fn
 }
 
+// GetFunction returns a reference to the registered function named name.
+// Returns nil if no function with that name has been registered.
+func GetFunction(name string) *Function {
+	registryMu.RLock()
+	defer registryMu.RUnlock()
+	function := registry[name]
+	return function
+}
+
 // registerFunctions registers the functions defined by [RFC 9535].
 func registerFunctions() {
 	Register(&Function{
@@ -275,20 +285,16 @@ func init() { registerFunctions() }
 // checkLengthArgs checks the argument expressions to length() and returns an
 // error if there is not exactly one expression that results in a
 // [PathValue]-compatible value.
+//
+//nolint:err113
 func checkLengthArgs(fea []FunctionExprArg) error {
 	if len(fea) != 1 {
-		return fmt.Errorf(
-			"%w: expected 1 argument but received %v",
-			ErrPathParse, len(fea),
-		)
+		return fmt.Errorf("expected 1 argument but found %v", len(fea))
 	}
 
 	kind := fea[0].asTypeKind()
 	if !kind.convertsTo(PathValue) {
-		return fmt.Errorf(
-			"%w: expected argument to length() to be convertible to PathValue but received %v",
-			ErrPathParse, kind,
-		)
+		return errors.New("cannot convert length() argument to ValueType")
 	}
 
 	return nil
@@ -297,6 +303,7 @@ func checkLengthArgs(fea []FunctionExprArg) error {
 // lengthFunc extracts the single argument passed in jv and returns its
 // length. Panics if jv[0] doesn't exist or is not convertible to [ValueType].
 //
+//   - if jv[0] is nil, the result is nil
 //   - If jv[0] is a string, the result is the number of Unicode scalar values
 //     in the string.
 //   - If jv[0] is a []any, the result is the number of elements in the slice.
@@ -307,6 +314,9 @@ func checkLengthArgs(fea []FunctionExprArg) error {
 //nolint:ireturn
 func lengthFunc(jv []JSONPathValue) JSONPathValue {
 	v := newValueTypeFrom(jv[0])
+	if v == nil {
+		return nil
+	}
 	switch v := v.any.(type) {
 	case string:
 		// Unicode scalar values
@@ -323,20 +333,16 @@ func lengthFunc(jv []JSONPathValue) JSONPathValue {
 // checkCountArgs checks the argument expressions to count() and returns an
 // error if there is not exactly one expression that results in a
 // [PathNodes]-compatible value.
+//
+//nolint:err113
 func checkCountArgs(fea []FunctionExprArg) error {
 	if len(fea) != 1 {
-		return fmt.Errorf(
-			"%w: expected 1 argument but received %v",
-			ErrPathParse, len(fea),
-		)
+		return fmt.Errorf("expected 1 argument but found %v", len(fea))
 	}
 
 	kind := fea[0].asTypeKind()
 	if !kind.convertsTo(PathNodes) {
-		return fmt.Errorf(
-			"%w: expected argument to count() to be convertible to PathNodes but received %v",
-			ErrPathParse, kind,
-		)
+		return errors.New("cannot convert count() argument to PathNodes")
 	}
 
 	return nil
@@ -355,20 +361,16 @@ func countFunc(jv []JSONPathValue) JSONPathValue {
 // checkValueArgs checks the argument expressions to value() and returns an
 // error if there is not exactly one expression that results in a
 // [PathNodes]-compatible value.
+//
+//nolint:err113
 func checkValueArgs(fea []FunctionExprArg) error {
 	if len(fea) != 1 {
-		return fmt.Errorf(
-			"%w: expected 1 argument but received %v",
-			ErrPathParse, len(fea),
-		)
+		return fmt.Errorf("expected 1 argument but found %v", len(fea))
 	}
 
 	kind := fea[0].asTypeKind()
 	if !kind.convertsTo(PathNodes) {
-		return fmt.Errorf(
-			"%w: expected argument to value() to be convertible to PathNodes but received %v",
-			ErrPathParse, kind,
-		)
+		return errors.New("cannot convert value() argument to PathNodes")
 	}
 
 	return nil
@@ -392,22 +394,18 @@ func valueFunc(jv []JSONPathValue) JSONPathValue {
 // checkMatchArgs checks the argument expressions to match() and returns an
 // error if there are not exactly two expressions that result in
 // [PathValue]-compatible values.
+//
+//nolint:err113
 func checkMatchArgs(fea []FunctionExprArg) error {
 	const matchArgLen = 2
 	if len(fea) != matchArgLen {
-		return fmt.Errorf(
-			"%w: expected 2 arguments but received %v",
-			ErrPathParse, len(fea),
-		)
+		return fmt.Errorf("expected 2 arguments but found %v", len(fea))
 	}
 
 	for i, arg := range fea {
 		kind := arg.asTypeKind()
 		if !kind.convertsTo(PathValue) {
-			return fmt.Errorf(
-				"%w: expected argument %v to match() to be convertible to PathValue but received %v",
-				ErrPathParse, i+1, kind,
-			)
+			return fmt.Errorf("cannot convert match() argument %v to PathNodes", i+1)
 		}
 	}
 
@@ -424,7 +422,7 @@ func checkMatchArgs(fea []FunctionExprArg) error {
 func matchFunc(jv []JSONPathValue) JSONPathValue {
 	if v, ok := newValueTypeFrom(jv[0]).any.(string); ok {
 		if r, ok := newValueTypeFrom(jv[1]).any.(string); ok {
-			if rc, err := regexp.Compile(`(?s)\A` + r + `\z`); err == nil {
+			if rc := compileRegex(`\A` + r + `\z`); rc != nil {
 				return logicalFrom(rc.MatchString(v))
 			}
 		}
@@ -435,22 +433,18 @@ func matchFunc(jv []JSONPathValue) JSONPathValue {
 // checkSearchArgs checks the argument expressions to search() and returns an
 // error if there are not exactly two expressions that result in
 // [PathValue]-compatible values.
+//
+//nolint:err113
 func checkSearchArgs(fea []FunctionExprArg) error {
 	const searchArgLen = 2
 	if len(fea) != searchArgLen {
-		return fmt.Errorf(
-			"%w: expected 2 arguments but received %v",
-			ErrPathParse, len(fea),
-		)
+		return fmt.Errorf("expected 2 arguments but found %v", len(fea))
 	}
 
 	for i, arg := range fea {
 		kind := arg.asTypeKind()
 		if !kind.convertsTo(PathValue) {
-			return fmt.Errorf(
-				"%w: expected argument %v to search() to be convertible to PathValue but received %v",
-				ErrPathParse, i+1, kind,
-			)
+			return fmt.Errorf("cannot convert search() argument %v to PathNodes", i+1)
 		}
 	}
 
@@ -467,12 +461,45 @@ func checkSearchArgs(fea []FunctionExprArg) error {
 func searchFunc(jv []JSONPathValue) JSONPathValue {
 	if val, ok := newValueTypeFrom(jv[0]).any.(string); ok {
 		if r, ok := newValueTypeFrom(jv[1]).any.(string); ok {
-			if rc, err := regexp.Compile(r); err == nil {
+			if rc := compileRegex(r); rc != nil {
 				return logicalFrom(rc.MatchString(val))
 			}
 		}
 	}
 	return LogicalFalse
+}
+
+// compileRegex compiles str into a regular expression or returns an error. To
+// comply with RFC 9485 regular expression semantics, all instances of "." are
+// replaced with "[^\n\r]". This sadly requires compiling the regex twice:
+// once to produce an AST to replace "." nodes, and a second time for the
+// final regex.
+func compileRegex(str string) *regexp.Regexp {
+	// First compile AST and replace "." with [^\n\r].
+	// https://www.rfc-editor.org/rfc/rfc9485.html#name-pcre-re2-and-ruby-regexps
+	r, err := syntax.Parse(str, syntax.Perl|syntax.DotNL)
+	if err != nil {
+		// Could use some way to log these errors rather than failing silently.
+		return nil
+	}
+
+	replaceDot(r)
+	re, _ := regexp.Compile(r.String())
+	return re
+}
+
+//nolint:gochecknoglobals
+var clrf, _ = syntax.Parse("[^\n\r]", syntax.Perl)
+
+// replaceDot recurses re to replace all "." nodes with "[^\n\r]" nodes.
+func replaceDot(re *syntax.Regexp) {
+	if re.Op == syntax.OpAnyChar {
+		*re = *clrf
+	} else {
+		for _, re := range re.Sub {
+			replaceDot(re)
+		}
+	}
 }
 
 // Function defines a JSONPath function. Use [Register] to register a new
@@ -504,9 +531,9 @@ type FunctionExprArg interface {
 	asTypeKind() FuncType
 }
 
-// comparableVal defines the interface for comparable values in filter
+// CompVal defines the interface for comparable values in filter
 // expressions.
-type comparableVal interface {
+type CompVal interface {
 	stringWriter
 	// asValue returns the value to be compared.
 	asValue(current, root any) JSONPathValue

@@ -28,7 +28,7 @@ func TestExpressionInterface(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			a.Implements((*basicExpr)(nil), tc.tok)
+			a.Implements((*BasicExpr)(nil), tc.tok)
 		})
 	}
 }
@@ -39,7 +39,7 @@ func TestLogicalAndExpr(t *testing.T) {
 
 	for _, tc := range []struct {
 		name    string
-		expr    []basicExpr
+		expr    []BasicExpr
 		root    any
 		current any
 		exp     bool
@@ -47,14 +47,14 @@ func TestLogicalAndExpr(t *testing.T) {
 	}{
 		{
 			name:    "no_expr",
-			expr:    []basicExpr{},
+			expr:    []BasicExpr{},
 			current: map[string]any{"x": 0},
 			exp:     true,
 			str:     "",
 		},
 		{
 			name: "one_true_expr",
-			expr: []basicExpr{&ExistExpr{
+			expr: []BasicExpr{&ExistExpr{
 				&Query{segments: []*Segment{Child(Name("x"))}, root: false},
 			}},
 			current: map[string]any{"x": 0},
@@ -63,7 +63,7 @@ func TestLogicalAndExpr(t *testing.T) {
 		},
 		{
 			name: "one_false_expr",
-			expr: []basicExpr{&ExistExpr{
+			expr: []BasicExpr{&ExistExpr{
 				&Query{segments: []*Segment{Child(Name("y"))}, root: true},
 			}},
 			root: map[string]any{"x": 0},
@@ -72,7 +72,7 @@ func TestLogicalAndExpr(t *testing.T) {
 		},
 		{
 			name: "two_true_expr",
-			expr: []basicExpr{
+			expr: []BasicExpr{
 				&ExistExpr{&Query{segments: []*Segment{Child(Name("x"))}}},
 				&ExistExpr{&Query{segments: []*Segment{Child(Name("y"))}}},
 			},
@@ -82,7 +82,7 @@ func TestLogicalAndExpr(t *testing.T) {
 		},
 		{
 			name: "one_true_one_false",
-			expr: []basicExpr{
+			expr: []BasicExpr{
 				&ExistExpr{&Query{segments: []*Segment{Child(Name("x"))}}},
 				&ExistExpr{&Query{segments: []*Segment{Child(Name("y"))}}},
 			},
@@ -114,14 +114,14 @@ func TestLogicalOrExpr(t *testing.T) {
 	}{
 		{
 			name:    "no_expr",
-			expr:    []LogicalAndExpr{LogicalAndExpr([]basicExpr{})},
+			expr:    []LogicalAndExpr{LogicalAndExpr([]BasicExpr{})},
 			current: map[string]any{"x": 0},
 			exp:     true,
 			str:     "",
 		},
 		{
 			name: "one_expr",
-			expr: []LogicalAndExpr{LogicalAndExpr([]basicExpr{&ExistExpr{
+			expr: []LogicalAndExpr{LogicalAndExpr([]BasicExpr{&ExistExpr{
 				&Query{segments: []*Segment{Child(Name("x"))}, root: true},
 			}})},
 			root: map[string]any{"x": 0},
@@ -130,7 +130,7 @@ func TestLogicalOrExpr(t *testing.T) {
 		},
 		{
 			name: "one_false_expr",
-			expr: []LogicalAndExpr{LogicalAndExpr([]basicExpr{&ExistExpr{
+			expr: []LogicalAndExpr{LogicalAndExpr([]BasicExpr{&ExistExpr{
 				&Query{segments: []*Segment{Child(Name("x"))}},
 			}})},
 			current: map[string]any{"y": 0},
@@ -140,10 +140,10 @@ func TestLogicalOrExpr(t *testing.T) {
 		{
 			name: "two_true_expr",
 			expr: []LogicalAndExpr{
-				LogicalAndExpr([]basicExpr{
+				LogicalAndExpr([]BasicExpr{
 					&ExistExpr{&Query{segments: []*Segment{Child(Name("x"))}}},
 				}),
-				LogicalAndExpr([]basicExpr{
+				LogicalAndExpr([]BasicExpr{
 					&ExistExpr{&Query{segments: []*Segment{Child(Name("y"))}}},
 				}),
 			},
@@ -154,10 +154,10 @@ func TestLogicalOrExpr(t *testing.T) {
 		{
 			name: "one_true_one_false",
 			expr: []LogicalAndExpr{
-				LogicalAndExpr([]basicExpr{
+				LogicalAndExpr([]BasicExpr{
 					&ExistExpr{&Query{segments: []*Segment{Child(Name("x"))}}},
 				}),
-				LogicalAndExpr([]basicExpr{
+				LogicalAndExpr([]BasicExpr{
 					&ExistExpr{&Query{segments: []*Segment{Child(Name("y"))}}},
 				}),
 			},
@@ -168,11 +168,11 @@ func TestLogicalOrExpr(t *testing.T) {
 		{
 			name: "nested_ands",
 			expr: []LogicalAndExpr{
-				LogicalAndExpr([]basicExpr{
+				LogicalAndExpr([]BasicExpr{
 					&ExistExpr{&Query{segments: []*Segment{Child(Name("x"))}}},
 					&ExistExpr{&Query{segments: []*Segment{Child(Name("y"))}}},
 				}),
-				LogicalAndExpr([]basicExpr{
+				LogicalAndExpr([]BasicExpr{
 					&ExistExpr{&Query{segments: []*Segment{Child(Name("y"))}}},
 					&ExistExpr{&Query{segments: []*Segment{Child(Name("x"))}}},
 				}),

@@ -64,3 +64,33 @@ func (q *Query) isSingular() bool {
 	}
 	return true
 }
+
+// singular returns a singularQuery variant of q if q [isSingular] returns true.
+func (q *Query) singular() *singularQuery {
+	if q.isSingular() {
+		return singular(q)
+	}
+
+	return nil
+}
+
+// expression returns a singularQuery variant of q if q [isSingular] returns
+// true, and otherwise returns a filterQuery.
+//
+//nolint:ireturn
+func (q *Query) expression() FunctionExprArg {
+	if q.isSingular() {
+		return singular(q)
+	}
+
+	return &filterQuery{q}
+}
+
+// singular is a utility function that converts q to a singularQuery.
+func singular(q *Query) *singularQuery {
+	selectors := make([]Selector, len(q.segments))
+	for i, s := range q.segments {
+		selectors[i] = s.selectors[0]
+	}
+	return &singularQuery{selectors: selectors, relative: !q.root}
+}

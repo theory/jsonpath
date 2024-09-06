@@ -347,7 +347,8 @@ func TestScanNumber(t *testing.T) {
 		{
 			name: "neg_zero",
 			in:   "-0 oops",
-			tok:  token{invalid, "invalid number literal", 0},
+			tok:  token{integer, "-0", 0},
+			num:  int64(0),
 		},
 		{
 			name: "leading_zero",
@@ -412,8 +413,8 @@ func TestScanNumber(t *testing.T) {
 		},
 		{
 			name: "numb_exp",
-			in:   "42e124",
-			tok:  token{number, "42e124", 0},
+			in:   "42E124",
+			tok:  token{number, "42E124", 0},
 			num:  float64(42e124),
 		},
 		{
@@ -424,8 +425,8 @@ func TestScanNumber(t *testing.T) {
 		},
 		{
 			name: "neg_exp",
-			in:   "-42e123",
-			tok:  token{number, "-42e123", 0},
+			in:   "-42E123",
+			tok:  token{number, "-42E123", 0},
 			num:  float64(-42e123),
 		},
 		{
@@ -444,6 +445,12 @@ func TestScanNumber(t *testing.T) {
 			in:   "99e-01234",
 			tok:  token{number, "99e-01234", 0},
 			num:  float64(99e-01234),
+		},
+		{
+			name: "exp_decimal",
+			in:   "12.32E3",
+			tok:  token{number, "12.32E3", 0},
+			num:  float64(12.32e3),
 		},
 		{
 			name: "exp_plus_no_digits",
@@ -544,87 +551,106 @@ func TestScanBlankSpace(t *testing.T) {
 		name string
 		in   string
 		tok  token
+		next rune
 	}{
 		{
 			name: "empty",
 			in:   "",
 			tok:  token{blankSpace, "", 0},
+			next: eof,
 		},
 		{
 			name: "no_spaces",
 			in:   "xxx",
 			tok:  token{blankSpace, "", 0},
+			next: 'x',
 		},
 		{
 			name: "space",
 			in:   " ",
 			tok:  token{blankSpace, " ", 0},
+			next: eof,
 		},
 		{
 			name: "spaces",
 			in:   "     ",
 			tok:  token{blankSpace, "     ", 0},
+			next: eof,
 		},
 		{
 			name: "spacey",
 			in:   "     y",
 			tok:  token{blankSpace, "     ", 0},
+			next: 'y',
 		},
 		{
 			name: "newline",
 			in:   "\n",
 			tok:  token{blankSpace, "\n", 0},
+			next: eof,
 		},
 		{
 			name: "newlines",
 			in:   "\n\n\n\n",
 			tok:  token{blankSpace, "\n\n\n\n", 0},
+			next: eof,
 		},
 		{
 			name: "newline_plus",
 			in:   "\n\n\n\ngo on",
 			tok:  token{blankSpace, "\n\n\n\n", 0},
+			next: 'g',
 		},
 		{
 			name: "linefeed",
 			in:   "\r",
 			tok:  token{blankSpace, "\r", 0},
+			next: eof,
 		},
 		{
 			name: "multiple_linefeed",
 			in:   "\r\r\r\r",
 			tok:  token{blankSpace, "\r\r\r\r", 0},
+			next: eof,
 		},
 		{
 			name: "linefeed_plus",
 			in:   "\r\r\r\rgo on",
 			tok:  token{blankSpace, "\r\r\r\r", 0},
+			next: 'g',
 		},
 		{
 			name: "tab",
 			in:   "\t",
 			tok:  token{blankSpace, "\t", 0},
+			next: eof,
 		},
 		{
 			name: "multiple_tab",
 			in:   "\t\t\t\t",
 			tok:  token{blankSpace, "\t\t\t\t", 0},
+			next: eof,
 		},
 		{
 			name: "tab_plus",
 			in:   "\t\t\t\tgo on",
 			tok:  token{blankSpace, "\t\t\t\t", 0},
+			next: 'g',
 		},
 		{
 			name: "mix_blanks",
 			in:   "\t    \r\n\t   \r\n\t lol",
 			tok:  token{blankSpace, "\t    \r\n\t   \r\n\t ", 0},
+			next: 'l',
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			lex := newLexer(tc.in)
 			a.Equal(tc.tok, lex.scanBlankSpace())
+			lex = newLexer(tc.in)
+			lex.skipBlankSpace()
+			a.Equal(tc.next, lex.r)
 		})
 	}
 }
@@ -735,9 +761,11 @@ func TestScanTokens(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			lex := newLexer(tc.in)
+			a.Equal(token{}, lex.prev)
 			tokens := make([]token, 0, len(tc.tokens))
 			for t := lex.scan(); t.tok != eof; t = lex.scan() {
 				tokens = append(tokens, t)
+				a.Equal(t, lex.prev)
 			}
 			a.Equal(tc.tokens, tokens)
 		})

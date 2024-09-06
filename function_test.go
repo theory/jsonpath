@@ -1,6 +1,7 @@
 package jsonpath
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -241,12 +242,58 @@ func TestValueTypeFrom(t *testing.T) {
 	}
 }
 
-//nolint:paralleltest
+// Mock up a valid JSONPathValue that returns a new type.
+type newValueType struct{}
+
+func (newValueType) PathType() PathType         { return PathType(15) }
+func (newValueType) FuncType() FuncType         { return FuncType(16) }
+func (newValueType) writeTo(b *strings.Builder) { b.WriteString("FuncType(16)") }
+
+func TestMain(m *testing.M) {
+	// Set up a nodes-type returning function and some other type function.
+	// Do it before running any tests so that the global list of functions
+	// will remain static for the duration of the tests.
+	Register(&Function{
+		Name:       "__mk_nodes",
+		ResultType: FuncNodeList,
+		Validate:   func([]FunctionExprArg) error { return nil },
+		Evaluate: func(args []JSONPathValue) JSONPathValue {
+			ret := NodesType{}
+			for _, x := range args {
+				v, ok := x.(*ValueType)
+				if !ok {
+					panic(fmt.Sprintf("unexpected argument of type %T", x))
+				}
+				ret = append(ret, v.any)
+			}
+			return ret
+		},
+	})
+
+	// Set up a function that returns a logical result with no args
+	Register(&Function{
+		Name:       "__true",
+		ResultType: FuncLogical,
+		Validate:   func([]FunctionExprArg) error { return nil },
+		Evaluate:   func([]JSONPathValue) JSONPathValue { return LogicalTrue },
+	})
+
+	// Set up a function that returns an unknown return type.
+	Register(&Function{
+		Name:       "__new_type",
+		ResultType: FuncType(16),
+		Validate:   func([]FunctionExprArg) error { return nil },
+		Evaluate:   func([]JSONPathValue) JSONPathValue { return newValueType{} },
+	})
+
+	m.Run()
+}
+
 func TestRegistry(t *testing.T) {
-	// Testing a global variable changed by other tests, so don't run in parallel.
+	t.Parallel()
 	a := assert.New(t)
 	r := require.New(t)
-	a.Len(registry, 5)
+	a.Len(registry, 8)
 
 	for _, tc := range []struct {
 		name  string
@@ -255,6 +302,7 @@ func TestRegistry(t *testing.T) {
 		args  []JSONPathValue
 		exp   any
 	}{
+		// RFC 9535-defined functions.
 		{
 			name:  "length",
 			rType: FuncValue,
@@ -290,9 +338,32 @@ func TestRegistry(t *testing.T) {
 			args:  []JSONPathValue{&ValueType{"foo"}, &ValueType{"."}},
 			exp:   LogicalTrue,
 		},
+		// Test functions set up by TestMain()
+		{
+			name:  "__mk_nodes",
+			rType: FuncNodeList,
+			expr:  []FunctionExprArg{&literalArg{"foo"}, &literalArg{"."}},
+			args:  []JSONPathValue{&ValueType{"foo"}, &ValueType{"."}},
+			exp:   NodesType{"foo", "."},
+		},
+		{
+			name:  "__true",
+			rType: FuncLogical,
+			expr:  []FunctionExprArg{},
+			args:  []JSONPathValue{},
+			exp:   LogicalTrue,
+		},
+		{
+			name:  "__new_type",
+			rType: FuncType(16),
+			expr:  []FunctionExprArg{},
+			args:  []JSONPathValue{},
+			exp:   newValueType{},
+		},
 	} {
-		t.Run(tc.name, func(*testing.T) {
-			ft := registry[tc.name]
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			ft := GetFunction(tc.name)
 			a.NotNil(ft)
 			a.Equal(tc.rType, ft.ResultType)
 			r.NoError(ft.Validate(tc.expr))
@@ -409,6 +480,11 @@ func TestLengthFunc(t *testing.T) {
 			exp:  -1,
 		},
 		{
+			name: "nil",
+			vals: []JSONPathValue{nil},
+			exp:  -1,
+		},
+		{
 			name: "not_value",
 			vals: []JSONPathValue{LogicalFalse},
 			err:  "unexpected argument of type jsonpath.LogicalType",
@@ -447,18 +523,18 @@ func TestCheckSingularFuncArgs(t *testing.T) {
 		{
 			name: "no_args",
 			expr: []FunctionExprArg{},
-			err:  "jsonpath: expected 1 argument but received 0",
+			err:  "expected 1 argument but found 0",
 		},
 		{
 			name: "two_args",
 			expr: []FunctionExprArg{&literalArg{}, &literalArg{}},
-			err:  "jsonpath: expected 1 argument but received 2",
+			err:  "expected 1 argument but found 2",
 		},
 		{
 			name:     "literal_string",
 			expr:     []FunctionExprArg{&literalArg{}},
-			countErr: "jsonpath: expected argument to count() to be convertible to PathNodes but received FuncLiteral",
-			valueErr: "jsonpath: expected argument to value() to be convertible to PathNodes but received FuncLiteral",
+			countErr: "cannot convert count() argument to PathNodes",
+			valueErr: "cannot convert value() argument to PathNodes",
 		},
 		{
 			name: "singular_query",
@@ -476,16 +552,16 @@ func TestCheckSingularFuncArgs(t *testing.T) {
 					NewQuery([]*Segment{Child(Name("x"))}),
 				}},
 			}},
-			lengthErr: "jsonpath: expected argument to length() to be convertible to PathValue but received FuncLogical",
-			countErr:  "jsonpath: expected argument to count() to be convertible to PathNodes but received FuncLogical",
-			valueErr:  "jsonpath: expected argument to value() to be convertible to PathNodes but received FuncLogical",
+			lengthErr: "cannot convert length() argument to ValueType",
+			countErr:  "cannot convert count() argument to PathNodes",
+			valueErr:  "cannot convert value() argument to PathNodes",
 		},
 		{
 			name:      "logical_or",
 			expr:      []FunctionExprArg{&LogicalOrExpr{}},
-			lengthErr: "jsonpath: expected argument to length() to be convertible to PathValue but received FuncLogical",
-			countErr:  "jsonpath: expected argument to count() to be convertible to PathNodes but received FuncLogical",
-			valueErr:  "jsonpath: expected argument to value() to be convertible to PathNodes but received FuncLogical",
+			lengthErr: "cannot convert length() argument to ValueType",
+			countErr:  "cannot convert count() argument to PathNodes",
+			valueErr:  "cannot convert value() argument to PathNodes",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -495,10 +571,8 @@ func TestCheckSingularFuncArgs(t *testing.T) {
 			switch {
 			case tc.err != "":
 				r.EqualError(err, tc.err)
-				r.ErrorIs(err, ErrPathParse)
 			case tc.lengthErr != "":
 				r.EqualError(err, tc.lengthErr)
-				r.ErrorIs(err, ErrPathParse)
 			default:
 				r.NoError(err)
 			}
@@ -508,10 +582,8 @@ func TestCheckSingularFuncArgs(t *testing.T) {
 			switch {
 			case tc.err != "":
 				r.EqualError(err, tc.err)
-				r.ErrorIs(err, ErrPathParse)
 			case tc.countErr != "":
 				r.EqualError(err, tc.countErr)
-				r.ErrorIs(err, ErrPathParse)
 			default:
 				r.NoError(err)
 			}
@@ -521,10 +593,8 @@ func TestCheckSingularFuncArgs(t *testing.T) {
 			switch {
 			case tc.err != "":
 				r.EqualError(err, tc.err)
-				r.ErrorIs(err, ErrPathParse)
 			case tc.valueErr != "":
 				r.EqualError(err, tc.valueErr)
-				r.ErrorIs(err, ErrPathParse)
 			default:
 				r.NoError(err)
 			}
@@ -544,27 +614,27 @@ func TestCheckRegexFuncArgs(t *testing.T) {
 		{
 			name: "no_args",
 			expr: []FunctionExprArg{},
-			err:  "jsonpath: expected 2 arguments but received 0",
+			err:  "expected 2 arguments but found 0",
 		},
 		{
 			name: "one_arg",
 			expr: []FunctionExprArg{&literalArg{"hi"}},
-			err:  "jsonpath: expected 2 arguments but received 1",
+			err:  "expected 2 arguments but found 1",
 		},
 		{
 			name: "three_args",
 			expr: []FunctionExprArg{&literalArg{"hi"}, &literalArg{"hi"}, &literalArg{"hi"}},
-			err:  "jsonpath: expected 2 arguments but received 3",
+			err:  "expected 2 arguments but found 3",
 		},
 		{
 			name: "logical_or_1",
 			expr: []FunctionExprArg{&LogicalOrExpr{}, &literalArg{"hi"}},
-			err:  "jsonpath: expected argument 1 to %v() to be convertible to PathValue but received FuncLogical",
+			err:  "cannot convert %v() argument 1 to PathNodes",
 		},
 		{
 			name: "logical_or_2",
 			expr: []FunctionExprArg{&literalArg{"hi"}, &LogicalOrExpr{}},
-			err:  "jsonpath: expected argument 2 to %v() to be convertible to PathValue but received FuncLogical",
+			err:  "cannot convert %v() argument 2 to PathNodes",
 		},
 		{
 			name: "singular_query_literal",
@@ -590,7 +660,7 @@ func TestCheckRegexFuncArgs(t *testing.T) {
 					NewQuery([]*Segment{Child(Name("x"))}),
 				}},
 			}, &literalArg{"hi"}},
-			err: "jsonpath: expected argument 1 to %v() to be convertible to PathValue but received FuncLogical",
+			err: "cannot convert %v() argument 1 to PathNodes",
 		},
 		{
 			name: "function_expr_2",
@@ -600,7 +670,7 @@ func TestCheckRegexFuncArgs(t *testing.T) {
 					NewQuery([]*Segment{Child(Name("x"))}),
 				}},
 			}},
-			err: "jsonpath: expected argument 2 to %v() to be convertible to PathValue but received FuncLogical",
+			err: "cannot convert %v() argument 2 to PathNodes",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -611,7 +681,6 @@ func TestCheckRegexFuncArgs(t *testing.T) {
 				r.NoError(err)
 			} else {
 				r.EqualError(err, strings.Replace(tc.err, "%v", "match", 1))
-				r.ErrorIs(err, ErrPathParse)
 			}
 
 			// Test search args
@@ -620,7 +689,6 @@ func TestCheckRegexFuncArgs(t *testing.T) {
 				r.NoError(err)
 			} else {
 				r.EqualError(err, strings.Replace(tc.err, "%v", "search", 1))
-				r.ErrorIs(err, ErrPathParse)
 			}
 		})
 	}
@@ -714,14 +782,14 @@ func TestRegexFuncs(t *testing.T) {
 			name:   "multi_line_newline",
 			input:  &ValueType{"xx\nyz"},
 			regex:  &ValueType{".*"},
-			match:  true,
+			match:  false,
 			search: true,
 		},
 		{
 			name:   "multi_line_crlf",
 			input:  &ValueType{"xx\r\nyz"},
 			regex:  &ValueType{".*"},
-			match:  true,
+			match:  false,
 			search: true,
 		},
 		{
@@ -735,6 +803,13 @@ func TestRegexFuncs(t *testing.T) {
 			name:   "not_string_regex",
 			input:  &ValueType{"x"},
 			regex:  &ValueType{1},
+			match:  false,
+			search: false,
+		},
+		{
+			name:   "invalid_regex",
+			input:  &ValueType{"x"},
+			regex:  &ValueType{".["},
 			match:  false,
 			search: false,
 		},
@@ -835,7 +910,7 @@ func TestJsonFunctionExprArgInterface(t *testing.T) {
 	}
 }
 
-func TestJsoncomparableValInterface(t *testing.T) {
+func TestJSONComparableValInterface(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
 
@@ -849,7 +924,7 @@ func TestJsoncomparableValInterface(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			a.Implements((*comparableVal)(nil), tc.expr)
+			a.Implements((*CompVal)(nil), tc.expr)
 		})
 	}
 }
@@ -1018,40 +1093,6 @@ func TestFunctionExpr(t *testing.T) {
 	rootX := NewQuery([]*Segment{Descendant(Name("x"))})
 	rootX.root = true
 
-	// Set up a nodes-type returning function and some other type function.
-	Register(&Function{
-		Name:       "mk_nodes",
-		ResultType: FuncNodeList,
-		Validate:   func([]FunctionExprArg) error { return nil },
-		Evaluate: func(args []JSONPathValue) JSONPathValue {
-			ret := NodesType{}
-			for _, x := range args {
-				v, ok := x.(*ValueType)
-				if !ok {
-					t.Fatalf("unexpected argument of type %T", x)
-				}
-				ret = append(ret, v.any)
-			}
-			return ret
-		},
-	})
-
-	// Set up a function that returns an unknown return type.
-	Register(&Function{
-		Name:       "new_type",
-		ResultType: FuncType(16),
-		Validate:   func([]FunctionExprArg) error { return nil },
-		Evaluate:   func([]JSONPathValue) JSONPathValue { return newValueType{} },
-	})
-
-	// Remove the test functions from the registry
-	t.Cleanup(func() {
-		registryMu.Lock()
-		defer registryMu.Unlock()
-		delete(registry, "mk_nodes")
-		delete(registry, "new_type")
-	})
-
 	for _, tc := range []struct {
 		name    string
 		fName   string
@@ -1127,7 +1168,7 @@ func TestFunctionExpr(t *testing.T) {
 			name:  "invalid_args",
 			fName: "count",
 			args:  []FunctionExprArg{&literalArg{"hi"}},
-			err:   "jsonpath: expected argument to count() to be convertible to PathNodes but received FuncLiteral",
+			err:   "cannot convert count() argument to PathNodes",
 		},
 		{
 			name:  "unknown_func",
@@ -1136,28 +1177,36 @@ func TestFunctionExpr(t *testing.T) {
 			err:   "jsonpath: unknown jsonpath function nonesuch()",
 		},
 		{
-			name:    "mk_nodes",
-			fName:   "mk_nodes",
+			name:    "__mk_nodes",
+			fName:   "__mk_nodes",
 			args:    []FunctionExprArg{&literalArg{42}, &literalArg{99}},
 			exp:     NodesType{42, 99},
 			logical: true,
-			str:     `mk_nodes(42, 99)`,
+			str:     `__mk_nodes(42, 99)`,
 		},
 		{
-			name:    "mk_nodes_empty",
-			fName:   "mk_nodes",
+			name:    "__mk_nodes_empty",
+			fName:   "__mk_nodes",
 			args:    []FunctionExprArg{},
 			exp:     NodesType{},
 			logical: false,
-			str:     `mk_nodes()`,
+			str:     `__mk_nodes()`,
 		},
 		{
-			name:    "new_type",
-			fName:   "new_type",
+			name:    "__true",
+			fName:   "__true",
+			args:    []FunctionExprArg{},
+			exp:     LogicalTrue,
+			logical: true,
+			str:     `__true()`,
+		},
+		{
+			name:    "__new_type",
+			fName:   "__new_type",
 			args:    []FunctionExprArg{},
 			exp:     newValueType{},
 			logical: false,
-			str:     `new_type()`,
+			str:     `__new_type()`,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1165,7 +1214,6 @@ func TestFunctionExpr(t *testing.T) {
 			fe, err := NewFunctionExpr(tc.fName, tc.args)
 			if tc.err != "" {
 				r.EqualError(err, tc.err)
-				r.ErrorIs(err, ErrPathParse)
 				a.Nil(fe)
 				return
 			}
@@ -1178,9 +1226,3 @@ func TestFunctionExpr(t *testing.T) {
 		})
 	}
 }
-
-type newValueType struct{}
-
-func (newValueType) PathType() PathType       { return PathType(15) }
-func (newValueType) FuncType() FuncType       { return FuncType(16) }
-func (newValueType) writeTo(*strings.Builder) {}

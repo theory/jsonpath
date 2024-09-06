@@ -122,11 +122,14 @@ type lexer struct {
 
 	// Position of the next rune in buf.
 	nextPos int
+
+	// Last scanned token.
+	prev token
 }
 
 // newLexer creates a new lexer for the given input.
 func newLexer(buf string) *lexer {
-	lex := lexer{buf, -1, 0, 0}
+	lex := lexer{buf, -1, 0, 0, token{}}
 
 	// Prime the lexer by calling .next
 	lex.next()
@@ -137,24 +140,28 @@ func newLexer(buf string) *lexer {
 func (lex *lexer) scan() token {
 	switch {
 	case lex.r < 0:
-		return token{eof, "", lex.rPos}
+		lex.prev = token{eof, "", lex.rPos}
 	case lex.r == '$':
 		if isIdentRune(lex.peek(), 0) {
-			return lex.scanIdentifier()
+			lex.prev = lex.scanIdentifier()
+		} else {
+			lex.prev = token{lex.r, "", lex.rPos}
+			lex.next()
 		}
 	case isIdentRune(lex.r, 0):
-		return lex.scanIdentifier()
+		lex.prev = lex.scanIdentifier()
 	case isDigit(lex.r) || lex.r == '-':
-		return lex.scanNumber()
+		lex.prev = lex.scanNumber()
 	case lex.r == '"' || lex.r == '\'':
-		return lex.scanString()
+		lex.prev = lex.scanString()
 	case blanks&(1<<uint(lex.r)) != 0:
-		return lex.scanBlankSpace()
+		lex.prev = lex.scanBlankSpace()
+	default:
+		lex.prev = token{lex.r, "", lex.rPos}
+		lex.next()
 	}
 
-	ret := token{lex.r, "", lex.rPos}
-	lex.next()
-	return ret
+	return lex.prev
 }
 
 // next advances the lexer's internal state to point to the next rune in the
@@ -196,6 +203,35 @@ func (lex *lexer) scanBlankSpace() token {
 		lex.next()
 	}
 	return token{blankSpace, lex.buf[startPos:lex.rPos], startPos}
+}
+
+// skipBlankSpace skips blank spaces from the current position until the next
+// non-blank space token.
+func (lex *lexer) skipBlankSpace() rune {
+	if lex.isBlankSpace(lex.r) {
+		lex.scan()
+	}
+	return lex.r
+}
+
+// isBlankSpace returns true if r is blank space.
+func (lex *lexer) isBlankSpace(r rune) bool {
+	return blanks&(1<<uint(r)) != 0
+}
+
+// peekPastBlankSpace returns the next non-blank space rune from the current
+// position without advancing the internal state.
+func (lex *lexer) peekPastBlankSpace() rune {
+	np := lex.nextPos
+	for np < len(lex.buf) {
+		r := rune(lex.buf[np])
+		if !lex.isBlankSpace(r) {
+			return r
+		}
+		np++
+	}
+
+	return rune(eof)
 }
 
 // scanIdentifier scans an identifier, including escapes. lex.r should be the
@@ -266,9 +302,8 @@ func (lex *lexer) scanNumber() token {
 		next := lex.next()
 		switch {
 		case next == '0':
-			next := lex.peek()
-			if next != '.' && next != 'e' {
-				// -0 only for fractional and exponent numbers
+			if isDigit(lex.peek()) {
+				// No leading zeros.
 				return lex.errToken(startPos, "invalid number literal")
 			}
 		case !isDigit(next):
@@ -294,12 +329,13 @@ func (lex *lexer) scanNumber() token {
 		for isDigit(lex.r) {
 			lex.next()
 		}
-		if lex.r == 'e' {
+		switch lex.r {
+		case 'e', 'E':
 			// Exponent.
 			return lex.scanExponent(startPos)
 		}
 		return token{number, lex.buf[startPos:lex.rPos], startPos}
-	case 'e':
+	case 'e', 'E':
 		// Exponent.
 		return lex.scanExponent(startPos)
 	default:

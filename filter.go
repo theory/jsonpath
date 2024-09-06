@@ -4,8 +4,8 @@ import (
 	"strings"
 )
 
-// basicExpr defines the interface for filter expressions.
-type basicExpr interface {
+// BasicExpr defines the interface for filter expressions.
+type BasicExpr interface {
 	stringWriter
 	// testFilter executes the filter expression on current and root and
 	// returns true or false depending on the truthiness of its result.
@@ -14,7 +14,7 @@ type basicExpr interface {
 
 // LogicalAndExpr represents a list of one or more expressions ANDed together
 // by the && operator.
-type LogicalAndExpr []basicExpr
+type LogicalAndExpr []BasicExpr
 
 // testFilter returns true if all of la's expressions return true.
 // Short-circuits and returns false for the first expression that returns

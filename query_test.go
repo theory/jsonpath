@@ -915,3 +915,58 @@ func TestQueryInputs(t *testing.T) {
 	a.Equal([]any{}, q.Select(x, y))
 	a.Equal([]any{"x"}, q.Select(y, x))
 }
+
+func TestSingularExpr(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+
+	for _, tc := range []struct {
+		name  string
+		query *Query
+		sing  *singularQuery
+	}{
+		{
+			name:  "relative_singular",
+			query: NewQuery([]*Segment{Child(Name("j"))}),
+			sing:  &singularQuery{selectors: []Selector{Name("j")}, relative: true},
+		},
+		{
+			name:  "root_singular",
+			query: &Query{segments: []*Segment{Child(Name("j")), Child(Index(0))}, root: true},
+			sing:  &singularQuery{selectors: []Selector{Name("j"), Index(0)}},
+		},
+		{
+			name:  "descendant",
+			query: NewQuery([]*Segment{Descendant(Name("j"))}),
+		},
+		{
+			name:  "multi_selector",
+			query: NewQuery([]*Segment{Child(Name("j"), Name("x"))}),
+		},
+		{
+			name:  "single_slice",
+			query: NewQuery([]*Segment{Child(Slice())}),
+		},
+		{
+			name:  "wildcard",
+			query: NewQuery([]*Segment{Child(Wildcard)}),
+		},
+		{
+			name:  "filter",
+			query: NewQuery([]*Segment{Child(&Filter{})}),
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			if tc.sing == nil {
+				a.False(tc.query.isSingular())
+				a.Nil(tc.query.singular())
+				a.Equal(&filterQuery{tc.query}, tc.query.expression())
+			} else {
+				a.True(tc.query.isSingular())
+				a.Equal(tc.sing, tc.query.singular())
+				a.Equal(tc.sing, tc.query.expression())
+			}
+		})
+	}
+}

@@ -99,6 +99,9 @@ func TestEqualTo(t *testing.T) {
 	t.Run("not_comparable", func(t *testing.T) {
 		t.Parallel()
 		a.False(valueEqualTo(42, "x"))
+		a.False(equalTo(nil, &ValueType{42}))
+		a.False(equalTo(&ValueType{42}, nil))
+		a.False(equalTo(LogicalFalse, LogicalFalse))
 	})
 }
 
@@ -166,9 +169,93 @@ func TestLessThan(t *testing.T) {
 
 	t.Run("not_comparable", func(t *testing.T) {
 		t.Parallel()
+		a.False(lessThan(LogicalFalse, &ValueType{"."}))
+		a.False(lessThan(&ValueType{"x"}, LogicalFalse))
 		a.False(valueLessThan(42, "x"))
 		a.False(valueLessThan([]any{0}, []any{1}))
 	})
+}
+
+func TestSameType(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+
+	for _, tc := range []struct {
+		name  string
+		left  JSONPathValue
+		right JSONPathValue
+		exp   bool
+	}{
+		{"int_nodes", NodesType{1}, NodesType{0}, true},
+		{"float_nodes", NodesType{98.6}, NodesType{22.4}, true},
+		{"bool_nodes", NodesType{true}, NodesType{false}, true},
+		{"string_nodes", NodesType{"hi"}, NodesType{"go"}, true},
+		{"object_nodes", NodesType{map[string]any{}}, NodesType{map[string]any{}}, true},
+		{"array_nodes", NodesType{[]any{}}, NodesType{[]any{}}, true},
+		{"nil_nodes", NodesType{nil}, NodesType{nil}, true},
+		{"int_float_nodes", NodesType{1}, NodesType{98.6}, true},
+		{"int64_uint32_nodes", NodesType{int64(1)}, NodesType{uint32(8)}, true},
+		{"int_bool_nodes", NodesType{1}, NodesType{false}, false},
+		{"string_obj_nodes", NodesType{"hi"}, NodesType{map[string]any{}}, false},
+		{"int64_array_nodes", NodesType{int64(9)}, NodesType{[]any{}}, false},
+		{"int_vals", &ValueType{1}, &ValueType{0}, true},
+		{"float_vals", &ValueType{98.6}, &ValueType{22.4}, true},
+		{"bool_vals", &ValueType{true}, &ValueType{false}, true},
+		{"string_vals", &ValueType{"hi"}, &ValueType{"go"}, true},
+		{"object_vals", &ValueType{map[string]any{}}, &ValueType{map[string]any{}}, true},
+		{"array_vals", &ValueType{[]any{}}, &ValueType{[]any{}}, true},
+		{"nil_vals", &ValueType{nil}, &ValueType{nil}, true},
+		{"int_float_vals", &ValueType{1}, &ValueType{98.6}, true},
+		{"int64_uint32_vals", &ValueType{int64(1)}, &ValueType{uint32(8)}, true},
+		{"int_bool_vals", &ValueType{1}, &ValueType{false}, false},
+		{"string_obj_vals", &ValueType{"hi"}, &ValueType{map[string]any{}}, false},
+		{"int64_array_vals", &ValueType{int64(9)}, &ValueType{[]any{}}, false},
+		{"nodes_multi", NodesType{1, 1}, NodesType{1, 1}, false},
+		{"nodes_multi_sing", NodesType{1, 1}, NodesType{1}, false},
+
+		{"nodes_val_int", NodesType{0}, &ValueType{1}, true},
+		{"nodes_val_float", NodesType{1.1}, &ValueType{2.2}, true},
+		{"nodes_val_numbers", NodesType{1}, &ValueType{2.2}, true},
+		{"nodes_val_bool", NodesType{true}, &ValueType{false}, true},
+		{"nodes_val_string", NodesType{"hi"}, &ValueType{"go"}, true},
+		{"nodes_val_object", NodesType{map[string]any{}}, &ValueType{map[string]any{}}, true},
+		{"nodes_val_array", NodesType{[]any{"x"}}, &ValueType{[]any{1}}, true},
+		{"nodes_val_nil", NodesType{nil}, &ValueType{nil}, true},
+		{"nodes_val_int_bool", NodesType{21}, &ValueType{false}, false},
+		{"nodes_val_string_nil", NodesType{"hi"}, &ValueType{nil}, false},
+		{"nodes_val_obj_array", NodesType{map[string]any{}}, &ValueType{[]any{}}, false},
+		{"nodes_bool_logical", NodesType{true}, LogicalFalse, true},
+		{"nodes_string_logical", NodesType{"x"}, LogicalFalse, false},
+		{"nodes_int_logical", NodesType{42}, LogicalFalse, false},
+		{"multi_nodes_val", NodesType{0, 0}, &ValueType{1}, false},
+		{"multi_nodes_logical", NodesType{true, true}, LogicalTrue, false},
+
+		{"val_nodes_int", &ValueType{0}, NodesType{1}, true},
+		{"val_nodes_float", &ValueType{1.1}, NodesType{2.2}, true},
+		{"val_nodes_numbers", &ValueType{1}, NodesType{2.2}, true},
+		{"val_nodes_bool", &ValueType{true}, NodesType{false}, true},
+		{"val_nodes_string", &ValueType{"hi"}, NodesType{"go"}, true},
+		{"val_nodes_object", &ValueType{map[string]any{}}, NodesType{map[string]any{}}, true},
+		{"val_nodes_array", &ValueType{[]any{"x"}}, NodesType{[]any{1}}, true},
+		{"val_nodes_nil", &ValueType{nil}, NodesType{nil}, true},
+		{"val_nodes_int_bool", &ValueType{21}, NodesType{false}, false},
+		{"val_nodes_string_nil", &ValueType{"hi"}, NodesType{nil}, false},
+		{"val_nodes_obj_array", &ValueType{map[string]any{}}, NodesType{[]any{}}, false},
+		{"val_bool_logical", &ValueType{true}, LogicalFalse, true},
+		{"val_string_logical", &ValueType{"x"}, LogicalFalse, false},
+		{"val_int_logical", &ValueType{42}, LogicalFalse, false},
+
+		{"logical_types", LogicalFalse, LogicalTrue, true},
+		{"logical_val_bool", LogicalFalse, &ValueType{false}, true},
+		{"logical_nodes_bool", LogicalFalse, NodesType{false}, true},
+		{"logical_val_string", LogicalFalse, &ValueType{"true"}, false},
+		{"logical_nodes_string", LogicalFalse, NodesType{"true"}, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			a.Equal(tc.exp, sameType(tc.left, tc.right))
+		})
+	}
 }
 
 func TestComparisonExpr(t *testing.T) {
@@ -177,8 +264,8 @@ func TestComparisonExpr(t *testing.T) {
 
 	for _, tc := range []struct {
 		name    string
-		left    comparableVal
-		right   comparableVal
+		left    CompVal
+		right   CompVal
 		root    any
 		current any
 		expect  []bool
@@ -243,12 +330,12 @@ func TestComparisonExpr(t *testing.T) {
 			str:     `@["x"] %v @["y"]`,
 		},
 		{
-			name:    "query_string_gt",
-			left:    &singularQuery{selectors: []Selector{Name("y")}},
-			right:   &singularQuery{selectors: []Selector{Name("x")}},
-			current: map[string]any{"x": "x", "y": "y"},
-			expect:  []bool{false, true, false, true, false, true},
-			str:     `$["y"] %v $["x"]`,
+			name:   "query_string_gt",
+			left:   &singularQuery{selectors: []Selector{Name("y")}},
+			right:  &singularQuery{selectors: []Selector{Name("x")}},
+			root:   map[string]any{"x": "x", "y": "y"},
+			expect: []bool{false, true, false, true, false, true},
+			str:    `$["y"] %v $["x"]`,
 		},
 		{
 			name: "func_numbers_eq",
@@ -288,9 +375,9 @@ func TestComparisonExpr(t *testing.T) {
 				args: []FunctionExprArg{&filterQuery{NewQuery([]*Segment{Child(Name("x"))})}},
 				fn:   registry["value"],
 			},
-			root:   map[string]any{"x": "x", "y": "y"},
-			expect: []bool{false, true, false, true, false, true},
-			str:    `value(@["y"]) %v value(@["x"])`,
+			current: map[string]any{"x": "x", "y": "y"},
+			expect:  []bool{false, true, false, true, false, true},
+			str:     `value(@["y"]) %v value(@["x"])`,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
