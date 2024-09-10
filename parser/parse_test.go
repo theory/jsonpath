@@ -1,4 +1,4 @@
-package jsonpath
+package parser
 
 import (
 	"errors"
@@ -29,10 +29,10 @@ func TestParseRoot(t *testing.T) {
 	a := assert.New(t)
 	r := require.New(t)
 
-	p, err := Parse("$")
+	q, err := Parse("$")
 	r.NoError(err)
-	a.Equal("$", p.String())
-	a.Empty(p.q.Segments())
+	a.Equal("$", q.String())
+	a.Empty(q.Segments())
 }
 
 func TestParseSimple(t *testing.T) {
@@ -212,12 +212,12 @@ func TestParseSimple(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			p, err := Parse(tc.path)
+			q, err := Parse(tc.path)
 			if tc.err == "" {
 				r.NoError(err)
-				a.Equal(New(tc.exp), p)
+				a.Equal(tc.exp, q)
 			} else {
-				a.Nil(p)
+				a.Nil(q)
 				r.EqualError(err, tc.err)
 				r.ErrorIs(err, ErrPathParse)
 			}
@@ -1279,12 +1279,12 @@ func TestParseSelectors(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			p, err := Parse(tc.path)
+			q, err := Parse(tc.path)
 			if tc.err == "" {
 				r.NoError(err)
-				a.Equal(New(tc.exp), p)
+				a.Equal(tc.exp, q)
 			} else {
-				a.Nil(p)
+				a.Nil(q)
 				r.EqualError(err, tc.err)
 				r.ErrorIs(err, ErrPathParse)
 			}

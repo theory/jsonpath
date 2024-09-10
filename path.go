@@ -1,7 +1,10 @@
 // Package jsonpath implements RFC 9535 JSONPath query expressions.
 package jsonpath
 
-import "github.com/theory/jsonpath/spec"
+import (
+	"github.com/theory/jsonpath/parser"
+	"github.com/theory/jsonpath/spec"
+)
 
 // Path represents a [RFC 9535] JSONPath query.
 //
@@ -13,6 +16,18 @@ type Path struct {
 // New creates and returns a new Path consisting of q.
 func New(q *spec.PathQuery) *Path {
 	return &Path{q: q}
+}
+
+// Parse parses path, a JSON Path query string, into a Path. Returns a
+// PathParseError on parse failure.
+//
+//nolint:wrapcheck
+func Parse(path string) (*Path, error) {
+	q, err := parser.Parse(path)
+	if err != nil {
+		return nil, err
+	}
+	return New(q), nil
 }
 
 // String returns a string representation of p.

@@ -1,4 +1,4 @@
-package jsonpath
+package parser
 
 import (
 	"math"

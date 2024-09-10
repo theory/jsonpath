@@ -1,4 +1,5 @@
-package jsonpath
+// Package parser handles parsing RFC 9535 JSONPath queries.
+package parser
 
 import (
 	"errors"
@@ -26,9 +27,9 @@ func unexpected(tok token) error {
 	return makeError(tok, "unexpected "+tok.name())
 }
 
-// Parse parses path, a JSON Path query string, into a Path. Returns a
+// Parse parses path, a JSON Path query string, into a PathQuery. Returns a
 // PathParseError on parse failure.
-func Parse(path string) (*Path, error) {
+func Parse(path string) (*spec.PathQuery, error) {
 	lex := newLexer(path)
 	tok := lex.scan()
 
@@ -43,7 +44,7 @@ func Parse(path string) (*Path, error) {
 		if lex.r != eof {
 			return nil, unexpected(lex.scan())
 		}
-		return New(q), nil
+		return q, nil
 	case eof:
 		// The token contained nothing.
 		return nil, fmt.Errorf("%w: unexpected end of input", ErrPathParse)

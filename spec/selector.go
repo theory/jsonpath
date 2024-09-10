@@ -1,5 +1,5 @@
-// Package spec implements provides object definitions for RFC 9535 JSONPath
-// query expressions.
+// Package spec provides object definitions and execution for RFC 9535
+// JSONPath query expressions.
 package spec
 
 import (
