@@ -1,25 +1,25 @@
-package jsonpath
+package spec
 
 import "strings"
 
-// Query represents a JSONPath expression.
-type Query struct {
+// PathQuery represents a JSONPath expression.
+type PathQuery struct {
 	segments []*Segment
 	root     bool
 }
 
-// NewQuery returns a new query consisting of segments.
-func NewQuery(segments []*Segment) *Query {
-	return &Query{segments: segments}
+// Query returns a new query consisting of segments.
+func Query(root bool, segments []*Segment) *PathQuery {
+	return &PathQuery{root: root, segments: segments}
 }
 
 // Segments returns q's Segments.
-func (q *Query) Segments() []*Segment {
+func (q *PathQuery) Segments() []*Segment {
 	return q.segments
 }
 
 // String returns a string representation of q.
-func (q *Query) String() string {
+func (q *PathQuery) String() string {
 	buf := new(strings.Builder)
 	if q.root {
 		buf.WriteRune('$')
@@ -35,7 +35,7 @@ func (q *Query) String() string {
 // Select selects q.segments from current or root and returns the result.
 // Returns just input if q has no segments. Defined by the [Selector]
 // interface.
-func (q *Query) Select(current, root any) []any {
+func (q *PathQuery) Select(current, root any) []any {
 	res := []any{current}
 	if q.root {
 		res[0] = root
@@ -53,7 +53,7 @@ func (q *Query) Select(current, root any) []any {
 
 // isSingular returns true if q always returns a singular value. Defined by
 // the [Selector] interface.
-func (q *Query) isSingular() bool {
+func (q *PathQuery) isSingular() bool {
 	for _, s := range q.segments {
 		if s.descendant {
 			return false
@@ -65,8 +65,8 @@ func (q *Query) isSingular() bool {
 	return true
 }
 
-// singular returns a singularQuery variant of q if q [isSingular] returns true.
-func (q *Query) singular() *singularQuery {
+// Singular returns a singularQuery variant of q if q [isSingular] returns true.
+func (q *PathQuery) Singular() *SingularQueryExpr {
 	if q.isSingular() {
 		return singular(q)
 	}
@@ -74,11 +74,11 @@ func (q *Query) singular() *singularQuery {
 	return nil
 }
 
-// expression returns a singularQuery variant of q if q [isSingular] returns
+// Expression returns a singularQuery variant of q if q [isSingular] returns
 // true, and otherwise returns a filterQuery.
 //
 //nolint:ireturn
-func (q *Query) expression() FunctionExprArg {
+func (q *PathQuery) Expression() FunctionExprArg {
 	if q.isSingular() {
 		return singular(q)
 	}
@@ -87,10 +87,10 @@ func (q *Query) expression() FunctionExprArg {
 }
 
 // singular is a utility function that converts q to a singularQuery.
-func singular(q *Query) *singularQuery {
+func singular(q *PathQuery) *SingularQueryExpr {
 	selectors := make([]Selector, len(q.segments))
 	for i, s := range q.segments {
 		selectors[i] = s.selectors[0]
 	}
-	return &singularQuery{selectors: selectors, relative: !q.root}
+	return &SingularQueryExpr{selectors: selectors, relative: !q.root}
 }

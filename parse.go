@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+
+	"github.com/theory/jsonpath/spec"
 )
 
 // ErrPathParse errors are returned for path parse errors.
@@ -33,7 +35,7 @@ func Parse(path string) (*Path, error) {
 	switch tok.tok {
 	case '$':
 		// All path queries must start with $.
-		q, err := parseQuery(lex)
+		q, err := parseQuery(true, lex)
 		if err != nil {
 			return nil, err
 		}
@@ -52,8 +54,8 @@ func Parse(path string) (*Path, error) {
 
 // parseQuery parses a query expression. lex.r should be set to $ (or,
 // eventually, @) before calling. Returns the parsed Query.
-func parseQuery(lex *lexer) (*Query, error) {
-	segs := []*Segment{}
+func parseQuery(root bool, lex *lexer) (*spec.PathQuery, error) {
+	segs := []*spec.Segment{}
 	for {
 		switch {
 		case lex.r == '[':
@@ -63,7 +65,7 @@ func parseQuery(lex *lexer) (*Query, error) {
 			if err != nil {
 				return nil, err
 			}
-			segs = append(segs, Child(selectors...))
+			segs = append(segs, spec.Child(selectors...))
 		case lex.r == '.':
 			// Start of a name selector, wildcard, or descendant segment.
 			lex.scan()
@@ -82,7 +84,7 @@ func parseQuery(lex *lexer) (*Query, error) {
 			if err != nil {
 				return nil, err
 			}
-			segs = append(segs, Child(sel))
+			segs = append(segs, spec.Child(sel))
 		case lex.isBlankSpace(lex.r):
 			switch lex.peekPastBlankSpace() {
 			case '.', '[':
@@ -92,7 +94,7 @@ func parseQuery(lex *lexer) (*Query, error) {
 			fallthrough
 		default:
 			// Done parsing.
-			return NewQuery(segs), nil
+			return spec.Query(root, segs), nil
 		}
 	}
 }
@@ -101,12 +103,12 @@ func parseQuery(lex *lexer) (*Query, error) {
 // parsed Selector.
 //
 //nolint:ireturn
-func parseNameOrWildcard(lex *lexer) (Selector, error) {
+func parseNameOrWildcard(lex *lexer) (spec.Selector, error) {
 	switch tok := lex.scan(); tok.tok {
 	case identifier:
-		return Name(tok.val), nil
+		return spec.Name(tok.val), nil
 	case '*':
-		return Wildcard, nil
+		return spec.Wildcard, nil
 	default:
 		return nil, unexpected(tok)
 	}
@@ -114,7 +116,7 @@ func parseNameOrWildcard(lex *lexer) (Selector, error) {
 
 // parseDescendant parses a ".." descendant segment, which may be a bracketed
 // segment or a wildcard or name selector segment. Returns the parsed Segment.
-func parseDescendant(lex *lexer) (*Segment, error) {
+func parseDescendant(lex *lexer) (*spec.Segment, error) {
 	switch tok := lex.scan(); tok.tok {
 	case '[':
 		// Start of segment; scan selectors
@@ -122,11 +124,11 @@ func parseDescendant(lex *lexer) (*Segment, error) {
 		if err != nil {
 			return nil, err
 		}
-		return Descendant(selectors...), nil
+		return spec.Descendant(selectors...), nil
 	case identifier:
-		return Descendant(Name(tok.val)), nil
+		return spec.Descendant(spec.Name(tok.val)), nil
 	case '*':
-		return Descendant(Wildcard), nil
+		return spec.Descendant(spec.Wildcard), nil
 	default:
 		return nil, unexpected(tok)
 	}
@@ -146,8 +148,8 @@ func makeNumErr(tok token, err error) error {
 
 // parseSelectors parses Selectors from a bracket segment. lex.r should be '['
 // before calling. Returns the Selectors parsed.
-func parseSelectors(lex *lexer) ([]Selector, error) {
-	selectors := []Selector{}
+func parseSelectors(lex *lexer) ([]spec.Selector, error) {
+	selectors := []spec.Selector{}
 	for {
 		switch tok := lex.scan(); tok.tok {
 		case '?':
@@ -157,9 +159,9 @@ func parseSelectors(lex *lexer) ([]Selector, error) {
 			}
 			selectors = append(selectors, filter)
 		case '*':
-			selectors = append(selectors, Wildcard)
+			selectors = append(selectors, spec.Wildcard)
 		case goString:
-			selectors = append(selectors, Name(tok.val))
+			selectors = append(selectors, spec.Name(tok.val))
 		case integer:
 			// Index or slice?
 			if lex.skipBlankSpace() == ':' {
@@ -175,7 +177,7 @@ func parseSelectors(lex *lexer) ([]Selector, error) {
 				if err != nil {
 					return nil, err
 				}
-				selectors = append(selectors, Index(idx))
+				selectors = append(selectors, spec.Index(idx))
 			}
 		case ':':
 			// Slice.
@@ -234,7 +236,7 @@ func parsePathInt(tok token) (int64, error) {
 
 // parseSlice parses a slice selector, <start>:<end>:<step>. Returns the
 // parsed SliceSelector.
-func parseSlice(lex *lexer, tok token) (SliceSelector, error) {
+func parseSlice(lex *lexer, tok token) (spec.SliceSelector, error) {
 	var args [3]any
 
 	// Parse the three parts: start, end, and step.
@@ -248,42 +250,42 @@ func parseSlice(lex *lexer, tok token) (SliceSelector, error) {
 			// Parse the integer.
 			num, err := parsePathInt(tok)
 			if err != nil {
-				return SliceSelector{}, err
+				return spec.SliceSelector{}, err
 			}
 			args[i] = int(num)
 		default:
 			// Nothing else allowed.
-			return SliceSelector{}, unexpected(tok)
+			return spec.SliceSelector{}, unexpected(tok)
 		}
 
 		// What's next?
 		next := lex.skipBlankSpace()
 		if next == ']' || next == ',' {
 			// We've reached the end.
-			return Slice(args[0], args[1], args[2]), nil
+			return spec.Slice(args[0], args[1], args[2]), nil
 		}
 		tok = lex.scan()
 	}
 
 	// Never found the end of the slice.
-	return SliceSelector{}, unexpected(tok)
+	return spec.SliceSelector{}, unexpected(tok)
 }
 
 // parseFilter parses a [Filter] from Lex. A [Filter] consists of a single
 // [LogicalOrExpr] (logical-or-expr).
-func parseFilter(lex *lexer) (*Filter, error) {
+func parseFilter(lex *lexer) (*spec.FilterSelector, error) {
 	lor, err := parseLogicalOrExpr(lex)
 	if err != nil {
 		return nil, err
 	}
-	return &Filter{lor}, nil
+	return spec.Filter(lor), nil
 }
 
 // parseLogicalOrExpr parses a [LogicalOrExpr] from lex. A [LogicalOrExpr] is
 // made up of one or more [LogicalAndExpr] (logical-and-expr) separated by
 // "||".
-func parseLogicalOrExpr(lex *lexer) (LogicalOrExpr, error) {
-	ands := []LogicalAndExpr{}
+func parseLogicalOrExpr(lex *lexer) (spec.LogicalOr, error) {
+	ands := []spec.LogicalAnd{}
 	land, err := parseLogicalAndExpr(lex)
 	if err != nil {
 		return nil, err
@@ -307,18 +309,18 @@ func parseLogicalOrExpr(lex *lexer) (LogicalOrExpr, error) {
 		ands = append(ands, land)
 	}
 
-	return LogicalOrExpr(ands), nil
+	return spec.LogicalOr(ands), nil
 }
 
 // parseLogicalAndExpr parses a [LogicalAndExpr] from lex. A [LogicalAndExpr]
 // is made up of one or more [BasicExpr]s (basic-expr) separated by "&&".
-func parseLogicalAndExpr(lex *lexer) (LogicalAndExpr, error) {
+func parseLogicalAndExpr(lex *lexer) (spec.LogicalAnd, error) {
 	expr, err := parseBasicExpr(lex)
 	if err != nil {
 		return nil, err
 	}
 
-	ors := []BasicExpr{expr}
+	ors := []spec.BasicExpr{expr}
 	lex.scanBlankSpace()
 	for {
 		if lex.r != '&' {
@@ -336,7 +338,7 @@ func parseLogicalAndExpr(lex *lexer) (LogicalAndExpr, error) {
 		ors = append(ors, expr)
 	}
 
-	return LogicalAndExpr(ors), nil
+	return spec.LogicalAnd(ors), nil
 }
 
 // parseBasicExpr parses a [BasicExpr] from lex. A [BasicExpr] may be a
@@ -344,7 +346,7 @@ func parseLogicalAndExpr(lex *lexer) (LogicalAndExpr, error) {
 // (comparison-expr), or test expression (test-expr).
 //
 //nolint:ireturn
-func parseBasicExpr(lex *lexer) (BasicExpr, error) {
+func parseBasicExpr(lex *lexer) (spec.BasicExpr, error) {
 	// Consume blank space.
 	lex.skipBlankSpace()
 
@@ -364,7 +366,7 @@ func parseBasicExpr(lex *lexer) (BasicExpr, error) {
 			if err != nil {
 				return nil, err
 			}
-			return NotFuncExpr{f}, nil
+			return spec.NotFuncExpr{FunctionExpr: f}, nil
 		}
 
 		// test-expr or comparison-expr
@@ -388,14 +390,14 @@ func parseBasicExpr(lex *lexer) (BasicExpr, error) {
 			return nil, err
 		}
 
-		if sing := q.singular(); sing != nil {
+		if sing := q.Singular(); sing != nil {
 			switch lex.skipBlankSpace() {
 			// comparison-expr
 			case '=', '!', '<', '>':
 				return parseComparableExpr(sing, lex)
 			}
 		}
-		return &ExistExpr{q}, nil
+		return &spec.ExistExpr{PathQuery: q}, nil
 	}
 
 	return nil, unexpected(tok)
@@ -410,13 +412,13 @@ func parseBasicExpr(lex *lexer) (BasicExpr, error) {
 // returns an error.
 //
 //nolint:ireturn
-func parseFunctionFilterExpr(ident token, lex *lexer) (BasicExpr, error) {
+func parseFunctionFilterExpr(ident token, lex *lexer) (spec.BasicExpr, error) {
 	f, err := parseFunction(ident, lex)
 	if err != nil {
 		return nil, err
 	}
 
-	if f.fn.ResultType == FuncLogical {
+	if f.ResultType() == spec.FuncLogical {
 		return f, nil
 	}
 
@@ -429,29 +431,29 @@ func parseFunctionFilterExpr(ident token, lex *lexer) (BasicExpr, error) {
 	return nil, makeError(lex.scan(), "missing comparison to function result")
 }
 
-// parseNotExistsExpr parses a [NotExistsExpr] (non-existence) from lex.
-func parseNotExistsExpr(tok token, lex *lexer) (*NotExistsExpr, error) {
+// parseNotExistsExpr parses a [spec.NotExistsExpr] (non-existence) from lex.
+func parseNotExistsExpr(tok token, lex *lexer) (*spec.NotExistsExpr, error) {
 	q, err := parseFilterQuery(tok, lex)
 	if err != nil {
 		return nil, err
 	}
-	return &NotExistsExpr{q}, nil
+	return spec.Nonexistence(q), nil
 }
 
-// parseFilterQuery parses a *Query (rel-query / jsonpath-query) from lex.
-func parseFilterQuery(tok token, lex *lexer) (*Query, error) {
-	q, err := parseQuery(lex)
+// parseFilterQuery parses a [*spec.Query] (rel-query / jsonpath-query) from
+// lex.
+func parseFilterQuery(tok token, lex *lexer) (*spec.PathQuery, error) {
+	q, err := parseQuery(tok.tok == '$', lex)
 	if err != nil {
 		return nil, err
 	}
-	q.root = tok.tok == '$'
 	return q, nil
 }
 
-// parseLogicalOrExpr parses a [LogicalOrExpr] from lex, which should return
-// the next token after '(' from scan(). Returns an error if the expression
-// does not end with a closing ')'.
-func parseInnerParenExpr(lex *lexer) (LogicalOrExpr, error) {
+// parseLogicalOrExpr parses a [spec.LogicalOrExpr] from lex, which should
+// return the next token after '(' from scan(). Returns an error if the
+// expression does not end with a closing ')'.
+func parseInnerParenExpr(lex *lexer) (spec.LogicalOr, error) {
 	expr, err := parseLogicalOrExpr(lex)
 	if err != nil {
 		return nil, err
@@ -471,56 +473,54 @@ func parseInnerParenExpr(lex *lexer) (LogicalOrExpr, error) {
 // parseParenExpr parses a [ParenExpr] (paren-expr) expression from lex, which
 // should return the next token after '(' from scan(). Returns an error if the
 // expression does not end with a closing ')'.
-func parseParenExpr(lex *lexer) (*ParenExpr, error) {
+func parseParenExpr(lex *lexer) (*spec.ParenExpr, error) {
 	expr, err := parseInnerParenExpr(lex)
 	if err != nil {
 		return nil, err
 	}
-	return &ParenExpr{expr}, nil
+	return spec.Paren(expr), nil
 }
 
-// parseParenExpr parses a [NotParenExpr] expression (logical-not-op
+// parseParenExpr parses a [*spec.NotParenExpr] expression (logical-not-op
 // paren-expression) from lex, which should return the next token after '('
 // from scan(). Returns an error if the expression does not end with a closing
 // ')'.
-func parseNotParenExpr(lex *lexer) (*NotParenExpr, error) {
+func parseNotParenExpr(lex *lexer) (*spec.NotParenExpr, error) {
 	expr, err := parseInnerParenExpr(lex)
 	if err != nil {
 		return nil, err
 	}
-	return &NotParenExpr{expr}, nil
+	return spec.NotParen(expr), nil
 }
 
 // parseFunction parses a function named tok.val from lex. tok should be the
 // token just before the next call to lex.scan, and must be an identifier
 // token naming the function. Returns an error if the function is not found in
 // the registry or if arguments are invalid for the function.
-func parseFunction(tok token, lex *lexer) (*FunctionExpr, error) {
-	function := GetFunction(tok.val)
-	if function == nil {
-		return nil, makeError(tok, fmt.Sprintf("unknown function %q", tok.val))
-	}
-
+func parseFunction(tok token, lex *lexer) (*spec.FunctionExpr, error) {
 	paren := lex.scan() // Drop (
 	args, err := parseFunctionArgs(lex)
 	if err != nil {
 		return nil, err
 	}
 
-	// Validate the functions.
-	if err := function.Validate(args); err != nil {
-		// Return the error starting at the opening parenthesis.
+	fe, err := spec.NewFunctionExpr(tok.val, args)
+	if err != nil {
+		// If the function is unknown, report error from function name.
+		if errors.Is(err, spec.ErrUnregistered) {
+			return nil, makeError(tok, err.Error())
+		}
+		// Otherwise report error from '('
 		return nil, makeError(paren, err.Error())
 	}
-
-	return &FunctionExpr{fn: function, args: args}, nil
+	return fe, nil
 }
 
 // parseFunctionArgs parses the comma-delimited arguments to a function from
 // lex. Arguments may be one of literal, filter-query (including
 // singular-query), logical-expr, or function-expr.
-func parseFunctionArgs(lex *lexer) ([]FunctionExprArg, error) {
-	res := []FunctionExprArg{}
+func parseFunctionArgs(lex *lexer) ([]spec.FunctionExprArg, error) {
+	res := []spec.FunctionExprArg{}
 	for {
 		switch tok := lex.scan(); tok.tok {
 		case goString, integer, number, boolFalse, boolTrue, jsonNull:
@@ -537,7 +537,7 @@ func parseFunctionArgs(lex *lexer) ([]FunctionExprArg, error) {
 				return nil, err
 			}
 
-			res = append(res, q.expression())
+			res = append(res, q.Expression())
 
 		case identifier:
 			// function-expr
@@ -581,37 +581,37 @@ func parseFunctionArgs(lex *lexer) ([]FunctionExprArg, error) {
 }
 
 // parseLiteral parses the literal value from tok into native Go values and
-// returns them as literalArg. tok.tok must be one of goString, integer,
+// returns them as spec.LiteralArg. tok.tok must be one of goString, integer,
 // number, boolFalse, boolTrue, or jsonNull.
-func parseLiteral(tok token) (*literalArg, error) {
+func parseLiteral(tok token) (*spec.LiteralArg, error) {
 	switch tok.tok {
 	case goString:
-		return &literalArg{tok.val}, nil
+		return spec.Literal(tok.val), nil
 	case integer:
 		integer, err := strconv.ParseInt(tok.val, 10, 64)
 		if err != nil {
 			return nil, makeNumErr(tok, err)
 		}
-		return &literalArg{integer}, nil
+		return spec.Literal(integer), nil
 	case number:
 		num, err := strconv.ParseFloat(tok.val, 64)
 		if err != nil {
 			return nil, makeNumErr(tok, err)
 		}
-		return &literalArg{num}, nil
+		return spec.Literal(num), nil
 	case boolTrue:
-		return &literalArg{true}, nil
+		return spec.Literal(true), nil
 	case boolFalse:
-		return &literalArg{false}, nil
+		return spec.Literal(false), nil
 	case jsonNull:
-		return &literalArg{nil}, nil
+		return spec.Literal(nil), nil
 	default:
 		return nil, unexpected(tok)
 	}
 }
 
 // parseComparableExpr parses a [ComparisonExpr] (comparison-expr) from lex.
-func parseComparableExpr(left CompVal, lex *lexer) (*ComparisonExpr, error) {
+func parseComparableExpr(left spec.CompVal, lex *lexer) (*spec.ComparisonExpr, error) {
 	// Skip blank space.
 	lex.skipBlankSpace()
 
@@ -628,13 +628,13 @@ func parseComparableExpr(left CompVal, lex *lexer) (*ComparisonExpr, error) {
 		return nil, err
 	}
 
-	return &ComparisonExpr{left, op, right}, nil
+	return &spec.ComparisonExpr{Left: left, Op: op, Right: right}, nil
 }
 
 // parseComparableVal parses a [CompVal] (comparable) from lex.
 //
 //nolint:ireturn
-func parseComparableVal(tok token, lex *lexer) (CompVal, error) {
+func parseComparableVal(tok token, lex *lexer) (spec.CompVal, error) {
 	switch tok.tok {
 	case goString, integer, number, boolFalse, boolTrue, jsonNull:
 		// literal
@@ -651,7 +651,7 @@ func parseComparableVal(tok token, lex *lexer) (CompVal, error) {
 		if err != nil {
 			return nil, err
 		}
-		if f.fn.ResultType == FuncLogical {
+		if f.ResultType() == spec.FuncLogical {
 			return nil, makeError(tok, "cannot compare result of logical function")
 		}
 		return f, nil
@@ -661,40 +661,40 @@ func parseComparableVal(tok token, lex *lexer) (CompVal, error) {
 }
 
 // parseCompOp pares a [CompOp] (comparison-op) from lex.
-func parseCompOp(lex *lexer) (CompOp, error) {
+func parseCompOp(lex *lexer) (spec.CompOp, error) {
 	tok := lex.scan()
 	switch tok.tok {
 	case '=':
 		if lex.r == '=' {
 			lex.scan()
-			return EqualTo, nil
+			return spec.EqualTo, nil
 		}
 	case '!':
 		if lex.r == '=' {
 			lex.scan()
-			return NotEqualTo, nil
+			return spec.NotEqualTo, nil
 		}
 	case '<':
 		if lex.r == '=' {
 			lex.scan()
-			return LessThanEqualTo, nil
+			return spec.LessThanEqualTo, nil
 		}
-		return LessThan, nil
+		return spec.LessThan, nil
 	case '>':
 		if lex.r == '=' {
 			lex.scan()
-			return GreaterThanEqualTo, nil
+			return spec.GreaterThanEqualTo, nil
 		}
-		return GreaterThan, nil
+		return spec.GreaterThan, nil
 	}
 
 	return 0, makeError(tok, "invalid comparison operator")
 }
 
-// parseSingularQuery parses a [singularQuery] (singular-query) from lex. A
-// singular query consists only of single-selector nodes.
-func parseSingularQuery(startToken token, lex *lexer) (*singularQuery, error) {
-	selectors := []Selector{}
+// parseSingularQuery parses a [spec.SingularQueryExpr] (singular-query) from
+// lex. A singular query consists only of single-selector nodes.
+func parseSingularQuery(startToken token, lex *lexer) (*spec.SingularQueryExpr, error) {
+	selectors := []spec.Selector{}
 	for {
 		switch lex.r {
 		case '[':
@@ -703,13 +703,13 @@ func parseSingularQuery(startToken token, lex *lexer) (*singularQuery, error) {
 			lex.scan()
 			switch tok := lex.scan(); tok.tok {
 			case goString:
-				selectors = append(selectors, Name(tok.val))
+				selectors = append(selectors, spec.Name(tok.val))
 			case integer:
 				idx, err := parsePathInt(tok)
 				if err != nil {
 					return nil, err
 				}
-				selectors = append(selectors, Index(idx))
+				selectors = append(selectors, spec.Index(idx))
 			default:
 				return nil, unexpected(tok)
 			}
@@ -726,13 +726,10 @@ func parseSingularQuery(startToken token, lex *lexer) (*singularQuery, error) {
 			if tok.tok != identifier {
 				return nil, unexpected(tok)
 			}
-			selectors = append(selectors, Name(tok.val))
+			selectors = append(selectors, spec.Name(tok.val))
 		default:
 			// Done parsing.
-			return &singularQuery{
-				selectors: selectors,
-				relative:  startToken.tok == '@',
-			}, nil
+			return spec.SingularQuery(startToken.tok == '$', selectors), nil
 		}
 	}
 }

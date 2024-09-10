@@ -1,4 +1,4 @@
-package jsonpath
+package spec
 
 import (
 	"strings"
@@ -12,14 +12,14 @@ type BasicExpr interface {
 	testFilter(current, root any) bool
 }
 
-// LogicalAndExpr represents a list of one or more expressions ANDed together
+// LogicalAnd represents a list of one or more expressions ANDed together
 // by the && operator.
-type LogicalAndExpr []BasicExpr
+type LogicalAnd []BasicExpr
 
 // testFilter returns true if all of la's expressions return true.
 // Short-circuits and returns false for the first expression that returns
 // false.
-func (la LogicalAndExpr) testFilter(current, root any) bool {
+func (la LogicalAnd) testFilter(current, root any) bool {
 	for _, e := range la {
 		if !e.testFilter(current, root) {
 			return false
@@ -29,7 +29,7 @@ func (la LogicalAndExpr) testFilter(current, root any) bool {
 }
 
 // writeTo writes the string representation of la to buf.
-func (la LogicalAndExpr) writeTo(buf *strings.Builder) {
+func (la LogicalAnd) writeTo(buf *strings.Builder) {
 	for i, e := range la {
 		e.writeTo(buf)
 		if i < len(la)-1 {
@@ -38,11 +38,11 @@ func (la LogicalAndExpr) writeTo(buf *strings.Builder) {
 	}
 }
 
-// LogicalOrExpr represents a list of one or more expressions ORed together by
+// LogicalOr represents a list of one or more expressions ORed together by
 // the || operator.
-type LogicalOrExpr []LogicalAndExpr
+type LogicalOr []LogicalAnd
 
-func (lo LogicalOrExpr) testFilter(current, root any) bool {
+func (lo LogicalOr) testFilter(current, root any) bool {
 	for _, e := range lo {
 		if e.testFilter(current, root) {
 			return true
@@ -52,7 +52,7 @@ func (lo LogicalOrExpr) testFilter(current, root any) bool {
 }
 
 // writeTo writes the string representation of lo to buf.
-func (lo LogicalOrExpr) writeTo(buf *strings.Builder) {
+func (lo LogicalOr) writeTo(buf *strings.Builder) {
 	for i, e := range lo {
 		e.writeTo(buf)
 		if i < len(lo)-1 {
@@ -64,49 +64,64 @@ func (lo LogicalOrExpr) writeTo(buf *strings.Builder) {
 // execute evaluates lo and returns LogicalTrue when it returns true and
 // LogicalFalse when it returns false.
 //
-//nolint:ireturn
-func (lo LogicalOrExpr) execute(current, root any) JSONPathValue {
+
+func (lo LogicalOr) execute(current, root any) JSONPathValue {
 	return logicalFrom(lo.testFilter(current, root))
 }
 
 // asTypeKind returns FuncLogical. Defined by the [FunctionExprArg] interface.
-func (lo LogicalOrExpr) asTypeKind() FuncType {
+func (lo LogicalOr) asTypeKind() FuncType {
 	return FuncLogical
 }
 
 // ParenExpr represents a parenthesized expression.
 type ParenExpr struct {
-	LogicalOrExpr
+	LogicalOr
+}
+
+// Paren returns a new ParenExpr.
+func Paren(or LogicalOr) *ParenExpr {
+	return &ParenExpr{LogicalOr: or}
 }
 
 // writeTo writes a string representation of p to buf.
 func (p *ParenExpr) writeTo(buf *strings.Builder) {
 	buf.WriteRune('(')
-	p.LogicalOrExpr.writeTo(buf)
+	p.LogicalOr.writeTo(buf)
 	buf.WriteRune(')')
 }
 
 // NotParenExpr represents a parenthesized expression preceded with a !.
 type NotParenExpr struct {
-	LogicalOrExpr
+	LogicalOr
+}
+
+// NotParen returns a new NotParenExpr.
+func NotParen(or LogicalOr) *NotParenExpr {
+	return &NotParenExpr{LogicalOr: or}
 }
 
 // writeTo writes a string representation of p to buf.
 func (np *NotParenExpr) writeTo(buf *strings.Builder) {
 	buf.WriteString("!(")
-	np.LogicalOrExpr.writeTo(buf)
+	np.LogicalOr.writeTo(buf)
 	buf.WriteRune(')')
 }
 
 // testFilter returns false if the np.LogicalOrExpression returns true and
 // true if it returns false.
 func (np *NotParenExpr) testFilter(current, root any) bool {
-	return !np.LogicalOrExpr.testFilter(current, root)
+	return !np.LogicalOr.testFilter(current, root)
 }
 
 // ExistExpr represents an existence expression.
 type ExistExpr struct {
-	*Query
+	*PathQuery
+}
+
+// Existence returns a new ExistExpr.
+func Existence(q *PathQuery) *ExistExpr {
+	return &ExistExpr{PathQuery: q}
 }
 
 // testFilter returns true if e.Query selects any results from current or
@@ -117,18 +132,23 @@ func (e *ExistExpr) testFilter(current, root any) bool {
 
 // writeTo writes a string representation of e to buf.
 func (e *ExistExpr) writeTo(buf *strings.Builder) {
-	buf.WriteString(e.Query.String())
+	buf.WriteString(e.PathQuery.String())
 }
 
 // NotExistsExpr represents a nonexistence expression.
 type NotExistsExpr struct {
-	*Query
+	*PathQuery
+}
+
+// Nonexistence returns a new NotExistsExpr.
+func Nonexistence(q *PathQuery) *NotExistsExpr {
+	return &NotExistsExpr{PathQuery: q}
 }
 
 // writeTo writes a string representation of ne to buf.
 func (ne NotExistsExpr) writeTo(buf *strings.Builder) {
 	buf.WriteRune('!')
-	buf.WriteString(ne.Query.String())
+	buf.WriteString(ne.PathQuery.String())
 }
 
 // testFilter returns true if ne.Query selects no results from current or

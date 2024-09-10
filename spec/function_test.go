@@ -1,4 +1,4 @@
-package jsonpath
+package spec
 
 import (
 	"fmt"
@@ -103,9 +103,9 @@ func TestNodesType(t *testing.T) {
 		err  string
 	}{
 		{"nodes", NodesType([]any{1, 2}), NodesType([]any{1, 2}), ""},
-		{"value", &ValueType{1}, NodesType([]any{1}), ""},
+		{"value", Value(1), NodesType([]any{1}), ""},
 		{"nil", nil, NodesType([]any{}), ""},
-		{"logical", LogicalTrue, nil, "unexpected argument of type jsonpath.LogicalType"},
+		{"logical", LogicalTrue, nil, "unexpected argument of type spec.LogicalType"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -140,7 +140,7 @@ func TestLogicalType(t *testing.T) {
 		{"empty_nodes", NodesType([]any{}), LogicalFalse, false, "", "false"},
 		{"nodes", NodesType([]any{1}), LogicalTrue, true, "", "true"},
 		{"null", nil, LogicalFalse, false, "", "false"},
-		{"value", &ValueType{1}, LogicalFalse, false, "unexpected argument of type *jsonpath.ValueType", ""},
+		{"value", Value(1), LogicalFalse, false, "unexpected argument of type *spec.ValueType", ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -206,9 +206,10 @@ func TestValueType(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			val := &ValueType{tc.val}
+			val := Value(tc.val)
 			a.Equal(PathValue, val.PathType())
 			a.Equal(FuncValue, val.FuncType())
+			a.Equal(tc.val, val.Value())
 			a.Equal("ValueType", bufString(val))
 			a.Equal(tc.exp, val.testFilter(nil, nil))
 		})
@@ -225,10 +226,10 @@ func TestValueTypeFrom(t *testing.T) {
 		exp  *ValueType
 		err  string
 	}{
-		{"valueType", &ValueType{42}, &ValueType{42}, ""},
+		{"valueType", Value(42), Value(42), ""},
 		{"nil", nil, nil, ""},
-		{"logical", LogicalFalse, nil, "unexpected argument of type jsonpath.LogicalType"},
-		{"nodes", NodesType([]any{1}), nil, "unexpected argument of type jsonpath.NodesType"},
+		{"logical", LogicalFalse, nil, "unexpected argument of type spec.LogicalType"},
+		{"nodes", NodesType([]any{1}), nil, "unexpected argument of type spec.NodesType"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -306,44 +307,44 @@ func TestRegistry(t *testing.T) {
 		{
 			name:  "length",
 			rType: FuncValue,
-			expr:  []FunctionExprArg{&literalArg{"foo"}},
-			args:  []JSONPathValue{&ValueType{"foo"}},
-			exp:   &ValueType{3},
+			expr:  []FunctionExprArg{Literal("foo")},
+			args:  []JSONPathValue{Value("foo")},
+			exp:   Value(3),
 		},
 		{
 			name:  "count",
 			rType: FuncValue,
-			expr:  []FunctionExprArg{&singularQuery{}},
+			expr:  []FunctionExprArg{&SingularQueryExpr{}},
 			args:  []JSONPathValue{NodesType([]any{1, 2})},
-			exp:   &ValueType{2},
+			exp:   Value(2),
 		},
 		{
 			name:  "value",
 			rType: FuncValue,
-			expr:  []FunctionExprArg{&singularQuery{}},
+			expr:  []FunctionExprArg{&SingularQueryExpr{}},
 			args:  []JSONPathValue{NodesType([]any{42})},
-			exp:   &ValueType{42},
+			exp:   Value(42),
 		},
 		{
 			name:  "match",
 			rType: FuncLogical,
-			expr:  []FunctionExprArg{&literalArg{"foo"}, &literalArg{".*"}},
-			args:  []JSONPathValue{&ValueType{"foo"}, &ValueType{".*"}},
+			expr:  []FunctionExprArg{Literal("foo"), Literal(".*")},
+			args:  []JSONPathValue{Value("foo"), Value(".*")},
 			exp:   LogicalTrue,
 		},
 		{
 			name:  "search",
 			rType: FuncLogical,
-			expr:  []FunctionExprArg{&literalArg{"foo"}, &literalArg{"."}},
-			args:  []JSONPathValue{&ValueType{"foo"}, &ValueType{"."}},
+			expr:  []FunctionExprArg{Literal("foo"), Literal(".")},
+			args:  []JSONPathValue{Value("foo"), Value(".")},
 			exp:   LogicalTrue,
 		},
 		// Test functions set up by TestMain()
 		{
 			name:  "__mk_nodes",
 			rType: FuncNodeList,
-			expr:  []FunctionExprArg{&literalArg{"foo"}, &literalArg{"."}},
-			args:  []JSONPathValue{&ValueType{"foo"}, &ValueType{"."}},
+			expr:  []FunctionExprArg{Literal("foo"), Literal(".")},
+			args:  []JSONPathValue{Value("foo"), Value(".")},
 			exp:   NodesType{"foo", "."},
 		},
 		{
@@ -411,72 +412,72 @@ func TestLengthFunc(t *testing.T) {
 	}{
 		{
 			name: "empty_string",
-			vals: []JSONPathValue{&ValueType{""}},
+			vals: []JSONPathValue{Value("")},
 			exp:  0,
 		},
 		{
 			name: "ascii_string",
-			vals: []JSONPathValue{&ValueType{"abc def"}},
+			vals: []JSONPathValue{Value("abc def")},
 			exp:  7,
 		},
 		{
 			name: "unicode_string",
-			vals: []JSONPathValue{&ValueType{"foö"}},
+			vals: []JSONPathValue{Value("foö")},
 			exp:  3,
 		},
 		{
 			name: "emoji_string",
-			vals: []JSONPathValue{&ValueType{"Hi 👋🏻"}},
+			vals: []JSONPathValue{Value("Hi 👋🏻")},
 			exp:  5,
 		},
 		{
 			name: "empty_array",
-			vals: []JSONPathValue{&ValueType{[]any{}}},
+			vals: []JSONPathValue{Value([]any{})},
 			exp:  0,
 		},
 		{
 			name: "array",
-			vals: []JSONPathValue{&ValueType{[]any{1, 2, 3, 4, 5}}},
+			vals: []JSONPathValue{Value([]any{1, 2, 3, 4, 5})},
 			exp:  5,
 		},
 		{
 			name: "nested_array",
-			vals: []JSONPathValue{&ValueType{[]any{1, 2, 3, "x", []any{456, 67}, true}}},
+			vals: []JSONPathValue{Value([]any{1, 2, 3, "x", []any{456, 67}, true})},
 			exp:  6,
 		},
 		{
 			name: "empty_object",
-			vals: []JSONPathValue{&ValueType{map[string]any{}}},
+			vals: []JSONPathValue{Value(map[string]any{})},
 			exp:  0,
 		},
 		{
 			name: "object",
-			vals: []JSONPathValue{&ValueType{map[string]any{"x": 1, "y": 0, "z": 2}}},
+			vals: []JSONPathValue{Value(map[string]any{"x": 1, "y": 0, "z": 2})},
 			exp:  3,
 		},
 		{
 			name: "nested_object",
-			vals: []JSONPathValue{&ValueType{map[string]any{
+			vals: []JSONPathValue{Value(map[string]any{
 				"x": 1,
 				"y": 0,
 				"z": []any{1, 2},
 				"a": map[string]any{"b": 9},
-			}}},
+			})},
 			exp: 4,
 		},
 		{
 			name: "integer",
-			vals: []JSONPathValue{&ValueType{42}},
+			vals: []JSONPathValue{Value(42)},
 			exp:  -1,
 		},
 		{
 			name: "bool",
-			vals: []JSONPathValue{&ValueType{true}},
+			vals: []JSONPathValue{Value(true)},
 			exp:  -1,
 		},
 		{
 			name: "null",
-			vals: []JSONPathValue{&ValueType{nil}},
+			vals: []JSONPathValue{Value(nil)},
 			exp:  -1,
 		},
 		{
@@ -487,7 +488,7 @@ func TestLengthFunc(t *testing.T) {
 		{
 			name: "not_value",
 			vals: []JSONPathValue{LogicalFalse},
-			err:  "unexpected argument of type jsonpath.LogicalType",
+			err:  "unexpected argument of type spec.LogicalType",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -502,7 +503,7 @@ func TestLengthFunc(t *testing.T) {
 			if tc.exp < 0 {
 				a.Nil(res)
 			} else {
-				a.Equal(&ValueType{tc.exp}, res)
+				a.Equal(Value(tc.exp), res)
 			}
 		})
 	}
@@ -527,41 +528,43 @@ func TestCheckSingularFuncArgs(t *testing.T) {
 		},
 		{
 			name: "two_args",
-			expr: []FunctionExprArg{&literalArg{}, &literalArg{}},
+			expr: []FunctionExprArg{Literal(nil), Literal(nil)},
 			err:  "expected 1 argument but found 2",
 		},
 		{
 			name:     "literal_string",
-			expr:     []FunctionExprArg{&literalArg{}},
-			countErr: "cannot convert count() argument to PathNodes",
-			valueErr: "cannot convert value() argument to PathNodes",
+			expr:     []FunctionExprArg{Literal(nil)},
+			countErr: "cannot convert argument to PathNodes",
+			valueErr: "cannot convert argument to PathNodes",
 		},
 		{
 			name: "singular_query",
-			expr: []FunctionExprArg{&singularQuery{}},
+			expr: []FunctionExprArg{SingularQuery(false, nil)},
 		},
 		{
 			name: "filter_query",
-			expr: []FunctionExprArg{&filterQuery{NewQuery([]*Segment{Child(Name("x"))})}},
+			expr: []FunctionExprArg{&filterQuery{
+				Query(true, []*Segment{Child(Name("x"))}),
+			}},
 		},
 		{
 			name: "logical_function_expr",
 			expr: []FunctionExprArg{&FunctionExpr{
 				fn: registry["match"],
 				args: []FunctionExprArg{&filterQuery{
-					NewQuery([]*Segment{Child(Name("x"))}),
+					Query(true, []*Segment{Child(Name("x"))}),
 				}},
 			}},
-			lengthErr: "cannot convert length() argument to ValueType",
-			countErr:  "cannot convert count() argument to PathNodes",
-			valueErr:  "cannot convert value() argument to PathNodes",
+			lengthErr: "cannot convert argument to ValueType",
+			countErr:  "cannot convert argument to PathNodes",
+			valueErr:  "cannot convert argument to PathNodes",
 		},
 		{
 			name:      "logical_or",
-			expr:      []FunctionExprArg{&LogicalOrExpr{}},
-			lengthErr: "cannot convert length() argument to ValueType",
-			countErr:  "cannot convert count() argument to PathNodes",
-			valueErr:  "cannot convert value() argument to PathNodes",
+			expr:      []FunctionExprArg{&LogicalOr{}},
+			lengthErr: "cannot convert argument to ValueType",
+			countErr:  "cannot convert argument to PathNodes",
+			valueErr:  "cannot convert argument to PathNodes",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -618,59 +621,65 @@ func TestCheckRegexFuncArgs(t *testing.T) {
 		},
 		{
 			name: "one_arg",
-			expr: []FunctionExprArg{&literalArg{"hi"}},
+			expr: []FunctionExprArg{Literal("hi")},
 			err:  "expected 2 arguments but found 1",
 		},
 		{
 			name: "three_args",
-			expr: []FunctionExprArg{&literalArg{"hi"}, &literalArg{"hi"}, &literalArg{"hi"}},
+			expr: []FunctionExprArg{Literal("hi"), Literal("hi"), Literal("hi")},
 			err:  "expected 2 arguments but found 3",
 		},
 		{
 			name: "logical_or_1",
-			expr: []FunctionExprArg{&LogicalOrExpr{}, &literalArg{"hi"}},
-			err:  "cannot convert %v() argument 1 to PathNodes",
+			expr: []FunctionExprArg{&LogicalOr{}, Literal("hi")},
+			err:  "cannot convert argument 1 to PathNodes",
 		},
 		{
 			name: "logical_or_2",
-			expr: []FunctionExprArg{&literalArg{"hi"}, &LogicalOrExpr{}},
-			err:  "cannot convert %v() argument 2 to PathNodes",
+			expr: []FunctionExprArg{Literal("hi"), LogicalOr{}},
+			err:  "cannot convert argument 2 to PathNodes",
 		},
 		{
 			name: "singular_query_literal",
-			expr: []FunctionExprArg{&singularQuery{}, &literalArg{"hi"}},
+			expr: []FunctionExprArg{&SingularQueryExpr{}, Literal("hi")},
 		},
 		{
 			name: "literal_singular_query",
-			expr: []FunctionExprArg{&literalArg{"hi"}, &singularQuery{}},
+			expr: []FunctionExprArg{Literal("hi"), &SingularQueryExpr{}},
 		},
 		{
 			name: "filter_query_1",
-			expr: []FunctionExprArg{&filterQuery{NewQuery([]*Segment{Child(Name("x"))})}, &literalArg{"hi"}},
+			expr: []FunctionExprArg{
+				&filterQuery{Query(true, []*Segment{Child(Name("x"))})},
+				Literal("hi"),
+			},
 		},
 		{
 			name: "filter_query_2",
-			expr: []FunctionExprArg{&literalArg{"hi"}, &filterQuery{NewQuery([]*Segment{Child(Name("x"))})}},
+			expr: []FunctionExprArg{
+				Literal("hi"),
+				&filterQuery{Query(true, []*Segment{Child(Name("x"))})},
+			},
 		},
 		{
 			name: "function_expr_1",
 			expr: []FunctionExprArg{&FunctionExpr{
 				fn: registry["match"],
 				args: []FunctionExprArg{&filterQuery{
-					NewQuery([]*Segment{Child(Name("x"))}),
+					Query(true, []*Segment{Child(Name("x"))}),
 				}},
-			}, &literalArg{"hi"}},
-			err: "cannot convert %v() argument 1 to PathNodes",
+			}, Literal("hi")},
+			err: "cannot convert argument 1 to PathNodes",
 		},
 		{
 			name: "function_expr_2",
-			expr: []FunctionExprArg{&literalArg{"hi"}, &FunctionExpr{
+			expr: []FunctionExprArg{Literal("hi"), &FunctionExpr{
 				fn: registry["match"],
 				args: []FunctionExprArg{&filterQuery{
-					NewQuery([]*Segment{Child(Name("x"))}),
+					Query(true, []*Segment{Child(Name("x"))}),
 				}},
 			}},
-			err: "cannot convert %v() argument 2 to PathNodes",
+			err: "cannot convert argument 2 to PathNodes",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -707,7 +716,7 @@ func TestCountFunc(t *testing.T) {
 		{"empty", []JSONPathValue{NodesType([]any{})}, 0, ""},
 		{"one", []JSONPathValue{NodesType([]any{1})}, 1, ""},
 		{"three", []JSONPathValue{NodesType([]any{1, true, nil})}, 3, ""},
-		{"not_nodes", []JSONPathValue{LogicalTrue}, 0, "unexpected argument of type jsonpath.LogicalType"},
+		{"not_nodes", []JSONPathValue{LogicalTrue}, 0, "unexpected argument of type spec.LogicalType"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -719,7 +728,7 @@ func TestCountFunc(t *testing.T) {
 			if tc.exp < 0 {
 				a.Nil(res)
 			} else {
-				a.Equal(&ValueType{tc.exp}, res)
+				a.Equal(Value(tc.exp), res)
 			}
 		})
 	}
@@ -736,11 +745,11 @@ func TestValueFunc(t *testing.T) {
 		err  string
 	}{
 		{"empty", []JSONPathValue{NodesType([]any{})}, nil, ""},
-		{"one_int", []JSONPathValue{NodesType([]any{1})}, &ValueType{1}, ""},
-		{"one_null", []JSONPathValue{NodesType([]any{nil})}, &ValueType{nil}, ""},
-		{"one_string", []JSONPathValue{NodesType([]any{"x"})}, &ValueType{"x"}, ""},
+		{"one_int", []JSONPathValue{NodesType([]any{1})}, Value(1), ""},
+		{"one_null", []JSONPathValue{NodesType([]any{nil})}, Value(nil), ""},
+		{"one_string", []JSONPathValue{NodesType([]any{"x"})}, Value("x"), ""},
 		{"three", []JSONPathValue{NodesType([]any{1, true, nil})}, nil, ""},
-		{"not_nodes", []JSONPathValue{LogicalFalse}, nil, "unexpected argument of type jsonpath.LogicalType"},
+		{"not_nodes", []JSONPathValue{LogicalFalse}, nil, "unexpected argument of type spec.LogicalType"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -766,50 +775,50 @@ func TestRegexFuncs(t *testing.T) {
 	}{
 		{
 			name:   "dot",
-			input:  &ValueType{"x"},
-			regex:  &ValueType{"."},
+			input:  Value("x"),
+			regex:  Value("."),
 			match:  true,
 			search: true,
 		},
 		{
 			name:   "two_chars",
-			input:  &ValueType{"xx"},
-			regex:  &ValueType{"."},
+			input:  Value("xx"),
+			regex:  Value("."),
 			match:  false,
 			search: true,
 		},
 		{
 			name:   "multi_line_newline",
-			input:  &ValueType{"xx\nyz"},
-			regex:  &ValueType{".*"},
+			input:  Value("xx\nyz"),
+			regex:  Value(".*"),
 			match:  false,
 			search: true,
 		},
 		{
 			name:   "multi_line_crlf",
-			input:  &ValueType{"xx\r\nyz"},
-			regex:  &ValueType{".*"},
+			input:  Value("xx\r\nyz"),
+			regex:  Value(".*"),
 			match:  false,
 			search: true,
 		},
 		{
 			name:   "not_string_input",
-			input:  &ValueType{1},
-			regex:  &ValueType{"."},
+			input:  Value(1),
+			regex:  Value("."),
 			match:  false,
 			search: false,
 		},
 		{
 			name:   "not_string_regex",
-			input:  &ValueType{"x"},
-			regex:  &ValueType{1},
+			input:  Value("x"),
+			regex:  Value(1),
 			match:  false,
 			search: false,
 		},
 		{
 			name:   "invalid_regex",
-			input:  &ValueType{"x"},
-			regex:  &ValueType{".["},
+			input:  Value("x"),
+			regex:  Value(".["),
 			match:  false,
 			search: false,
 		},
@@ -835,19 +844,19 @@ func TestExecRegexFuncs(t *testing.T) {
 	}{
 		{
 			name:   "dot",
-			vals:   []JSONPathValue{&ValueType{"x"}, &ValueType{"x"}},
+			vals:   []JSONPathValue{Value("x"), Value("x")},
 			match:  true,
 			search: true,
 		},
 		{
 			name: "first_not_value",
-			vals: []JSONPathValue{NodesType{}, &ValueType{"x"}},
-			err:  "unexpected argument of type jsonpath.NodesType",
+			vals: []JSONPathValue{NodesType{}, Value("x")},
+			err:  "unexpected argument of type spec.NodesType",
 		},
 		{
 			name: "second_not_value",
-			vals: []JSONPathValue{&ValueType{"x"}, LogicalFalse},
-			err:  "unexpected argument of type jsonpath.LogicalType",
+			vals: []JSONPathValue{Value("x"), LogicalFalse},
+			err:  "unexpected argument of type spec.LogicalType",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -897,10 +906,10 @@ func TestJsonFunctionExprArgInterface(t *testing.T) {
 		name string
 		expr any
 	}{
-		{"literal", &literalArg{}},
+		{"literal", &LiteralArg{}},
 		{"filter_query", &filterQuery{}},
-		{"singular_query", &singularQuery{}},
-		{"logical_or", &LogicalOrExpr{}},
+		{"singular_query", &SingularQueryExpr{}},
+		{"logical_or", &LogicalOr{}},
 		{"function_expr", &FunctionExpr{}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -918,8 +927,8 @@ func TestJSONComparableValInterface(t *testing.T) {
 		name string
 		expr any
 	}{
-		{"literal", &literalArg{}},
-		{"singular_query", &singularQuery{}},
+		{"literal", &LiteralArg{}},
+		{"singular_query", &SingularQueryExpr{}},
 		{"function_expr", &FunctionExpr{}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -946,9 +955,10 @@ func TestLiteralArg(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			lit := &literalArg{tc.literal}
-			a.Equal(&ValueType{tc.literal}, lit.execute(nil, nil))
-			a.Equal(&ValueType{tc.literal}, lit.asValue(nil, nil))
+			lit := Literal(tc.literal)
+			a.Equal(Value(tc.literal), lit.execute(nil, nil))
+			a.Equal(Value(tc.literal), lit.asValue(nil, nil))
+			a.Equal(tc.literal, lit.Value())
 			a.Equal(FuncLiteral, lit.asTypeKind())
 			a.Equal(tc.str, bufString(lit))
 		})
@@ -970,35 +980,35 @@ func TestSingularQuery(t *testing.T) {
 			name:      "one_name",
 			selectors: []Selector{Name("x")},
 			input:     map[string]any{"x": 42},
-			exp:       &ValueType{42},
+			exp:       Value(42),
 			str:       `["x"]`,
 		},
 		{
 			name:      "two_names",
 			selectors: []Selector{Name("x"), Name("y")},
 			input:     map[string]any{"x": map[string]any{"y": 98.6}},
-			exp:       &ValueType{98.6},
+			exp:       Value(98.6),
 			str:       `["x"]["y"]`,
 		},
 		{
 			name:      "one_index",
 			selectors: []Selector{Index(1)},
 			input:     []any{"x", 42},
-			exp:       &ValueType{42},
+			exp:       Value(42),
 			str:       `[1]`,
 		},
 		{
 			name:      "two_indexes",
 			selectors: []Selector{Index(1), Index(0)},
 			input:     []any{"x", []any{true}},
-			exp:       &ValueType{true},
+			exp:       Value(true),
 			str:       `[1][0]`,
 		},
 		{
 			name:      "one_of_each",
 			selectors: []Selector{Index(1), Name("x")},
 			input:     []any{"x", map[string]any{"x": 12}},
-			exp:       &ValueType{12},
+			exp:       Value(12),
 			str:       `[1]["x"]`,
 		},
 		{
@@ -1010,7 +1020,7 @@ func TestSingularQuery(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			sq := &singularQuery{selectors: tc.selectors, relative: false}
+			sq := &SingularQueryExpr{selectors: tc.selectors, relative: false}
 			a.Equal(FuncSingularQuery, sq.asTypeKind())
 
 			// Start with absolute query.
@@ -1034,7 +1044,7 @@ func TestFilterQuery(t *testing.T) {
 
 	for _, tc := range []struct {
 		name     string
-		query    *Query
+		query    *PathQuery
 		current  any
 		root     any
 		exp      []any
@@ -1042,35 +1052,35 @@ func TestFilterQuery(t *testing.T) {
 	}{
 		{
 			name:     "root_name",
-			query:    &Query{segments: []*Segment{Child(Name("x"))}, root: true},
+			query:    Query(true, []*Segment{Child(Name("x"))}),
 			root:     map[string]any{"x": 42},
 			exp:      []any{42},
 			typeKind: FuncSingularQuery,
 		},
 		{
 			name:     "current_name",
-			query:    &Query{segments: []*Segment{Child(Name("x"))}, root: false},
+			query:    Query(false, []*Segment{Child(Name("x"))}),
 			current:  map[string]any{"x": 42},
 			exp:      []any{42},
 			typeKind: FuncSingularQuery,
 		},
 		{
 			name:     "root_name_index",
-			query:    &Query{segments: []*Segment{Child(Name("x")), Child(Index(1))}, root: true},
+			query:    Query(true, []*Segment{Child(Name("x")), Child(Index(1))}),
 			root:     map[string]any{"x": []any{19, 234}},
 			exp:      []any{234},
 			typeKind: FuncSingularQuery,
 		},
 		{
 			name:     "root_slice",
-			query:    &Query{segments: []*Segment{Child(Slice(0, 2))}, root: true},
+			query:    Query(true, []*Segment{Child(Slice(0, 2))}),
 			root:     []any{13, 2, 5},
 			exp:      []any{13, 2},
 			typeKind: FuncNodeList,
 		},
 		{
 			name:     "current_wildcard",
-			query:    &Query{segments: []*Segment{Child(Wildcard)}, root: false},
+			query:    Query(false, []*Segment{Child(Wildcard)}),
 			current:  []any{13, 2, []any{4}},
 			exp:      []any{13, 2, []any{4}},
 			typeKind: FuncNodeList,
@@ -1090,7 +1100,7 @@ func TestFunctionExpr(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
 	r := require.New(t)
-	rootX := NewQuery([]*Segment{Descendant(Name("x"))})
+	rootX := Query(true, []*Segment{Descendant(Name("x"))})
 	rootX.root = true
 
 	for _, tc := range []struct {
@@ -1107,18 +1117,18 @@ func TestFunctionExpr(t *testing.T) {
 		{
 			name:    "length_string",
 			fName:   "length",
-			args:    []FunctionExprArg{&singularQuery{selectors: []Selector{Name("x")}}},
+			args:    []FunctionExprArg{SingularQuery(true, []Selector{Name("x")})},
 			root:    map[string]any{"x": "xyz"},
-			exp:     &ValueType{3},
+			exp:     Value(3),
 			logical: true,
 			str:     `length($["x"])`,
 		},
 		{
 			name:    "length_slice",
 			fName:   "length",
-			args:    []FunctionExprArg{&singularQuery{selectors: []Selector{Name("x")}}},
+			args:    []FunctionExprArg{SingularQuery(true, []Selector{Name("x")})},
 			root:    map[string]any{"x": []any{1, 2, 3, 4, 5}},
-			exp:     &ValueType{5},
+			exp:     Value(5),
 			logical: true,
 			str:     `length($["x"])`,
 		},
@@ -1127,16 +1137,16 @@ func TestFunctionExpr(t *testing.T) {
 			fName:   "count",
 			args:    []FunctionExprArg{&filterQuery{rootX}},
 			root:    map[string]any{"x": map[string]any{"x": 1}},
-			exp:     &ValueType{2},
+			exp:     Value(2),
 			logical: true,
 			str:     `count($..["x"])`,
 		},
 		{
 			name:    "value",
 			fName:   "value",
-			args:    []FunctionExprArg{&singularQuery{selectors: []Selector{Name("x")}}},
+			args:    []FunctionExprArg{SingularQuery(true, []Selector{Name("x")})},
 			root:    map[string]any{"x": "xyz"},
-			exp:     &ValueType{"xyz"},
+			exp:     Value("xyz"),
 			logical: true,
 			str:     `value($["x"])`,
 		},
@@ -1144,8 +1154,8 @@ func TestFunctionExpr(t *testing.T) {
 			name:  "match",
 			fName: "match",
 			args: []FunctionExprArg{
-				&singularQuery{selectors: []Selector{Name("x")}},
-				&literalArg{"hi"},
+				SingularQuery(true, []Selector{Name("x")}),
+				Literal("hi"),
 			},
 			root:    map[string]any{"x": "hi"},
 			exp:     LogicalTrue,
@@ -1156,8 +1166,8 @@ func TestFunctionExpr(t *testing.T) {
 			name:  "search",
 			fName: "search",
 			args: []FunctionExprArg{
-				&singularQuery{selectors: []Selector{Name("x")}},
-				&literalArg{"i"},
+				SingularQuery(true, []Selector{Name("x")}),
+				Literal("i"),
 			},
 			root:    map[string]any{"x": "hi"},
 			exp:     LogicalTrue,
@@ -1167,19 +1177,19 @@ func TestFunctionExpr(t *testing.T) {
 		{
 			name:  "invalid_args",
 			fName: "count",
-			args:  []FunctionExprArg{&literalArg{"hi"}},
-			err:   "cannot convert count() argument to PathNodes",
+			args:  []FunctionExprArg{Literal("hi")},
+			err:   "function count() cannot convert argument to PathNodes",
 		},
 		{
 			name:  "unknown_func",
 			fName: "nonesuch",
-			args:  []FunctionExprArg{&literalArg{"hi"}},
-			err:   "jsonpath: unknown jsonpath function nonesuch()",
+			args:  []FunctionExprArg{Literal("hi")},
+			err:   "unknown function nonesuch()",
 		},
 		{
 			name:    "__mk_nodes",
 			fName:   "__mk_nodes",
-			args:    []FunctionExprArg{&literalArg{42}, &literalArg{99}},
+			args:    []FunctionExprArg{Literal(42), Literal(99)},
 			exp:     NodesType{42, 99},
 			logical: true,
 			str:     `__mk_nodes(42, 99)`,
@@ -1221,6 +1231,7 @@ func TestFunctionExpr(t *testing.T) {
 			a.Equal(tc.exp, fe.execute(tc.current, tc.root))
 			a.Equal(tc.exp, fe.asValue(tc.current, tc.root))
 			a.Equal(tc.logical, fe.testFilter(tc.current, tc.root))
+			a.Equal(fe.fn.ResultType, fe.ResultType())
 			a.Equal(!tc.logical, NotFuncExpr{fe}.testFilter(tc.current, tc.root))
 			a.Equal(tc.str, bufString(fe))
 		})

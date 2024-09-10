@@ -1,4 +1,4 @@
-package jsonpath
+package spec
 
 //go:generate stringer -linecomment -output op_string.go -type CompOp
 
@@ -21,6 +21,14 @@ const (
 	GreaterThanEqualTo                   // >=
 )
 
+// CompVal defines the interface for comparable values in filter
+// expressions.
+type CompVal interface {
+	stringWriter
+	// asValue returns the value to be compared.
+	asValue(current, root any) JSONPathValue
+}
+
 // ComparisonExpr represents the comparison of two values, which themselves
 // may be the output of expressions.
 type ComparisonExpr struct {
@@ -32,6 +40,11 @@ type ComparisonExpr struct {
 	// An expression that produces the JSON value for the right side of the
 	// comparison.
 	Right CompVal
+}
+
+// Comparison creates and returns a new ComparisonExpr.
+func Comparison(left CompVal, op CompOp, right CompVal) *ComparisonExpr {
+	return &ComparisonExpr{left, op, right}
 }
 
 // writeTo writes a string representation of ce to buf.

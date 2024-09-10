@@ -142,6 +142,7 @@ func TestParseSpecExamples(t *testing.T) {
 			t.Parallel()
 			p, err := Parse(tc.path)
 			r.NoError(err)
+			a.Equal(p.q, p.Query())
 			res := p.Select(val)
 
 			if tc.exp != nil {

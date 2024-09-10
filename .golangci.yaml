@@ -94,3 +94,27 @@ linters-settings:
     ignore-comments: true
   exhaustive:
     default-signifies-exhaustive: true
+  ireturn:
+    # ireturn does not allow using `allow` and `reject` settings at the same time.
+    # Both settings are lists of the keywords and regular expressions matched to interface or package names.
+    # keywords:
+    # - `empty` for `any`
+    # - `error` for errors
+    # - `stdlib` for standard library
+    # - `anon` for anonymous interfaces
+    # - `generic` for generic interfaces added in go 1.18
+
+    # By default, it allows using errors, empty interfaces, anonymous interfaces,
+    # and interfaces provided by the standard library.
+    allow:
+      - anon
+      - error
+      - empty
+      - stdlib
+      - generic
+      - JSONPathValue
+      # You can specify idiomatic endings for interface
+      # - (or|er)$
+    # reject-list of interfaces
+    # reject:
+    #   - github.com\/user\/package\/v4\.Type

@@ -1,4 +1,4 @@
-package jsonpath
+package spec
 
 import (
 	"testing"
@@ -35,7 +35,7 @@ func TestQueryRoot(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			q := NewQuery(nil)
+			q := Query(false, nil)
 			a.Equal([]any{tc.val}, q.Select(tc.val, nil))
 		})
 	}
@@ -83,9 +83,10 @@ func TestQueryString(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			q := NewQuery(tc.segs)
+			q := Query(false, tc.segs)
 			a.Equal("@"+tc.str, q.String())
-			a.Equal("$"+tc.str, New(q).String())
+			q = Query(true, tc.segs)
+			a.Equal("$"+tc.str, q.String())
 		})
 	}
 }
@@ -100,22 +101,15 @@ type queryTestCase struct {
 
 func (tc queryTestCase) run(a *assert.Assertions) {
 	// Set up Query.
-	q := NewQuery(tc.segs)
+	q := Query(false, tc.segs)
 	a.Equal(tc.segs, q.Segments())
 	a.False(q.root)
-
-	// Set up path.
-	p := New(NewQuery(tc.segs))
-	a.Equal(q.segments, p.Query().segments)
-	a.True(p.Query().root)
 
 	// Test both.
 	if tc.rand {
 		a.ElementsMatch(tc.exp, q.Select(tc.input, nil))
-		a.ElementsMatch(tc.exp, p.Select(tc.input))
 	} else {
 		a.Equal(tc.exp, q.Select(tc.input, nil))
-		a.Equal(tc.exp, p.Select(tc.input))
 	}
 }
 
@@ -905,7 +899,7 @@ func TestQueryInputs(t *testing.T) {
 	y := map[string]any{"y": "y"}
 
 	// Test current.
-	q := NewQuery([]*Segment{Child(Name("x"))})
+	q := Query(false, []*Segment{Child(Name("x"))})
 	a.False(q.root)
 	a.Equal([]any{"x"}, q.Select(x, y))
 	a.Equal([]any{}, q.Select(y, x))
@@ -922,50 +916,50 @@ func TestSingularExpr(t *testing.T) {
 
 	for _, tc := range []struct {
 		name  string
-		query *Query
-		sing  *singularQuery
+		query *PathQuery
+		sing  *SingularQueryExpr
 	}{
 		{
 			name:  "relative_singular",
-			query: NewQuery([]*Segment{Child(Name("j"))}),
-			sing:  &singularQuery{selectors: []Selector{Name("j")}, relative: true},
+			query: Query(false, []*Segment{Child(Name("j"))}),
+			sing:  SingularQuery(false, []Selector{Name("j")}),
 		},
 		{
 			name:  "root_singular",
-			query: &Query{segments: []*Segment{Child(Name("j")), Child(Index(0))}, root: true},
-			sing:  &singularQuery{selectors: []Selector{Name("j"), Index(0)}},
+			query: &PathQuery{segments: []*Segment{Child(Name("j")), Child(Index(0))}, root: true},
+			sing:  SingularQuery(true, []Selector{Name("j"), Index(0)}),
 		},
 		{
 			name:  "descendant",
-			query: NewQuery([]*Segment{Descendant(Name("j"))}),
+			query: Query(false, []*Segment{Descendant(Name("j"))}),
 		},
 		{
 			name:  "multi_selector",
-			query: NewQuery([]*Segment{Child(Name("j"), Name("x"))}),
+			query: Query(false, []*Segment{Child(Name("j"), Name("x"))}),
 		},
 		{
 			name:  "single_slice",
-			query: NewQuery([]*Segment{Child(Slice())}),
+			query: Query(false, []*Segment{Child(Slice())}),
 		},
 		{
 			name:  "wildcard",
-			query: NewQuery([]*Segment{Child(Wildcard)}),
+			query: Query(false, []*Segment{Child(Wildcard)}),
 		},
 		{
 			name:  "filter",
-			query: NewQuery([]*Segment{Child(&Filter{})}),
+			query: Query(false, []*Segment{Child(&FilterSelector{})}),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			if tc.sing == nil {
 				a.False(tc.query.isSingular())
-				a.Nil(tc.query.singular())
-				a.Equal(&filterQuery{tc.query}, tc.query.expression())
+				a.Nil(tc.query.Singular())
+				a.Equal(&filterQuery{tc.query}, tc.query.Expression())
 			} else {
 				a.True(tc.query.isSingular())
-				a.Equal(tc.sing, tc.query.singular())
-				a.Equal(tc.sing, tc.query.expression())
+				a.Equal(tc.sing, tc.query.Singular())
+				a.Equal(tc.sing, tc.query.Expression())
 			}
 		})
 	}

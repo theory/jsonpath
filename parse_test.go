@@ -7,7 +7,22 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/theory/jsonpath/spec"
 )
+
+func TestMain(m *testing.M) {
+	// Set up a function that returns an unknown return type.
+	spec.Register(&spec.Function{
+		Name:       "__true",
+		ResultType: spec.FuncLogical,
+		Validate:   func([]spec.FunctionExprArg) error { return nil },
+		Evaluate: func([]spec.JSONPathValue) spec.JSONPathValue {
+			return spec.LogicalTrue
+		},
+	})
+
+	m.Run()
+}
 
 func TestParseRoot(t *testing.T) {
 	t.Parallel()
@@ -17,7 +32,7 @@ func TestParseRoot(t *testing.T) {
 	p, err := Parse("$")
 	r.NoError(err)
 	a.Equal("$", p.String())
-	a.Empty(p.q.segments)
+	a.Empty(p.q.Segments())
 }
 
 func TestParseSimple(t *testing.T) {
@@ -28,18 +43,18 @@ func TestParseSimple(t *testing.T) {
 	for _, tc := range []struct {
 		name string
 		path string
-		exp  *Query
+		exp  *spec.PathQuery
 		err  string
 	}{
 		{
 			name: "root",
 			path: "$",
-			exp:  NewQuery([]*Segment{}),
+			exp:  spec.Query(true, []*spec.Segment{}),
 		},
 		{
 			name: "name",
 			path: "$.x",
-			exp:  NewQuery([]*Segment{Child(Name("x"))}),
+			exp:  spec.Query(true, []*spec.Segment{spec.Child(spec.Name("x"))}),
 		},
 		{
 			name: "trim_leading_space",
@@ -54,7 +69,10 @@ func TestParseSimple(t *testing.T) {
 		{
 			name: "no_interim_space",
 			path: "$.x   .y",
-			exp:  NewQuery([]*Segment{Child(Name("x")), Child(Name("y"))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Name("x")),
+				spec.Child(spec.Name("y")),
+			}),
 		},
 		{
 			name: "unexpected_integer",
@@ -69,52 +87,73 @@ func TestParseSimple(t *testing.T) {
 		{
 			name: "name_name",
 			path: "$.x.y",
-			exp:  NewQuery([]*Segment{Child(Name("x")), Child(Name("y"))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Name("x")),
+				spec.Child(spec.Name("y")),
+			}),
 		},
 		{
 			name: "wildcard",
 			path: "$.*",
-			exp:  NewQuery([]*Segment{Child(Wildcard)}),
+			exp:  spec.Query(true, []*spec.Segment{spec.Child(spec.Wildcard)}),
 		},
 		{
 			name: "wildcard_wildcard",
 			path: "$.*.*",
-			exp:  NewQuery([]*Segment{Child(Wildcard), Child(Wildcard)}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Wildcard),
+				spec.Child(spec.Wildcard),
+			}),
 		},
 		{
 			name: "name_wildcard",
 			path: "$.x.*",
-			exp:  NewQuery([]*Segment{Child(Name("x")), Child(Wildcard)}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Name("x")),
+				spec.Child(spec.Wildcard),
+			}),
 		},
 		{
 			name: "desc_name",
 			path: "$..x",
-			exp:  NewQuery([]*Segment{Descendant(Name("x"))}),
+			exp:  spec.Query(true, []*spec.Segment{spec.Descendant(spec.Name("x"))}),
 		},
 		{
 			name: "desc_name_2x",
 			path: "$..x..y",
-			exp:  NewQuery([]*Segment{Descendant(Name("x")), Descendant(Name("y"))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Descendant(spec.Name("x")),
+				spec.Descendant(spec.Name("y")),
+			}),
 		},
 		{
 			name: "desc_wildcard",
 			path: "$..*",
-			exp:  NewQuery([]*Segment{Descendant(Wildcard)}),
+			exp:  spec.Query(true, []*spec.Segment{spec.Descendant(spec.Wildcard)}),
 		},
 		{
 			name: "desc_wildcard_2x",
 			path: "$..*..*",
-			exp:  NewQuery([]*Segment{Descendant(Wildcard), Descendant(Wildcard)}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Descendant(spec.Wildcard),
+				spec.Descendant(spec.Wildcard),
+			}),
 		},
 		{
 			name: "desc_wildcard_name",
 			path: "$..*.xyz",
-			exp:  NewQuery([]*Segment{Descendant(Wildcard), Child(Name("xyz"))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Descendant(spec.Wildcard),
+				spec.Child(spec.Name("xyz")),
+			}),
 		},
 		{
 			name: "wildcard_desc_name",
 			path: "$.*..xyz",
-			exp:  NewQuery([]*Segment{Child(Wildcard), Descendant(Name("xyz"))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Wildcard),
+				spec.Descendant(spec.Name("xyz")),
+			}),
 		},
 		{
 			name: "empty_string",
@@ -144,22 +183,31 @@ func TestParseSimple(t *testing.T) {
 		{
 			name: "name_with_dollar",
 			path: "$.x$.$y",
-			exp:  NewQuery([]*Segment{Child(Name("x$")), Child(Name("$y"))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Name("x$")),
+				spec.Child(spec.Name("$y")),
+			}),
 		},
 		{
 			name: "name_with_escape",
 			path: `$.x\r.y\n`,
-			exp:  NewQuery([]*Segment{Child(Name("x\r")), Child(Name("y\n"))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Name("x\r")),
+				spec.Child(spec.Name("y\n")),
+			}),
 		},
 		{
 			name: "name_with_unicode_escape",
 			path: `$.fo\u00f8.tune\uD834\uDD1E`,
-			exp:  NewQuery([]*Segment{Child(Name("foø")), Child(Name("tune𝄞"))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Name("foø")),
+				spec.Child(spec.Name("tune𝄞")),
+			}),
 		},
 		{
 			name: "name_with_leading_unicode_escape",
 			path: `$.\u00f8ps`,
-			exp:  NewQuery([]*Segment{Child(Name("øps"))}),
+			exp:  spec.Query(true, []*spec.Segment{spec.Child(spec.Name("øps"))}),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -177,6 +225,15 @@ func TestParseSimple(t *testing.T) {
 	}
 }
 
+func newFuncExpr(t *testing.T, name string, args []spec.FunctionExprArg) *spec.FunctionExpr {
+	t.Helper()
+	f, err := spec.NewFunctionExpr(name, args)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	return f
+}
+
 func TestParseFilter(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
@@ -185,426 +242,429 @@ func TestParseFilter(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
 		query  string
-		filter *Filter
+		filter *spec.FilterSelector
 		err    string
 	}{
 		// ExistExpr
 		{
 			name:  "current_exists",
 			query: "@",
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&ExistExpr{&Query{segments: []*Segment{}}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Existence(spec.Query(false, []*spec.Segment{})),
+			}}),
 		},
 		{
 			name:  "root_exists",
 			query: "$",
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&ExistExpr{&Query{segments: []*Segment{}, root: true}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Existence(spec.Query(true, []*spec.Segment{})),
+			}}),
 		},
 		{
 			name:  "current_name_exists",
 			query: "@.x",
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&ExistExpr{&Query{segments: []*Segment{Child(Name("x"))}}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Existence(spec.Query(false, []*spec.Segment{spec.Child(spec.Name("x"))})),
+			}}),
 		},
 		{
 			name:  "root_name_exists",
 			query: "$.x",
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&ExistExpr{&Query{segments: []*Segment{Child(Name("x"))}, root: true}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Existence(spec.Query(true, []*spec.Segment{spec.Child(spec.Name("x"))})),
+			}}),
 		},
 		{
 			name:  "current_two_segment_exists",
 			query: "@.x[1]",
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&ExistExpr{&Query{segments: []*Segment{Child(Name("x")), Child(Index(1))}}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Existence(spec.Query(false, []*spec.Segment{
+					spec.Child(spec.Name("x")),
+					spec.Child(spec.Index(1)),
+				})),
+			}}),
 		},
 		{
 			name:  "root_two_selector_exists",
 			query: `$["x", 1]`,
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&ExistExpr{&Query{segments: []*Segment{Child(Name("x"), Index(1))}, root: true}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Existence(spec.Query(true, []*spec.Segment{
+					spec.Child(spec.Name("x"), spec.Index(1)),
+				})),
+			}}),
 		},
 		// NotExistExpr
 		{
 			name:  "current_not_exists",
 			query: "!@",
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&NotExistsExpr{&Query{segments: []*Segment{}}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Nonexistence(spec.Query(false, []*spec.Segment{})),
+			}}),
 		},
 		{
 			name:  "root_not_exists",
 			query: "!$",
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&NotExistsExpr{&Query{segments: []*Segment{}, root: true}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Nonexistence(spec.Query(true, []*spec.Segment{})),
+			}}),
 		},
 		{
 			name:  "current_name_not_exists",
 			query: "!@.x",
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&NotExistsExpr{&Query{segments: []*Segment{Child(Name("x"))}}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Nonexistence(spec.Query(false, []*spec.Segment{spec.Child(spec.Name("x"))})),
+			}}),
 		},
 		{
 			name:  "root_name_not_exists",
 			query: "!$.x",
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&NotExistsExpr{&Query{segments: []*Segment{Child(Name("x"))}, root: true}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Nonexistence(spec.Query(true, []*spec.Segment{spec.Child(spec.Name("x"))})),
+			}}),
 		},
 		{
 			name:  "current_two_segment_not_exists",
 			query: "!@.x[1]",
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&NotExistsExpr{&Query{segments: []*Segment{Child(Name("x")), Child(Index(1))}}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Nonexistence(spec.Query(false, []*spec.Segment{
+					spec.Child(spec.Name("x")),
+					spec.Child(spec.Index(1)),
+				})),
+			}}),
 		},
 		{
 			name:  "root_two_selector_not_exists",
 			query: `!$["x", 1]`,
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&NotExistsExpr{&Query{segments: []*Segment{Child(Name("x"), Index(1))}, root: true}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Nonexistence(spec.Query(true, []*spec.Segment{
+					spec.Child(spec.Name("x"), spec.Index(1)),
+				})),
+			}}),
 		},
 		// ParenExistExpr
 		{
 			name:  "paren_current_exists",
 			query: "(@)",
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&ParenExpr{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-					&ExistExpr{&Query{segments: []*Segment{}}},
-				})}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Paren(spec.LogicalOr{spec.LogicalAnd{
+					spec.Existence(spec.Query(false, []*spec.Segment{})),
+				}}),
+			}}),
 		},
 		{
 			name:  "paren_root_exists",
 			query: "($)",
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&ParenExpr{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-					&ExistExpr{&Query{segments: []*Segment{}, root: true}},
-				})}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Paren(spec.LogicalOr{spec.LogicalAnd{
+					spec.Existence(spec.Query(true, []*spec.Segment{})),
+				}}),
+			}}),
 		},
 		{
 			name:  "paren_current_exists_name_index",
 			query: `(@["x", 1])`,
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&ParenExpr{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-					&ExistExpr{&Query{segments: []*Segment{Child(Name("x"), Index(1))}}},
-				})}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Paren(spec.LogicalOr{spec.LogicalAnd{
+					spec.Existence(spec.Query(false, []*spec.Segment{
+						spec.Child(spec.Name("x"), spec.Index(1)),
+					})),
+				}}),
+			}}),
 		},
 		{
 			name:  "paren_logical_and",
 			query: `(  @["x", 1] && $["y"]  )`,
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&ParenExpr{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-					&ExistExpr{&Query{segments: []*Segment{Child(Name("x"), Index(1))}}},
-					&ExistExpr{&Query{segments: []*Segment{Child(Name("y"))}, root: true}},
-				})}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Paren(spec.LogicalOr{spec.LogicalAnd{
+					spec.Existence(spec.Query(false, []*spec.Segment{
+						spec.Child(spec.Name("x"), spec.Index(1)),
+					})),
+					spec.Existence(spec.Query(true, []*spec.Segment{
+						spec.Child(spec.Name("y")),
+					})),
+				}}),
+			}}),
 		},
 		{
 			name:  "paren_logical_or",
 			query: `(@["x", 1] || $["y"])`,
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&ParenExpr{LogicalOrExpr{
-					LogicalAndExpr([]BasicExpr{
-						&ExistExpr{&Query{segments: []*Segment{Child(Name("x"), Index(1))}}},
-					}),
-					LogicalAndExpr([]BasicExpr{
-						&ExistExpr{&Query{segments: []*Segment{Child(Name("y"))}, root: true}},
-					}),
-				}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Paren(spec.LogicalOr{
+					spec.LogicalAnd{spec.Existence(spec.Query(false, []*spec.Segment{
+						spec.Child(spec.Name("x"), spec.Index(1)),
+					}))},
+					spec.LogicalAnd{spec.Existence(spec.Query(true, []*spec.Segment{
+						spec.Child(spec.Name("y")),
+					}))},
+				}),
+			}}),
 		},
 		// NotParenExistExpr
 		{
 			name:  "not_paren_current_exists",
 			query: "!(@)",
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&NotParenExpr{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-					&ExistExpr{&Query{segments: []*Segment{}}},
-				})}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.NotParen(spec.LogicalOr{spec.LogicalAnd{
+					spec.Existence(spec.Query(false, []*spec.Segment{})),
+				}}),
+			}}),
 		},
 		{
 			name:  "not_paren_root_exists",
 			query: "!($)",
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&NotParenExpr{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-					&ExistExpr{&Query{segments: []*Segment{}, root: true}},
-				})}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.NotParen(spec.LogicalOr{spec.LogicalAnd{
+					spec.Existence(spec.Query(true, []*spec.Segment{})),
+				}}),
+			}}),
 		},
 		{
 			name:  "not_paren_current_exists_name_index",
 			query: `!(@["x", 1])`,
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&NotParenExpr{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-					&ExistExpr{&Query{segments: []*Segment{Child(Name("x"), Index(1))}}},
-				})}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.NotParen(spec.LogicalOr{spec.LogicalAnd{
+					spec.Existence(spec.Query(false, []*spec.Segment{
+						spec.Child(spec.Name("x"), spec.Index(1)),
+					})),
+				}}),
+			}}),
 		},
 		{
 			name:  "not_paren_logical_and",
 			query: `!(  @["x", 1] && $["y"]  )`,
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&NotParenExpr{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-					&ExistExpr{&Query{segments: []*Segment{Child(Name("x"), Index(1))}}},
-					&ExistExpr{&Query{segments: []*Segment{Child(Name("y"))}, root: true}},
-				})}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.NotParen(spec.LogicalOr{spec.LogicalAnd{
+					spec.Existence(spec.Query(false, []*spec.Segment{
+						spec.Child(spec.Name("x"), spec.Index(1)),
+					})),
+					spec.Existence(spec.Query(true, []*spec.Segment{
+						spec.Child(spec.Name("y")),
+					})),
+				}}),
+			}}),
 		},
 		{
 			name:  "not_paren_logical_or",
 			query: `!(@["x", 1] || $["y"])`,
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&NotParenExpr{LogicalOrExpr{
-					LogicalAndExpr([]BasicExpr{
-						&ExistExpr{&Query{segments: []*Segment{Child(Name("x"), Index(1))}}},
-					}),
-					LogicalAndExpr([]BasicExpr{
-						&ExistExpr{&Query{segments: []*Segment{Child(Name("y"))}, root: true}},
-					}),
-				}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.NotParen(spec.LogicalOr{
+					spec.LogicalAnd{spec.Existence(spec.Query(false, []*spec.Segment{
+						spec.Child(spec.Name("x"), spec.Index(1)),
+					}))},
+					spec.LogicalAnd{spec.Existence(spec.Query(true, []*spec.Segment{
+						spec.Child(spec.Name("y")),
+					}))},
+				}),
+			}}),
 		},
 		// FunctionExpr
 		{
 			name:  "function_current",
 			query: "__true(@)",
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&FunctionExpr{fn: GetFunction("__true"), args: []FunctionExprArg{
-					&singularQuery{selectors: []Selector{}, relative: true},
-				}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				newFuncExpr(t, "__true", []spec.FunctionExprArg{
+					spec.SingularQuery(false, []spec.Selector{}),
+				}),
+			}}),
 		},
 		{
 			name:  "function_match_current_integer",
 			query: "match( @,  42  )",
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&FunctionExpr{fn: GetFunction("match"), args: []FunctionExprArg{
-					&singularQuery{selectors: []Selector{}, relative: true},
-					&literalArg{int64(42)},
-				}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				newFuncExpr(t, "match", []spec.FunctionExprArg{
+					spec.SingularQuery(false, []spec.Selector{}),
+					spec.Literal(int64(42)),
+				}),
+			}}),
 		},
 		{
 			name:  "function_search_two_queries",
 			query: "search( $.x,  @[0]  )",
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&FunctionExpr{fn: GetFunction("search"), args: []FunctionExprArg{
-					&singularQuery{selectors: []Selector{Name("x")}},
-					&singularQuery{selectors: []Selector{Index(0)}, relative: true},
-				}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				newFuncExpr(t, "search", []spec.FunctionExprArg{
+					spec.SingularQuery(true, []spec.Selector{spec.Name("x")}),
+					spec.SingularQuery(false, []spec.Selector{spec.Index(0)}),
+				}),
+			}}),
 		},
 		{
 			name:  "function_length_string",
 			query: `length("hi") == 2`,
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&ComparisonExpr{
-					Left: &FunctionExpr{fn: GetFunction("length"), args: []FunctionExprArg{
-						&literalArg{"hi"},
-					}},
-					Op:    EqualTo,
-					Right: &literalArg{int64(2)},
-				},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Comparison(
+					newFuncExpr(t, "length", []spec.FunctionExprArg{spec.Literal("hi")}),
+					spec.EqualTo,
+					spec.Literal(int64(2)),
+				),
+			}}),
 		},
 		{
 			name:  "function_length_true",
 			query: `length(true) == 1`,
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&ComparisonExpr{
-					Left: &FunctionExpr{fn: GetFunction("length"), args: []FunctionExprArg{
-						&literalArg{true},
-					}},
-					Op:    EqualTo,
-					Right: &literalArg{int64(1)},
-				},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Comparison(
+					newFuncExpr(t, "length", []spec.FunctionExprArg{spec.Literal(true)}),
+					spec.EqualTo,
+					spec.Literal(int64(1)),
+				),
+			}}),
 		},
 		{
 			name:  "function_length_false",
 			query: `length(false)==1`,
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&ComparisonExpr{
-					Left: &FunctionExpr{fn: GetFunction("length"), args: []FunctionExprArg{
-						&literalArg{false},
-					}},
-					Op:    EqualTo,
-					Right: &literalArg{int64(1)},
-				},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Comparison(
+					newFuncExpr(t, "length", []spec.FunctionExprArg{spec.Literal(false)}),
+					spec.EqualTo,
+					spec.Literal(int64(1)),
+				),
+			}}),
 		},
 		{
 			name:  "function_value_null",
 			query: `__true(null)`, // defined in function_test.go
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&FunctionExpr{fn: GetFunction("__true"), args: []FunctionExprArg{
-					&literalArg{},
-				}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				newFuncExpr(t, "__true", []spec.FunctionExprArg{spec.Literal(nil)}),
+			}}),
 		},
 		{
 			name:  "nested_function",
 			query: `__true(count(@))`, // defined in function_test.go
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&FunctionExpr{fn: GetFunction("__true"), args: []FunctionExprArg{
-					&FunctionExpr{fn: GetFunction("count"), args: []FunctionExprArg{
-						&singularQuery{selectors: []Selector{}, relative: true},
-					}},
-				}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				newFuncExpr(t, "__true", []spec.FunctionExprArg{
+					newFuncExpr(t, "count", []spec.FunctionExprArg{
+						spec.SingularQuery(false, []spec.Selector{}),
+					}),
+				}),
+			}}),
 		},
 		{
 			name:  "function_paren_logical_expr",
 			query: `__true((@.x))`, // defined in function_test.go
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&FunctionExpr{fn: GetFunction("__true"), args: []FunctionExprArg{
-					LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-						&ExistExpr{&Query{segments: []*Segment{Child(Name("x"))}}},
-					})},
-				}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				newFuncExpr(t, "__true", []spec.FunctionExprArg{
+					spec.LogicalOr{spec.LogicalAnd{
+						spec.Existence(spec.Query(false, []*spec.Segment{
+							spec.Child(spec.Name("x")),
+						})),
+					}},
+				}),
+			}}),
 		},
 		{
 			name:  "function_paren_logical_not_expr",
 			query: `__true((!@.x))`, // defined in function_test.go
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&FunctionExpr{fn: GetFunction("__true"), args: []FunctionExprArg{
-					LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-						&NotExistsExpr{&Query{segments: []*Segment{Child(Name("x"))}}},
-					})},
-				}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				newFuncExpr(t, "__true", []spec.FunctionExprArg{
+					spec.LogicalOr{spec.LogicalAnd{
+						spec.Nonexistence(spec.Query(false, []*spec.Segment{
+							spec.Child(spec.Name("x")),
+						})),
+					}},
+				}),
+			}}),
 		},
 		{
 			name:  "function_lots_of_literals",
 			query: `__true("hi", 42, true, false, null, 98.6)`,
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&FunctionExpr{fn: GetFunction("__true"), args: []FunctionExprArg{
-					&literalArg{"hi"},
-					&literalArg{int64(42)},
-					&literalArg{true},
-					&literalArg{false},
-					&literalArg{nil},
-					&literalArg{float64(98.6)},
-				}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				newFuncExpr(t, "__true", []spec.FunctionExprArg{
+					spec.Literal("hi"),
+					spec.Literal(int64(42)),
+					spec.Literal(true),
+					spec.Literal(false),
+					spec.Literal(nil),
+					spec.Literal(float64(98.6)),
+				}),
+			}}),
 		},
 		{
 			name:  "function_no_args",
 			query: `__true()`,
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&FunctionExpr{fn: GetFunction("__true"), args: []FunctionExprArg{}},
-			})}},
-		},
-		{
-			name:  "function_no_args_space",
-			query: `__true(    )`,
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&FunctionExpr{fn: GetFunction("__true"), args: []FunctionExprArg{}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				newFuncExpr(t, "__true", []spec.FunctionExprArg{}),
+			}}),
 		},
 		// ComparisonExpr
 		{
 			name:  "literal_comparison",
 			query: `42 == 42`,
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&ComparisonExpr{&literalArg{int64(42)}, EqualTo, &literalArg{int64(42)}},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Comparison(spec.Literal(int64(42)), spec.EqualTo, spec.Literal(int64(42))),
+			}}),
 		},
 		{
 			name:  "literal_singular_comparison",
 			query: `42 != $.a.b`,
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&ComparisonExpr{
-					Left:  &literalArg{int64(42)},
-					Op:    NotEqualTo,
-					Right: &singularQuery{selectors: []Selector{Name("a"), Name("b")}},
-				},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Comparison(
+					spec.Literal(int64(42)),
+					spec.NotEqualTo,
+					spec.SingularQuery(true, []spec.Selector{spec.Name("a"), spec.Name("b")}),
+				),
+			}}),
 		},
 		{
 			name:  "literal_comparison_function",
 			query: `42 > length("hi")`,
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&ComparisonExpr{
-					Left: &literalArg{int64(42)},
-					Op:   GreaterThan,
-					Right: &FunctionExpr{fn: GetFunction("length"), args: []FunctionExprArg{
-						&literalArg{"hi"},
-					}},
-				},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Comparison(
+					spec.Literal(int64(42)),
+					spec.GreaterThan,
+					newFuncExpr(t, "length", []spec.FunctionExprArg{spec.Literal("hi")}),
+				),
+			}}),
 		},
 		{
 			name:  "function_cmp_singular",
 			query: `length("hi") <=   @[0]["a"]`,
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&ComparisonExpr{
-					Left: &FunctionExpr{fn: GetFunction("length"), args: []FunctionExprArg{
-						&literalArg{"hi"},
-					}},
-					Op:    LessThanEqualTo,
-					Right: &singularQuery{selectors: []Selector{Index(0), Name("a")}, relative: true},
-				},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Comparison(
+					newFuncExpr(t, "length", []spec.FunctionExprArg{spec.Literal("hi")}),
+					spec.LessThanEqualTo,
+					spec.SingularQuery(false, []spec.Selector{spec.Index(0), spec.Name("a")}),
+				),
+			}}),
 		},
 		{
 			name:  "singular_cmp_literal",
 			query: `$.a.b >= 98.6`,
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&ComparisonExpr{
-					Left:  &singularQuery{selectors: []Selector{Name("a"), Name("b")}},
-					Op:    GreaterThanEqualTo,
-					Right: &literalArg{float64(98.6)},
-				},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Comparison(
+					spec.SingularQuery(true, []spec.Selector{spec.Name("a"), spec.Name("b")}),
+					spec.GreaterThanEqualTo,
+					spec.Literal(float64(98.6)),
+				),
+			}}),
 		},
 		{
 			name:  "function_cmp_literal",
 			query: `length("hi") <   42 `,
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&ComparisonExpr{
-					Left: &FunctionExpr{fn: GetFunction("length"), args: []FunctionExprArg{
-						&literalArg{"hi"},
-					}},
-					Op:    LessThan,
-					Right: &literalArg{int64(42)},
-				},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Comparison(
+					newFuncExpr(t, "length", []spec.FunctionExprArg{spec.Literal("hi")}),
+					spec.LessThan,
+					spec.Literal(int64(42)),
+				),
+			}}),
 		},
 		{
 			name:  "not_function",
 			query: `!__true()`,
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				NotFuncExpr{
-					&FunctionExpr{fn: GetFunction("__true"), args: []FunctionExprArg{}},
-				},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.NotFuncExpr{FunctionExpr: newFuncExpr(t, "__true", []spec.FunctionExprArg{})},
+			}}),
 		},
 		{
 			name:  "singular_cmp_literal_no_space",
 			query: `@.x<42`,
-			filter: &Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-				&ComparisonExpr{
-					Left:  &singularQuery{selectors: []Selector{Name("x")}, relative: true},
-					Op:    LessThan,
-					Right: &literalArg{int64(42)},
-				},
-			})}},
+			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+				spec.Comparison(
+					spec.SingularQuery(false, []spec.Selector{spec.Name("x")}),
+					spec.LessThan,
+					spec.Literal(int64(42)),
+				),
+			}}),
 		},
 		{
 			name:  "invalid_logical_or",
@@ -629,17 +689,17 @@ func TestParseFilter(t *testing.T) {
 		{
 			name:  "invalid_and_expression",
 			query: `(@["x", 1] && nope(@))`,
-			err:   `jsonpath: unknown function "nope" at position 15`,
+			err:   `jsonpath: unknown function nope() at position 15`,
 		},
 		{
 			name:  "nonexistent_function",
 			query: `nonesuch(@)`,
-			err:   `jsonpath: unknown function "nonesuch" at position 1`,
+			err:   `jsonpath: unknown function nonesuch() at position 1`,
 		},
 		{
 			name:  "not_nonexistent_function",
 			query: `!nonesuch(@)`,
-			err:   `jsonpath: unknown function "nonesuch" at position 2`,
+			err:   `jsonpath: unknown function nonesuch() at position 2`,
 		},
 		{
 			name:  "invalid_literal",
@@ -684,12 +744,12 @@ func TestParseFilter(t *testing.T) {
 		{
 			name:  "invalid_function_arg",
 			query: `length(@[1, 2])`,
-			err:   `jsonpath: cannot convert length() argument to ValueType at position 7`,
+			err:   `jsonpath: function length() cannot convert argument to ValueType at position 7`,
 		},
 		{
 			name:  "too_many_function_args",
 			query: `length(@, $)`,
-			err:   `jsonpath: expected 1 argument but found 2 at position 7`,
+			err:   `jsonpath: function length() expected 1 argument but found 2 at position 7`,
 		},
 		{
 			name:  "function_literal_parse_error",
@@ -704,7 +764,7 @@ func TestParseFilter(t *testing.T) {
 		{
 			name:  "unknown_function_in_function_arg",
 			query: `length(nonesuch())`,
-			err:   `jsonpath: unknown function "nonesuch" at position 8`,
+			err:   `jsonpath: unknown function nonesuch() at position 8`,
 		},
 		{
 			name:  "invalid_not_function_arg",
@@ -724,7 +784,7 @@ func TestParseFilter(t *testing.T) {
 		{
 			name:  "invalid_comparable_function",
 			query: `42 == nonesuch()`,
-			err:   `jsonpath: unknown function "nonesuch" at position 7`,
+			err:   `jsonpath: unknown function nonesuch() at position 7`,
 		},
 		{
 			name:  "cannot_compare_logical_func",
@@ -734,7 +794,7 @@ func TestParseFilter(t *testing.T) {
 		{
 			name:  "function_wrong_arg_count",
 			query: `match("foo")`,
-			err:   `jsonpath: expected 2 arguments but found 1 at position 6`,
+			err:   `jsonpath: function match() expected 2 arguments but found 1 at position 6`,
 		},
 		{
 			name:  "function_second_arg_parse_error",
@@ -790,188 +850,256 @@ func TestParseSelectors(t *testing.T) {
 	for _, tc := range []struct {
 		name string
 		path string
-		exp  *Query
+		exp  *spec.PathQuery
 		err  string
 	}{
 		{
 			name: "index",
 			path: "$[0]",
-			exp:  NewQuery([]*Segment{Child(Index(0))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Index(0)),
+			}),
 		},
 		{
 			name: "two_indexes",
 			path: "$[0, 1]",
-			exp:  NewQuery([]*Segment{Child(Index(0), Index(1))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Index(0), spec.Index(1)),
+			}),
 		},
 		{
 			name: "name",
 			path: `$["foo"]`,
-			exp:  NewQuery([]*Segment{Child(Name("foo"))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Name("foo")),
+			}),
 		},
 		{
 			name: "sq_name",
 			path: `$['foo']`,
-			exp:  NewQuery([]*Segment{Child(Name("foo"))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Name("foo")),
+			}),
 		},
 		{
 			name: "two_names",
 			path: `$["foo", "🐦‍🔥"]`,
-			exp:  NewQuery([]*Segment{Child(Name("foo"), Name("🐦‍🔥"))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Name("foo"), spec.Name("🐦‍🔥")),
+			}),
 		},
 		{
 			name: "json_escapes",
 			path: `$["abx_xyx\ryup", "\b\f\n\r\t\/\\"]`,
-			exp:  NewQuery([]*Segment{Child(Name("abx_xyx\ryup"), Name("\b\f\n\r\t/\\"))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(
+					spec.Name("abx_xyx\ryup"),
+					spec.Name("\b\f\n\r\t/\\"),
+				),
+			}),
 		},
 		{
 			name: "unicode_escapes",
 			path: `$["fo\u00f8", "tune \uD834\uDD1E"]`,
-			exp:  NewQuery([]*Segment{Child(Name("foø"), Name("tune 𝄞"))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Name("foø"), spec.Name("tune 𝄞")),
+			}),
 		},
 		{
 			name: "slice_start",
 			path: `$[1:]`,
-			exp:  NewQuery([]*Segment{Child(Slice(1))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Slice(1)),
+			}),
 		},
 		{
 			name: "slice_start_2",
 			path: `$[2:]`,
-			exp:  NewQuery([]*Segment{Child(Slice(2))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Slice(2)),
+			}),
 		},
 		{
 			name: "slice_start_end",
 			path: `$[2:6]`,
-			exp:  NewQuery([]*Segment{Child(Slice(2, 6))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Slice(2, 6)),
+			}),
 		},
 		{
 			name: "slice_end",
 			path: `$[:6]`,
-			exp:  NewQuery([]*Segment{Child(Slice(nil, 6))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Slice(nil, 6)),
+			}),
 		},
 		{
 			name: "slice_start_end_step",
 			path: `$[2:6:2]`,
-			exp:  NewQuery([]*Segment{Child(Slice(2, 6, 2))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Slice(2, 6, 2)),
+			}),
 		},
 		{
 			name: "slice_start_step",
 			path: `$[2::2]`,
-			exp:  NewQuery([]*Segment{Child(Slice(2, nil, 2))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Slice(2, nil, 2)),
+			}),
 		},
 		{
 			name: "slice_step",
 			path: `$[::2]`,
-			exp:  NewQuery([]*Segment{Child(Slice(nil, nil, 2))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Slice(nil, nil, 2)),
+			}),
 		},
 		{
 			name: "slice_defaults",
 			path: `$[:]`,
-			exp:  NewQuery([]*Segment{Child(Slice())}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Slice()),
+			}),
 		},
 		{
 			name: "slice_spacing",
 			path: `$[   1:  2  : 2   ]`,
-			exp:  NewQuery([]*Segment{Child(Slice(1, 2, 2))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Slice(1, 2, 2)),
+			}),
 		},
 		{
 			name: "slice_slice",
 			path: `$[:,:]`,
-			exp:  NewQuery([]*Segment{Child(Slice(), Slice())}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Slice(), spec.Slice()),
+			}),
 		},
 		{
 			name: "slice_slice_slice",
 			path: `$[2:,:4,7:9]`,
-			exp:  NewQuery([]*Segment{Child(Slice(2), Slice(nil, 4), Slice(7, 9))}),
+			exp: spec.Query(true, []*spec.Segment{spec.Child(
+				spec.Slice(2),
+				spec.Slice(nil, 4),
+				spec.Slice(7, 9),
+			)}),
 		},
 		{
 			name: "slice_name",
 			path: `$[:,"hi"]`,
-			exp:  NewQuery([]*Segment{Child(Slice(), Name("hi"))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Slice(), spec.Name("hi")),
+			}),
 		},
 		{
 			name: "name_slice",
 			path: `$["hi",2:]`,
-			exp:  NewQuery([]*Segment{Child(Name("hi"), Slice(2))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Name("hi"), spec.Slice(2)),
+			}),
 		},
 		{
 			name: "slice_index",
 			path: `$[:,42]`,
-			exp:  NewQuery([]*Segment{Child(Slice(), Index(42))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Slice(), spec.Index(42)),
+			}),
 		},
 		{
 			name: "index_slice",
 			path: `$[42,:3]`,
-			exp:  NewQuery([]*Segment{Child(Index(42), Slice(nil, 3))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Index(42), spec.Slice(nil, 3)),
+			}),
 		},
 		{
 			name: "slice_wildcard",
 			path: `$[:,   *]`,
-			exp:  NewQuery([]*Segment{Child(Slice(), Wildcard)}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Slice(), spec.Wildcard),
+			}),
 		},
 		{
 			name: "wildcard_slice",
 			path: `$[  *,  :   ]`,
-			exp:  NewQuery([]*Segment{Child(Wildcard, Slice())}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Wildcard, spec.Slice()),
+			}),
 		},
 		{
 			name: "slice_neg_start",
 			path: `$[-3:]`,
-			exp:  NewQuery([]*Segment{Child(Slice(-3))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Slice(-3)),
+			}),
 		},
 		{
 			name: "slice_neg_end",
 			path: `$[:-3:]`,
-			exp:  NewQuery([]*Segment{Child(Slice(nil, -3))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Slice(nil, -3)),
+			}),
 		},
 		{
 			name: "slice_neg_step",
 			path: `$[::-2]`,
-			exp:  NewQuery([]*Segment{Child(Slice(nil, nil, -2))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Slice(nil, nil, -2)),
+			}),
 		},
 		{
 			name: "index_name_slice, wildcard",
 			path: `$[3, "🦀", :3,*]`,
-			exp:  NewQuery([]*Segment{Child(Index(3), Name("🦀"), Slice(nil, 3), Wildcard)}),
+			exp: spec.Query(true, []*spec.Segment{spec.Child(
+				spec.Index(3),
+				spec.Name("🦀"),
+				spec.Slice(nil, 3),
+				spec.Wildcard,
+			)}),
 		},
 		{
 			name: "filter_eq",
 			path: `$[?@.x == 'y']`,
-			exp: NewQuery([]*Segment{Child(
-				&Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-					&ComparisonExpr{
-						Left:  &singularQuery{selectors: []Selector{Name("x")}, relative: true},
-						Op:    EqualTo,
-						Right: &literalArg{"y"},
-					},
-				})}},
+			exp: spec.Query(true, []*spec.Segment{spec.Child(
+				spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+					spec.Comparison(
+						spec.SingularQuery(false, []spec.Selector{spec.Name("x")}),
+						spec.EqualTo,
+						spec.Literal("y"),
+					),
+				}}),
 			)}),
 		},
 		{
 			name: "filter_exists",
 			path: `$[?@.x]`,
-			exp: NewQuery([]*Segment{Child(
-				&Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-					&ExistExpr{&Query{segments: []*Segment{Child(Name("x"))}}},
-				})}},
+			exp: spec.Query(true, []*spec.Segment{spec.Child(
+				spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+					spec.Existence(spec.Query(
+						false, []*spec.Segment{spec.Child(spec.Name("x"))},
+					)),
+				}}),
 			)}),
 		},
 		{
 			name: "filter_not_exists",
 			path: `$[?!@[0]]`,
-			exp: NewQuery([]*Segment{Child(
-				&Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-					&NotExistsExpr{&Query{segments: []*Segment{Child(Index(0))}}},
-				})}},
+			exp: spec.Query(true, []*spec.Segment{spec.Child(
+				spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+					spec.Nonexistence(spec.Query(
+						false, []*spec.Segment{spec.Child(spec.Index(0))},
+					)),
+				}}),
 			)}),
 		},
 		{
 			name: "filter_current_and_root",
 			path: `$[? @ && $[0]]`,
-			exp: NewQuery([]*Segment{Child(
-				&Filter{LogicalOrExpr{LogicalAndExpr([]BasicExpr{
-					&ExistExpr{&Query{segments: []*Segment{}}},
-					&ExistExpr{&Query{segments: []*Segment{Child(Index(0))}, root: true}},
-				})}},
+			exp: spec.Query(true, []*spec.Segment{spec.Child(
+				spec.Filter(spec.LogicalOr{spec.LogicalAnd{
+					spec.Existence(spec.Query(false, []*spec.Segment{})),
+					spec.Existence(spec.Query(true, []*spec.Segment{spec.Child(spec.Index(0))})),
+				}}),
 			)}),
 		},
 		{
@@ -1007,67 +1135,76 @@ func TestParseSelectors(t *testing.T) {
 		{
 			name: "space_index",
 			path: "$[   0]",
-			exp:  NewQuery([]*Segment{Child(Index(0))}),
+			exp:  spec.Query(true, []*spec.Segment{spec.Child(spec.Index(0))}),
 		},
 		{
 			name: "index_space_comma_index",
 			path: "$[0    , 12]",
-			exp:  NewQuery([]*Segment{Child(Index(0), Index(12))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Index(0), spec.Index(12)),
+			}),
 		},
 		{
 			name: "index_comma_space_name",
 			path: `$[0, "xyz"]`,
-			exp:  NewQuery([]*Segment{Child(Index(0), Name("xyz"))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Index(0), spec.Name("xyz")),
+			}),
 		},
 		{
 			name: "tab_index",
 			path: "$[\t0]",
-			exp:  NewQuery([]*Segment{Child(Index(0))}),
+			exp:  spec.Query(true, []*spec.Segment{spec.Child(spec.Index(0))}),
 		},
 		{
 			name: "newline_index",
 			path: "$[\n0]",
-			exp:  NewQuery([]*Segment{Child(Index(0))}),
+			exp:  spec.Query(true, []*spec.Segment{spec.Child(spec.Index(0))}),
 		},
 		{
 			name: "return_index",
 			path: "$[\r0]",
-			exp:  NewQuery([]*Segment{Child(Index(0))}),
+			exp:  spec.Query(true, []*spec.Segment{spec.Child(spec.Index(0))}),
 		},
 		{
 			name: "name_space",
 			path: `$["hi"   ]`,
-			exp:  NewQuery([]*Segment{Child(Name("hi"))}),
+			exp:  spec.Query(true, []*spec.Segment{spec.Child(spec.Name("hi"))}),
 		},
 		{
 			name: "wildcard_tab",
 			path: "$[*\t]",
-			exp:  NewQuery([]*Segment{Child(Wildcard)}),
+			exp:  spec.Query(true, []*spec.Segment{spec.Child(spec.Wildcard)}),
 		},
 		{
 			name: "slice_newline",
 			path: "$[2:\t]",
-			exp:  NewQuery([]*Segment{Child(Slice(2))}),
+			exp:  spec.Query(true, []*spec.Segment{spec.Child(spec.Slice(2))}),
 		},
 		{
 			name: "index_return",
 			path: "$[0\r]",
-			exp:  NewQuery([]*Segment{Child(Index(0))}),
+			exp:  spec.Query(true, []*spec.Segment{spec.Child(spec.Index(0))}),
 		},
 		{
 			name: "descendant_index",
 			path: "$..[0]",
-			exp:  NewQuery([]*Segment{Descendant(Index(0))}),
+			exp:  spec.Query(true, []*spec.Segment{spec.Descendant(spec.Index(0))}),
 		},
 		{
 			name: "descendant_name",
 			path: `$..["hi"]`,
-			exp:  NewQuery([]*Segment{Descendant(Name("hi"))}),
+			exp:  spec.Query(true, []*spec.Segment{spec.Descendant(spec.Name("hi"))}),
 		},
 		{
 			name: "descendant_multi",
 			path: `$..[  "hi", 2, *, 4:5  ]`,
-			exp:  NewQuery([]*Segment{Descendant(Name("hi"), Index(2), Wildcard, Slice(4, 5))}),
+			exp: spec.Query(true, []*spec.Segment{spec.Descendant(
+				spec.Name("hi"),
+				spec.Index(2),
+				spec.Wildcard,
+				spec.Slice(4, 5),
+			)}),
 		},
 		{
 			name: "invalid_descendant",
@@ -1092,10 +1229,10 @@ func TestParseSelectors(t *testing.T) {
 		{
 			name: `name_sq_name_desc_wild`,
 			path: `$.names['first_name']..*`,
-			exp: NewQuery([]*Segment{
-				Child(Name("names")),
-				Child(Name("first_name")),
-				Descendant(Wildcard),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Name("names")),
+				spec.Child(spec.Name("first_name")),
+				spec.Descendant(spec.Wildcard),
 			}),
 		},
 		{
@@ -1106,27 +1243,33 @@ func TestParseSelectors(t *testing.T) {
 		{
 			name: "dq_name",
 			path: `$["name"]`,
-			exp:  NewQuery([]*Segment{Child(Name("name"))}),
+			exp:  spec.Query(true, []*spec.Segment{spec.Child(spec.Name("name"))}),
 		},
 		{
 			name: "sq_name",
 			path: `$['name']`,
-			exp:  NewQuery([]*Segment{Child(Name("name"))}),
+			exp:  spec.Query(true, []*spec.Segment{spec.Child(spec.Name("name"))}),
 		},
 		{
 			name: "two_name_segment",
 			path: `$["name","test"]`,
-			exp:  NewQuery([]*Segment{Child(Name("name"), Name("test"))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Name("name"), spec.Name("test")),
+			}),
 		},
 		{
 			name: "name_index_slice_segment",
 			path: `$['name',10,0:3]`,
-			exp:  NewQuery([]*Segment{Child(Name("name"), Index(10), Slice(0, 3))}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Name("name"), spec.Index(10), spec.Slice(0, 3)),
+			}),
 		},
 		{
 			name: "default_slice_wildcard_segment",
 			path: `$[::,*]`,
-			exp:  NewQuery([]*Segment{Child(Slice(), Wildcard)}),
+			exp: spec.Query(true, []*spec.Segment{
+				spec.Child(spec.Slice(), spec.Wildcard),
+			}),
 		},
 		{
 			name: "leading_zero_index",
@@ -1296,7 +1439,7 @@ func TestParseLiteral(t *testing.T) {
 			lit, err := parseLiteral(tc.tok)
 			if tc.err == "" {
 				r.NoError(err)
-				a.Equal(&literalArg{tc.exp}, lit)
+				a.Equal(spec.Literal(tc.exp), lit)
 			} else {
 				a.Nil(lit)
 				r.EqualError(err, tc.err)

@@ -1,4 +1,4 @@
-package jsonpath
+package spec
 
 import (
 	"testing"

@@ -1,4 +1,4 @@
-package jsonpath
+package spec
 
 import (
 	"math"
@@ -20,7 +20,7 @@ func TestSelectorInterface(t *testing.T) {
 		{"index", Index(42)},
 		{"slice", Slice()},
 		{"wildcard", Wildcard},
-		{"filter", &Filter{}},
+		{"filter", Filter(nil)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -522,7 +522,7 @@ func TestFilterSelector(t *testing.T) {
 
 	for _, tc := range []struct {
 		name    string
-		filter  *Filter
+		filter  *FilterSelector
 		root    any
 		current any
 		exp     []any
@@ -531,15 +531,15 @@ func TestFilterSelector(t *testing.T) {
 	}{
 		{
 			name:   "no_filter",
-			filter: &Filter{LogicalOrExpr{}},
+			filter: Filter(LogicalOr{}),
 			exp:    []any{},
 			str:    "",
 		},
 		{
 			name: "array_root",
-			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]BasicExpr{&ExistExpr{
-				&Query{segments: []*Segment{Child(Index(0))}, root: true},
-			}})})},
+			filter: Filter(LogicalOr{LogicalAnd{&ExistExpr{
+				Query(true, []*Segment{Child(Index(0))}),
+			}}}),
 			root:    []any{42, true, "hi"},
 			current: map[string]any{"x": 2},
 			exp:     []any{2},
@@ -547,9 +547,9 @@ func TestFilterSelector(t *testing.T) {
 		},
 		{
 			name: "array_root_false",
-			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]BasicExpr{&ExistExpr{
-				&Query{segments: []*Segment{Child(Index(4))}, root: true},
-			}})})},
+			filter: Filter(LogicalOr{LogicalAnd{&ExistExpr{
+				Query(true, []*Segment{Child(Index(4))}),
+			}}}),
 			root:    []any{42, true, "hi"},
 			current: map[string]any{"x": 2},
 			exp:     []any{},
@@ -557,9 +557,9 @@ func TestFilterSelector(t *testing.T) {
 		},
 		{
 			name: "object_root",
-			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]BasicExpr{&ExistExpr{
-				&Query{segments: []*Segment{Child(Name("y"))}, root: true},
-			}})})},
+			filter: Filter(LogicalOr{LogicalAnd{&ExistExpr{
+				Query(true, []*Segment{Child(Name("y"))}),
+			}}}),
 			root:    map[string]any{"x": 42, "y": "hi"},
 			current: map[string]any{"a": 2, "b": 3},
 			exp:     []any{2, 3},
@@ -568,9 +568,9 @@ func TestFilterSelector(t *testing.T) {
 		},
 		{
 			name: "object_root_false",
-			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]BasicExpr{&ExistExpr{
-				&Query{segments: []*Segment{Child(Name("z"))}, root: true},
-			}})})},
+			filter: Filter(LogicalOr{LogicalAnd{&ExistExpr{
+				Query(true, []*Segment{Child(Name("z"))}),
+			}}}),
 			root:    map[string]any{"x": 42, "y": "hi"},
 			current: map[string]any{"a": 2, "b": 3},
 			exp:     []any{},
@@ -579,36 +579,36 @@ func TestFilterSelector(t *testing.T) {
 		},
 		{
 			name: "array_current",
-			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]BasicExpr{&ExistExpr{
-				&Query{segments: []*Segment{Child(Index(0))}},
-			}})})},
+			filter: Filter(LogicalOr{LogicalAnd{&ExistExpr{
+				Query(false, []*Segment{Child(Index(0))}),
+			}}}),
 			current: []any{[]any{42}},
 			exp:     []any{[]any{42}},
 			str:     `@[0]`,
 		},
 		{
 			name: "array_current_false",
-			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]BasicExpr{&ExistExpr{
-				&Query{segments: []*Segment{Child(Index(1))}},
-			}})})},
+			filter: Filter(LogicalOr{LogicalAnd{&ExistExpr{
+				Query(false, []*Segment{Child(Index(1))}),
+			}}}),
 			current: []any{[]any{42}},
 			exp:     []any{},
 			str:     `@[1]`,
 		},
 		{
 			name: "object_current",
-			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]BasicExpr{&ExistExpr{
-				&Query{segments: []*Segment{Child(Name("x"))}},
-			}})})},
+			filter: Filter(LogicalOr{LogicalAnd{&ExistExpr{
+				Query(false, []*Segment{Child(Name("x"))}),
+			}}}),
 			current: []any{map[string]any{"x": 42}},
 			exp:     []any{map[string]any{"x": 42}},
 			str:     `@["x"]`,
 		},
 		{
 			name: "object_current_false",
-			filter: &Filter{LogicalOrExpr([]LogicalAndExpr{LogicalAndExpr([]BasicExpr{&ExistExpr{
-				&Query{segments: []*Segment{Child(Name("y"))}},
-			}})})},
+			filter: Filter(LogicalOr{LogicalAnd{&ExistExpr{
+				Query(false, []*Segment{Child(Name("y"))}),
+			}}}),
 			current: []any{map[string]any{"x": 42}},
 			exp:     []any{},
 			str:     `@["y"]`,

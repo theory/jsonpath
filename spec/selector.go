@@ -1,5 +1,6 @@
-// Package jsonpath implements RFC 9535 JSONPath query expressions.
-package jsonpath
+// Package spec implements provides object definitions for RFC 9535 JSONPath
+// query expressions.
+package spec
 
 import (
 	"fmt"
@@ -272,38 +273,43 @@ func normalize(i, length int) int {
 	return length + i
 }
 
-// Filter is a filter selector, e.g., ?().
-type Filter struct {
-	LogicalOrExpr
+// FilterSelector is a filter selector, e.g., ?().
+type FilterSelector struct {
+	LogicalOr
+}
+
+// Filter returns a new Filter.
+func Filter(or LogicalOr) *FilterSelector {
+	return &FilterSelector{LogicalOr: or}
 }
 
 // String returns a string representation of f.
-func (f *Filter) String() string {
+func (f *FilterSelector) String() string {
 	buf := new(strings.Builder)
 	f.writeTo(buf)
 	return buf.String()
 }
 
 // writeTo writes a string representation of f to buf.
-func (f *Filter) writeTo(buf *strings.Builder) {
-	f.LogicalOrExpr.writeTo(buf)
+func (f *FilterSelector) writeTo(buf *strings.Builder) {
+	f.LogicalOr.writeTo(buf)
 }
 
 // Select selects and returns values that f filters from current. Filter
 // expressions may evaluate the current value (@), the root value ($), or any
 // path expression. Defined by the [Selector] interface.
-func (f *Filter) Select(current, root any) []any {
+func (f *FilterSelector) Select(current, root any) []any {
 	ret := []any{}
 	switch current := current.(type) {
 	case []any:
 		for _, v := range current {
-			if f.LogicalOrExpr.testFilter(v, root) {
+			if f.LogicalOr.testFilter(v, root) {
 				ret = append(ret, v)
 			}
 		}
 	case map[string]any:
 		for _, v := range current {
-			if f.LogicalOrExpr.testFilter(v, root) {
+			if f.LogicalOr.testFilter(v, root) {
 				ret = append(ret, v)
 			}
 		}
@@ -314,4 +320,4 @@ func (f *Filter) Select(current, root any) []any {
 
 // isSingular returns false because Filters can return more than one value.
 // Defined by the [Selector] interface.
-func (f *Filter) isSingular() bool { return false }
+func (f *FilterSelector) isSingular() bool { return false }

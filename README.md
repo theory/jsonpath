@@ -5,6 +5,13 @@ RFC 9535 JSONPath in Go
 
 The jsonpath package provides [RFC 9535 JSONPath] functionality in Go.
 
+## Project Status
+
+While the implementation is complete, this package is currently under active
+development, mainly refactoring, reorganizing, renaming, and documenting.
+However, the public interface of the `jsonpath` package is stable, though new
+methods will be added. Only sub-packages are actively in flux.
+
 ## Copyright
 
 Copyright © 2024 David E. Wheeler
