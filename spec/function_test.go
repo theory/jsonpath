@@ -83,10 +83,10 @@ func TestFuncType(t *testing.T) {
 			t.Parallel()
 			a.Equal(tc.name, tc.fType.String())
 			for _, pv := range tc.ypv {
-				a.True(tc.fType.convertsTo(pv))
+				a.True(tc.fType.ConvertsTo(pv))
 			}
 			for _, pv := range tc.npv {
-				a.False(tc.fType.convertsTo(pv))
+				a.False(tc.fType.ConvertsTo(pv))
 			}
 		})
 	}
@@ -110,10 +110,10 @@ func TestNodesType(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			if tc.err != "" {
-				a.PanicsWithValue(tc.err, func() { newNodesTypeFrom(tc.from) })
+				a.PanicsWithValue(tc.err, func() { NodesFrom(tc.from) })
 				return
 			}
-			nt := newNodesTypeFrom(tc.from)
+			nt := NodesFrom(tc.from)
 			a.Equal(tc.exp, nt)
 			a.Equal(PathNodes, nt.PathType())
 			a.Equal(FuncNodeList, nt.FuncType())
@@ -145,10 +145,10 @@ func TestLogicalType(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			if tc.err != "" {
-				a.PanicsWithValue(tc.err, func() { newLogicalTypeFrom(tc.from) })
+				a.PanicsWithValue(tc.err, func() { LogicalFrom(tc.from) })
 				return
 			}
-			lt := newLogicalTypeFrom(tc.from)
+			lt := LogicalFrom(tc.from)
 			a.Equal(tc.exp, lt)
 			a.Equal(PathLogical, lt.PathType())
 			a.Equal(FuncLogical, lt.FuncType())
@@ -156,9 +156,9 @@ func TestLogicalType(t *testing.T) {
 			a.Equal(tc.str, bufString(lt))
 			a.Equal(tc.boolean, lt.Bool())
 			if tc.boolean {
-				a.Equal(LogicalTrue, logicalFrom(tc.boolean))
+				a.Equal(LogicalTrue, LogicalFrom(tc.boolean))
 			} else {
-				a.Equal(LogicalFalse, logicalFrom(tc.boolean))
+				a.Equal(LogicalFalse, LogicalFrom(tc.boolean))
 			}
 		})
 	}
@@ -234,10 +234,10 @@ func TestValueTypeFrom(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			if tc.err != "" {
-				a.PanicsWithValue(tc.err, func() { newValueTypeFrom(tc.val) })
+				a.PanicsWithValue(tc.err, func() { ValueFrom(tc.val) })
 				return
 			}
-			val := newValueTypeFrom(tc.val)
+			val := ValueFrom(tc.val)
 			a.Equal(tc.exp, val)
 		})
 	}
@@ -543,17 +543,17 @@ func TestCheckSingularFuncArgs(t *testing.T) {
 		},
 		{
 			name: "filter_query",
-			expr: []FunctionExprArg{&filterQuery{
+			expr: []FunctionExprArg{FilterQuery(
 				Query(true, []*Segment{Child(Name("x"))}),
-			}},
+			)},
 		},
 		{
 			name: "logical_function_expr",
 			expr: []FunctionExprArg{&FunctionExpr{
 				fn: registry["match"],
-				args: []FunctionExprArg{&filterQuery{
+				args: []FunctionExprArg{FilterQuery(
 					Query(true, []*Segment{Child(Name("x"))}),
-				}},
+				)},
 			}},
 			lengthErr: "cannot convert argument to ValueType",
 			countErr:  "cannot convert argument to PathNodes",
@@ -650,7 +650,7 @@ func TestCheckRegexFuncArgs(t *testing.T) {
 		{
 			name: "filter_query_1",
 			expr: []FunctionExprArg{
-				&filterQuery{Query(true, []*Segment{Child(Name("x"))})},
+				FilterQuery(Query(true, []*Segment{Child(Name("x"))})),
 				Literal("hi"),
 			},
 		},
@@ -658,16 +658,16 @@ func TestCheckRegexFuncArgs(t *testing.T) {
 			name: "filter_query_2",
 			expr: []FunctionExprArg{
 				Literal("hi"),
-				&filterQuery{Query(true, []*Segment{Child(Name("x"))})},
+				FilterQuery(Query(true, []*Segment{Child(Name("x"))})),
 			},
 		},
 		{
 			name: "function_expr_1",
 			expr: []FunctionExprArg{&FunctionExpr{
 				fn: registry["match"],
-				args: []FunctionExprArg{&filterQuery{
+				args: []FunctionExprArg{FilterQuery(
 					Query(true, []*Segment{Child(Name("x"))}),
-				}},
+				)},
 			}, Literal("hi")},
 			err: "cannot convert argument 1 to PathNodes",
 		},
@@ -675,9 +675,9 @@ func TestCheckRegexFuncArgs(t *testing.T) {
 			name: "function_expr_2",
 			expr: []FunctionExprArg{Literal("hi"), &FunctionExpr{
 				fn: registry["match"],
-				args: []FunctionExprArg{&filterQuery{
+				args: []FunctionExprArg{FilterQuery(
 					Query(true, []*Segment{Child(Name("x"))}),
-				}},
+				)},
 			}},
 			err: "cannot convert argument 2 to PathNodes",
 		},
@@ -825,8 +825,8 @@ func TestRegexFuncs(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			a.Equal(logicalFrom(tc.match), matchFunc([]JSONPathValue{tc.input, tc.regex}))
-			a.Equal(logicalFrom(tc.search), searchFunc([]JSONPathValue{tc.input, tc.regex}))
+			a.Equal(LogicalFrom(tc.match), matchFunc([]JSONPathValue{tc.input, tc.regex}))
+			a.Equal(LogicalFrom(tc.search), searchFunc([]JSONPathValue{tc.input, tc.regex}))
 		})
 	}
 }
@@ -862,8 +862,8 @@ func TestExecRegexFuncs(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			if tc.err == "" {
-				a.Equal(matchFunc(tc.vals), logicalFrom(tc.match))
-				a.Equal(searchFunc(tc.vals), logicalFrom(tc.search))
+				a.Equal(matchFunc(tc.vals), LogicalFrom(tc.match))
+				a.Equal(searchFunc(tc.vals), LogicalFrom(tc.search))
 			} else {
 				a.PanicsWithValue(tc.err, func() { matchFunc(tc.vals) })
 				a.PanicsWithValue(tc.err, func() { searchFunc(tc.vals) })
@@ -907,7 +907,7 @@ func TestJsonFunctionExprArgInterface(t *testing.T) {
 		expr any
 	}{
 		{"literal", &LiteralArg{}},
-		{"filter_query", &filterQuery{}},
+		{"filter_query", &FilterQueryExpr{}},
 		{"singular_query", &SingularQueryExpr{}},
 		{"logical_or", &LogicalOr{}},
 		{"function_expr", &FunctionExpr{}},
@@ -959,7 +959,7 @@ func TestLiteralArg(t *testing.T) {
 			a.Equal(Value(tc.literal), lit.execute(nil, nil))
 			a.Equal(Value(tc.literal), lit.asValue(nil, nil))
 			a.Equal(tc.literal, lit.Value())
-			a.Equal(FuncLiteral, lit.asTypeKind())
+			a.Equal(FuncLiteral, lit.ResultType())
 			a.Equal(tc.str, bufString(lit))
 		})
 	}
@@ -1021,7 +1021,7 @@ func TestSingularQuery(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			sq := &SingularQueryExpr{selectors: tc.selectors, relative: false}
-			a.Equal(FuncSingularQuery, sq.asTypeKind())
+			a.Equal(FuncSingularQuery, sq.ResultType())
 
 			// Start with absolute query.
 			a.False(sq.relative)
@@ -1088,8 +1088,8 @@ func TestFilterQuery(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			fq := &filterQuery{tc.query}
-			a.Equal(tc.typeKind, fq.asTypeKind())
+			fq := &FilterQueryExpr{tc.query}
+			a.Equal(tc.typeKind, fq.ResultType())
 			a.Equal(NodesType(tc.exp), fq.execute(tc.current, tc.root))
 			a.Equal(tc.query.String(), bufString(fq))
 		})
@@ -1135,7 +1135,7 @@ func TestFunctionExpr(t *testing.T) {
 		{
 			name:    "count",
 			fName:   "count",
-			args:    []FunctionExprArg{&filterQuery{rootX}},
+			args:    []FunctionExprArg{&FilterQueryExpr{rootX}},
 			root:    map[string]any{"x": map[string]any{"x": 1}},
 			exp:     Value(2),
 			logical: true,
@@ -1227,7 +1227,7 @@ func TestFunctionExpr(t *testing.T) {
 				a.Nil(fe)
 				return
 			}
-			a.Equal(registry[tc.fName].ResultType, fe.asTypeKind())
+			a.Equal(registry[tc.fName].ResultType, fe.ResultType())
 			a.Equal(tc.exp, fe.execute(tc.current, tc.root))
 			a.Equal(tc.exp, fe.asValue(tc.current, tc.root))
 			a.Equal(tc.logical, fe.testFilter(tc.current, tc.root))

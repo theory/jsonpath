@@ -45,6 +45,9 @@ issues:
         - err113
         - wrapcheck
         - maintidx
+    - path: registry/funcs\.go
+      linters:
+        - err113
 
 linters:
   # Enable specific linter
@@ -113,6 +116,7 @@ linters-settings:
       - stdlib
       - generic
       - JSONPathValue
+      - FunctionExprArg
       # You can specify idiomatic endings for interface
       # - (or|er)$
     # reject-list of interfaces

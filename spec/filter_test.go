@@ -177,9 +177,9 @@ func TestLogicalOrExpr(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			orExpr := LogicalOr(tc.expr)
-			a.Equal(FuncLogical, orExpr.asTypeKind())
+			a.Equal(FuncLogical, orExpr.ResultType())
 			a.Equal(tc.exp, orExpr.testFilter(tc.current, tc.root))
-			a.Equal(logicalFrom(tc.exp), orExpr.execute(tc.current, tc.root))
+			a.Equal(LogicalFrom(tc.exp), orExpr.execute(tc.current, tc.root))
 			a.Equal(tc.str, bufString(orExpr))
 
 			// Test ParenExpr.

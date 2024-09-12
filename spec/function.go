@@ -27,33 +27,36 @@ const (
 	PathNodes // NodesType
 )
 
-// FuncType defines the different types of function arguments and return
-// values. Function extensions require arguments that convert to specific
-// PathValues and define return values in terms of these types.
+// FuncType defines the function argument expressions and return types defined
+// by [RFC 9535]. Function extensions check that these types can be converted
+// to [spec.PathType] values for evaluation.
+//
+// [RFC 9535]: https://www.rfc-editor.org/rfc/rfc9535.html
 type FuncType uint8
 
 const (
-	// A literal JSON value.
+	// FuncLiteral represents a literal JSON value.
 	FuncLiteral FuncType = iota + 1 // FuncLiteral
 
-	// A value from a singular query.
+	// FuncSingularQuery represents a value from a singular query.
 	FuncSingularQuery // FuncSingularQuery
 
-	// A JSON value, used to represent functions that return [ValueType].
+	// FuncValue represents a JSON value, used to represent functions that
+	// return [ValueType].
 	FuncValue // FuncValue
 
-	// A node list, either from a filter query argument, or a function that
+	// FuncNodeList represents a node list, either from a filter query argument, or a function that
 	// returns [NodesType].
 	FuncNodeList // FuncNodeList
 
-	// A logical, either from a logical expression, or from a function that
-	// returns [LogicalType].
+	// FuncLogical represents a logical, either from a logical expression, or
+	// from a function that returns [LogicalType].
 	FuncLogical // FuncLogical
 )
 
-// convertsTo returns true if a function argument of type ft can be converted
+// ConvertsTo returns true if a function argument of type ft can be converted
 // to pv.
-func (ft FuncType) convertsTo(pv PathType) bool {
+func (ft FuncType) ConvertsTo(pv PathType) bool {
 	switch ft {
 	case FuncLiteral, FuncValue:
 		return pv == PathValue
@@ -87,8 +90,8 @@ func (NodesType) PathType() PathType { return PathNodes }
 // FuncType returns FuncNodeList. Defined by the JSONPathValue interface.
 func (NodesType) FuncType() FuncType { return FuncNodeList }
 
-// newNodesTypeFrom attempts to convert value to a NodesType.
-func newNodesTypeFrom(value JSONPathValue) NodesType {
+// NodesFrom attempts to convert value to a NodesType and panics if it cannot.
+func NodesFrom(value JSONPathValue) NodesType {
 	switch v := value.(type) {
 	case NodesType:
 		return v
@@ -115,14 +118,6 @@ const (
 	LogicalTrue                     // true
 )
 
-// logicalFrom converts b to a LogicalType.
-func logicalFrom(b bool) LogicalType {
-	if b {
-		return LogicalTrue
-	}
-	return LogicalFalse
-}
-
 // Bool returns the boolean equivalent to lt.
 func (lt LogicalType) Bool() bool { return lt == LogicalTrue }
 
@@ -132,13 +127,19 @@ func (LogicalType) PathType() PathType { return PathLogical }
 // FuncType returns FuncLogical. Defined by the JSONPathValue interface.
 func (LogicalType) FuncType() FuncType { return FuncLogical }
 
-// newNodesTypeFrom attempts to convert value to a NodesType.
-func newLogicalTypeFrom(value JSONPathValue) LogicalType {
+// LogicalFrom attempts to convert value to a LogicalType and panics if it
+// cannot.
+func LogicalFrom(value any) LogicalType {
 	switch v := value.(type) {
 	case LogicalType:
 		return v
 	case NodesType:
-		return logicalFrom(len(v) > 0)
+		return LogicalFrom(len(v) > 0)
+	case bool:
+		if v {
+			return LogicalTrue
+		}
+		return LogicalFalse
 	case nil:
 		return LogicalFalse
 	default:
@@ -172,8 +173,8 @@ func (*ValueType) PathType() PathType { return PathValue }
 // FuncType returns FuncValue. Defined by the JSONPathValue interface.
 func (*ValueType) FuncType() FuncType { return FuncValue }
 
-// newValueTypeFrom attempts to convert value to a ValueType.
-func newValueTypeFrom(value JSONPathValue) *ValueType {
+// ValueFrom attempts to convert value to a ValueType and panics if it cannot.
+func ValueFrom(value JSONPathValue) *ValueType {
 	switch v := value.(type) {
 	case *ValueType:
 		return v
@@ -300,8 +301,8 @@ func checkLengthArgs(fea []FunctionExprArg) error {
 		return fmt.Errorf("expected 1 argument but found %v", len(fea))
 	}
 
-	kind := fea[0].asTypeKind()
-	if !kind.convertsTo(PathValue) {
+	kind := fea[0].ResultType()
+	if !kind.ConvertsTo(PathValue) {
 		return errors.New("cannot convert argument to ValueType")
 	}
 
@@ -318,10 +319,8 @@ func checkLengthArgs(fea []FunctionExprArg) error {
 //   - If jv[0] is an map[string]any, the result is the number of members in
 //     the map.
 //   - For any other value, the result is nil.
-//
-
 func lengthFunc(jv []JSONPathValue) JSONPathValue {
-	v := newValueTypeFrom(jv[0])
+	v := ValueFrom(jv[0])
 	if v == nil {
 		return nil
 	}
@@ -348,8 +347,8 @@ func checkCountArgs(fea []FunctionExprArg) error {
 		return fmt.Errorf("expected 1 argument but found %v", len(fea))
 	}
 
-	kind := fea[0].asTypeKind()
-	if !kind.convertsTo(PathNodes) {
+	kind := fea[0].ResultType()
+	if !kind.ConvertsTo(PathNodes) {
 		return errors.New("cannot convert argument to PathNodes")
 	}
 
@@ -360,10 +359,8 @@ func checkCountArgs(fea []FunctionExprArg) error {
 // a ValueType containing an unsigned integer for the number of nodes
 // in jv[0]. Panics if jv[0] doesn't exist or is not convertible to
 // [NodesType].
-//
-
 func countFunc(jv []JSONPathValue) JSONPathValue {
-	return &ValueType{len(newNodesTypeFrom(jv[0]))}
+	return &ValueType{len(NodesFrom(jv[0]))}
 }
 
 // checkValueArgs checks the argument expressions to value() and returns an
@@ -376,8 +373,8 @@ func checkValueArgs(fea []FunctionExprArg) error {
 		return fmt.Errorf("expected 1 argument but found %v", len(fea))
 	}
 
-	kind := fea[0].asTypeKind()
-	if !kind.convertsTo(PathNodes) {
+	kind := fea[0].ResultType()
+	if !kind.ConvertsTo(PathNodes) {
 		return errors.New("cannot convert argument to PathNodes")
 	}
 
@@ -389,10 +386,8 @@ func checkValueArgs(fea []FunctionExprArg) error {
 //
 //   - If jv[0] contains a single node, the result is the value of the node.
 //   - If jv[0] is empty or contains multiple nodes, the result is nil.
-//
-
 func valueFunc(jv []JSONPathValue) JSONPathValue {
-	nodes := newNodesTypeFrom(jv[0])
+	nodes := NodesFrom(jv[0])
 	if len(nodes) == 1 {
 		return &ValueType{nodes[0]}
 	}
@@ -411,8 +406,8 @@ func checkMatchArgs(fea []FunctionExprArg) error {
 	}
 
 	for i, arg := range fea {
-		kind := arg.asTypeKind()
-		if !kind.convertsTo(PathValue) {
+		kind := arg.ResultType()
+		if !kind.ConvertsTo(PathValue) {
 			return fmt.Errorf("cannot convert argument %v to PathNodes", i+1)
 		}
 	}
@@ -425,13 +420,11 @@ func checkMatchArgs(fea []FunctionExprArg) error {
 // implied \A and \z anchors and used to match the first, returning LogicalTrue for
 // a match and LogicalFalse for no match. Returns LogicalFalse if either jv value
 // is not a string or if jv[1] fails to compile.
-//
-
 func matchFunc(jv []JSONPathValue) JSONPathValue {
-	if v, ok := newValueTypeFrom(jv[0]).any.(string); ok {
-		if r, ok := newValueTypeFrom(jv[1]).any.(string); ok {
+	if v, ok := ValueFrom(jv[0]).any.(string); ok {
+		if r, ok := ValueFrom(jv[1]).any.(string); ok {
 			if rc := compileRegex(`\A` + r + `\z`); rc != nil {
-				return logicalFrom(rc.MatchString(v))
+				return LogicalFrom(rc.MatchString(v))
 			}
 		}
 	}
@@ -450,8 +443,8 @@ func checkSearchArgs(fea []FunctionExprArg) error {
 	}
 
 	for i, arg := range fea {
-		kind := arg.asTypeKind()
-		if !kind.convertsTo(PathValue) {
+		kind := arg.ResultType()
+		if !kind.ConvertsTo(PathValue) {
 			return fmt.Errorf("cannot convert argument %v to PathNodes", i+1)
 		}
 	}
@@ -464,13 +457,11 @@ func checkSearchArgs(fea []FunctionExprArg) error {
 // to match the former, returning LogicalTrue for a match and LogicalFalse for no
 // match. Returns LogicalFalse if either value is not a string, or if jv[1]
 // fails to compile.
-//
-
 func searchFunc(jv []JSONPathValue) JSONPathValue {
-	if val, ok := newValueTypeFrom(jv[0]).any.(string); ok {
-		if r, ok := newValueTypeFrom(jv[1]).any.(string); ok {
+	if val, ok := ValueFrom(jv[0]).any.(string); ok {
+		if r, ok := ValueFrom(jv[1]).any.(string); ok {
 			if rc := compileRegex(r); rc != nil {
-				return logicalFrom(rc.MatchString(val))
+				return LogicalFrom(rc.MatchString(val))
 			}
 		}
 	}
@@ -534,9 +525,9 @@ type FunctionExprArg interface {
 	// evaluate evaluates the function expression against current and root and
 	// returns the resulting JSONPathValue.
 	execute(current, root any) JSONPathValue
-	// asTypeKind returns the FuncType that defines the type of the return
+	// ResultType returns the FuncType that defines the type of the return
 	// value of JSONPathValue.
-	asTypeKind() FuncType
+	ResultType() FuncType
 }
 
 // LiteralArg represents a literal JSON value, excluding objects and arrays.
@@ -555,14 +546,12 @@ func (la *LiteralArg) Value() any { return la.literal }
 
 // execute returns a [ValueType] containing the literal value. Defined by the
 // [FunctionExprArg] interface.
-//
-
 func (la *LiteralArg) execute(_, _ any) JSONPathValue {
 	return &ValueType{la.literal}
 }
 
-// asTypeKind returns FuncLiteral. Defined by the [FunctionExprArg] interface.
-func (la *LiteralArg) asTypeKind() FuncType {
+// ResultType returns FuncLiteral. Defined by the [FunctionExprArg] interface.
+func (la *LiteralArg) ResultType() FuncType {
 	return FuncLiteral
 }
 
@@ -577,8 +566,6 @@ func (la *LiteralArg) writeTo(buf *strings.Builder) {
 
 // asValue returns la.literal as a [ValueType]. Defined by the [comparableVal]
 // interface.
-//
-
 func (la *LiteralArg) asValue(_, _ any) JSONPathValue {
 	return &ValueType{la.literal}
 }
@@ -600,8 +587,6 @@ func SingularQuery(root bool, selectors []Selector) *SingularQueryExpr {
 
 // execute returns a [ValueType] containing the return value of executing sq.
 // Defined by the [FunctionExprArg] interface.
-//
-
 func (sq *SingularQueryExpr) execute(current, root any) JSONPathValue {
 	target := root
 	if sq.relative {
@@ -619,16 +604,14 @@ func (sq *SingularQueryExpr) execute(current, root any) JSONPathValue {
 	return &ValueType{target}
 }
 
-// asTypeKind returns FuncSingularQuery. Defined by the [FunctionExprArg]
+// ResultType returns FuncSingularQuery. Defined by the [FunctionExprArg]
 // interface.
-func (*SingularQueryExpr) asTypeKind() FuncType {
+func (*SingularQueryExpr) ResultType() FuncType {
 	return FuncSingularQuery
 }
 
 // asValue returns the result of executing sq.execute against current and root.
 // Defined by the [comparableVal] interface.
-//
-
 func (sq *SingularQueryExpr) asValue(current, root any) JSONPathValue {
 	return sq.execute(current, root)
 }
@@ -648,22 +631,25 @@ func (sq *SingularQueryExpr) writeTo(buf *strings.Builder) {
 	}
 }
 
-// filterQuery represents a JSONPath Query used in a filter expression.
-type filterQuery struct {
+// FilterQueryExpr represents a JSONPath Query used in a filter expression.
+type FilterQueryExpr struct {
 	*PathQuery
+}
+
+// FilterQuery creates and returns a new FilterQueryExpr.
+func FilterQuery(q *PathQuery) *FilterQueryExpr {
+	return &FilterQueryExpr{q}
 }
 
 // execute returns a [NodesType] containing the result of executing fq.
 // Defined by the [FunctionExprArg] interface.
-//
-
-func (fq *filterQuery) execute(current, root any) JSONPathValue {
+func (fq *FilterQueryExpr) execute(current, root any) JSONPathValue {
 	return NodesType(fq.Select(current, root))
 }
 
-// asTypeKind returns FuncSingularQuery if fq is a singular query, and
+// ResultType returns FuncSingularQuery if fq is a singular query, and
 // FuncNodeList if it is not. Defined by the [FunctionExprArg] interface.
-func (fq *filterQuery) asTypeKind() FuncType {
+func (fq *FilterQueryExpr) ResultType() FuncType {
 	if fq.isSingular() {
 		return FuncSingularQuery
 	}
@@ -671,7 +657,7 @@ func (fq *filterQuery) asTypeKind() FuncType {
 }
 
 // writeTo writes a string representation of fq to buf.
-func (fq *filterQuery) writeTo(buf *strings.Builder) {
+func (fq *FilterQueryExpr) writeTo(buf *strings.Builder) {
 	buf.WriteString(fq.PathQuery.String())
 }
 
@@ -707,12 +693,6 @@ func NewFunctionExpr(name string, args []FunctionExprArg) (*FunctionExpr, error)
 	return nil, fmt.Errorf("%w %v()", ErrUnregistered, name)
 }
 
-// ResultType returns the [FuncType] returned by the execution of the function
-// expression.
-func (fe *FunctionExpr) ResultType() FuncType {
-	return fe.fn.ResultType
-}
-
 // writeTo writes the string representation of fe to buf.
 func (fe *FunctionExpr) writeTo(buf *strings.Builder) {
 	buf.WriteString(fe.fn.Name + "(")
@@ -727,8 +707,6 @@ func (fe *FunctionExpr) writeTo(buf *strings.Builder) {
 
 // execute returns a [NodesType] containing the results of executing each
 // argument in fe.args. Defined by the [FunctionExprArg] interface.
-//
-
 func (fe *FunctionExpr) execute(current, root any) JSONPathValue {
 	res := []JSONPathValue{}
 	for _, a := range fe.args {
@@ -738,16 +716,14 @@ func (fe *FunctionExpr) execute(current, root any) JSONPathValue {
 	return fe.fn.Evaluate(res)
 }
 
-// asTypeKind returns the result type of the registered function named
+// ResultType returns the result type of the registered function named
 // fe.name. Defined by the [FunctionExprArg] interface.
-func (fe *FunctionExpr) asTypeKind() FuncType {
+func (fe *FunctionExpr) ResultType() FuncType {
 	return fe.fn.ResultType
 }
 
 // asValue returns the result of executing fe.execute against current and root.
 // Defined by the [comparableVal] interface.
-//
-
 func (fe *FunctionExpr) asValue(current, root any) JSONPathValue {
 	return fe.execute(current, root)
 }

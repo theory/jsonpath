@@ -955,7 +955,7 @@ func TestSingularExpr(t *testing.T) {
 			if tc.sing == nil {
 				a.False(tc.query.isSingular())
 				a.Nil(tc.query.Singular())
-				a.Equal(&filterQuery{tc.query}, tc.query.Expression())
+				a.Equal(FilterQuery(tc.query), tc.query.Expression())
 			} else {
 				a.True(tc.query.isSingular())
 				a.Equal(tc.sing, tc.query.Singular())

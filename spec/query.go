@@ -76,14 +76,12 @@ func (q *PathQuery) Singular() *SingularQueryExpr {
 
 // Expression returns a singularQuery variant of q if q [isSingular] returns
 // true, and otherwise returns a filterQuery.
-//
-//nolint:ireturn
 func (q *PathQuery) Expression() FunctionExprArg {
 	if q.isSingular() {
 		return singular(q)
 	}
 
-	return &filterQuery{q}
+	return FilterQuery(q)
 }
 
 // singular is a utility function that converts q to a singularQuery.

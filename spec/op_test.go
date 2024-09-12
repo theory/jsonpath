@@ -368,11 +368,11 @@ func TestComparisonExpr(t *testing.T) {
 		{
 			name: "func_strings_gt",
 			left: &FunctionExpr{
-				args: []FunctionExprArg{&filterQuery{Query(false, []*Segment{Child(Name("y"))})}},
+				args: []FunctionExprArg{FilterQuery(Query(false, []*Segment{Child(Name("y"))}))},
 				fn:   registry["value"],
 			},
 			right: &FunctionExpr{
-				args: []FunctionExprArg{&filterQuery{Query(false, []*Segment{Child(Name("x"))})}},
+				args: []FunctionExprArg{FilterQuery(Query(false, []*Segment{Child(Name("x"))}))},
 				fn:   registry["value"],
 			},
 			current: map[string]any{"x": "x", "y": "y"},

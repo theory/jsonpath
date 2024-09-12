@@ -63,14 +63,12 @@ func (lo LogicalOr) writeTo(buf *strings.Builder) {
 
 // execute evaluates lo and returns LogicalTrue when it returns true and
 // LogicalFalse when it returns false.
-//
-
 func (lo LogicalOr) execute(current, root any) JSONPathValue {
-	return logicalFrom(lo.testFilter(current, root))
+	return LogicalFrom(lo.testFilter(current, root))
 }
 
-// asTypeKind returns FuncLogical. Defined by the [FunctionExprArg] interface.
-func (lo LogicalOr) asTypeKind() FuncType {
+// ResultType returns FuncLogical. Defined by the [FunctionExprArg] interface.
+func (lo LogicalOr) ResultType() FuncType {
 	return FuncLogical
 }
 
