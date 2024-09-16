@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -64,46 +65,89 @@ func TestRegistry(t *testing.T) {
 
 			ft := reg.Get(tc.name)
 			a.NotNil(ft)
-			a.Equal(tc.rType, ft.ResultType)
-			r.NoError(ft.Validate(tc.expr))
-			a.Equal(tc.exp, ft.Evaluate(tc.args))
+			a.Equal(tc.rType, ft.resultType)
+			r.NoError(ft.validator(tc.expr))
+			a.Equal(tc.exp, ft.evaluator(tc.args))
 		})
 	}
 }
 
 func TestRegisterErr(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
+	r := require.New(t)
 	reg := New()
 
 	for _, tc := range []struct {
-		name string
-		fn   *Function
-		err  string
+		name   string
+		fnName string
+		valid  Validator
+		eval   Evaluator
+		err    string
 	}{
 		{
-			name: "nil_func",
-			fn:   nil,
-			err:  "jsonpath: Register function is nil",
+			name: "nil_validator",
+			err:  "register: validator is nil",
 		},
 		{
-			name: "existing_func",
-			fn:   &Function{Name: "length"},
-			err:  "jsonpath: Register called twice for function length",
+			name:  "nil_evaluator",
+			valid: func([]spec.FunctionExprArg) error { return nil },
+			err:   "register: evaluator is nil",
+		},
+		{
+			name:   "existing_func",
+			fnName: "length",
+			valid:  func([]spec.FunctionExprArg) error { return nil },
+			eval:   func([]spec.JSONPathValue) spec.JSONPathValue { return spec.Value(42) },
+			err:    "register: Register called twice for function length",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			a.PanicsWithValue(tc.err, func() { reg.Register(tc.fn) })
+			err := reg.Register(tc.fnName, spec.FuncValue, tc.valid, tc.eval)
+			r.ErrorIs(err, ErrRegister, tc.name)
+			r.EqualError(err, tc.err, tc.name)
 		})
 	}
 }
 
-func newFuncExpr(t *testing.T, name string, args []spec.FunctionExprArg) *spec.FunctionExpr {
-	t.Helper()
-	f, err := spec.NewFunctionExpr(name, args)
-	if err != nil {
-		t.Fatal(err.Error())
+func TestFunction(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+
+	for _, tc := range []struct {
+		name string
+		fn   *Function
+		args []spec.JSONPathValue
+		err  error
+		exp  spec.JSONPathValue
+	}{
+		{
+			name: "valid_err_value",
+			fn: NewFunction(
+				"xyz", spec.FuncValue,
+				func([]spec.FunctionExprArg) error { return errors.New("oops") },
+				func([]spec.JSONPathValue) spec.JSONPathValue { return spec.Value(42) },
+			),
+			args: []spec.JSONPathValue{},
+			exp:  spec.Value(42),
+			err:  errors.New("oops"),
+		},
+		{
+			name: "no_valid_err_nodes",
+			fn: NewFunction(
+				"abc", spec.FuncNodeList,
+				func([]spec.FunctionExprArg) error { return nil },
+				func([]spec.JSONPathValue) spec.JSONPathValue { return spec.NodesType{"hi"} },
+			),
+			args: []spec.JSONPathValue{},
+			exp:  spec.NodesType{"hi"},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			a.Equal(tc.fn.name, tc.fn.Name())
+			a.Equal(tc.err, tc.fn.Validate(nil))
+			a.Equal(tc.exp, tc.fn.Evaluate(tc.args))
+		})
 	}
-	return f
 }

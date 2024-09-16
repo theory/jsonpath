@@ -341,43 +341,43 @@ func TestComparisonExpr(t *testing.T) {
 			name: "func_numbers_eq",
 			left: &FunctionExpr{
 				args: []FunctionExprArg{SingularQuery(true, []Selector{Name("x")})},
-				fn:   registry["length"],
+				fn:   newValueFunc(1),
 			},
 			right: &FunctionExpr{
 				args: []FunctionExprArg{SingularQuery(true, []Selector{Name("y")})},
-				fn:   registry["length"],
+				fn:   newValueFunc(1),
 			},
 			root:   map[string]any{"x": "xx", "y": "yy"},
 			expect: []bool{true, false, false, false, true, true},
-			str:    `length($["x"]) %v length($["y"])`,
+			str:    `__val($["x"]) %v __val($["y"])`,
 		},
 		{
 			name: "func_numbers_lt",
 			left: &FunctionExpr{
 				args: []FunctionExprArg{SingularQuery(true, []Selector{Name("x")})},
-				fn:   registry["length"],
+				fn:   newValueFunc(1),
 			},
 			right: &FunctionExpr{
 				args: []FunctionExprArg{SingularQuery(true, []Selector{Name("y")})},
-				fn:   registry["length"],
+				fn:   newValueFunc(2),
 			},
 			root:   map[string]any{"x": "xx", "y": "yyy"},
 			expect: []bool{false, true, true, false, true, false},
-			str:    `length($["x"]) %v length($["y"])`,
+			str:    `__val($["x"]) %v __val($["y"])`,
 		},
 		{
 			name: "func_strings_gt",
 			left: &FunctionExpr{
 				args: []FunctionExprArg{FilterQuery(Query(false, []*Segment{Child(Name("y"))}))},
-				fn:   registry["value"],
+				fn:   newValueFunc(42),
 			},
 			right: &FunctionExpr{
 				args: []FunctionExprArg{FilterQuery(Query(false, []*Segment{Child(Name("x"))}))},
-				fn:   registry["value"],
+				fn:   newValueFunc(41),
 			},
 			current: map[string]any{"x": "x", "y": "y"},
 			expect:  []bool{false, true, false, true, false, true},
-			str:     `value(@["y"]) %v value(@["x"])`,
+			str:     `__val(@["y"]) %v __val(@["x"])`,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

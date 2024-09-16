@@ -61,9 +61,10 @@ func (lo LogicalOr) writeTo(buf *strings.Builder) {
 	}
 }
 
-// execute evaluates lo and returns LogicalTrue when it returns true and
-// LogicalFalse when it returns false.
-func (lo LogicalOr) execute(current, root any) JSONPathValue {
+// evaluate evaluates lo and returns LogicalTrue when it returns true and
+// LogicalFalse when it returns false. Defined by the [FunctionExprArg]
+// interface.
+func (lo LogicalOr) evaluate(current, root any) JSONPathValue {
 	return LogicalFrom(lo.testFilter(current, root))
 }
 

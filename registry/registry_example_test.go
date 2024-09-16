@@ -3,6 +3,7 @@ package registry_test
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/theory/jsonpath/registry"
 	"github.com/theory/jsonpath/spec"
@@ -38,12 +39,15 @@ func firstFunc(jv []spec.JSONPathValue) spec.JSONPathValue {
 // first node in a list of nodes passed to it.
 func Example() {
 	reg := registry.New()
-	reg.Register(&registry.Function{
-		Name:       "first",
-		ResultType: spec.FuncValue,
-		Validate:   validateFirstArgs,
-		Evaluate:   firstFunc,
-	})
-	fmt.Printf("%v\n", reg.Get("first").ResultType)
+	err := reg.Register(
+		"first",
+		spec.FuncValue,
+		validateFirstArgs,
+		firstFunc,
+	)
+	if err != nil {
+		log.Fatalf("Error %v", err)
+	}
+	fmt.Printf("%v\n", reg.Get("first").ResultType())
 	// Output:FuncValue
 }

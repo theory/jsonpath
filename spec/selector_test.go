@@ -199,6 +199,16 @@ func TestSliceBounds(t *testing.T) {
 			},
 		},
 		{
+			name:  "nil_nil_nil",
+			slice: Slice(nil, nil, nil),
+			exp:   json,
+			cases: []lenCase{
+				{10, 0, 10},
+				{3, 0, 3},
+				{99, 0, 99},
+			},
+		},
+		{
 			name:  "3_8_2",
 			slice: Slice(3, 8, 2),
 			exp:   []any{"d", "f"},

@@ -3,13 +3,8 @@ package spec
 //go:generate stringer -linecomment -output function_string.go -type LogicalType,PathType,FuncType
 
 import (
-	"errors"
 	"fmt"
-	"regexp"
-	"regexp/syntax"
 	"strings"
-	"sync"
-	"unicode/utf8"
 )
 
 // PathType represents a path type.
@@ -225,306 +220,12 @@ func (vt *ValueType) writeTo(buf *strings.Builder) {
 	buf.WriteString("ValueType")
 }
 
-//nolint:gochecknoglobals
-var (
-	registryMu sync.RWMutex
-	registry   = make(map[string]*Function)
-)
-
-// Register registers a function extension by its name. If fn is nil or
-// Register is called twice with the same fn.name, it panics.
-func Register(fn *Function) {
-	registryMu.Lock()
-	defer registryMu.Unlock()
-	if fn == nil {
-		panic("jsonpath: Register function is nil")
-	}
-	if _, dup := registry[fn.Name]; dup {
-		panic("jsonpath: Register called twice for function " + fn.Name)
-	}
-	registry[fn.Name] = fn
-}
-
-// GetFunction returns a reference to the registered function named name.
-// Returns nil if no function with that name has been registered.
-func GetFunction(name string) *Function {
-	registryMu.RLock()
-	defer registryMu.RUnlock()
-	function := registry[name]
-	return function
-}
-
-// registerFunctions registers the functions defined by [RFC 9535].
-func registerFunctions() {
-	Register(&Function{
-		Name:       "length",
-		ResultType: FuncValue,
-		Validate:   checkLengthArgs,
-		Evaluate:   lengthFunc,
-	})
-	Register(&Function{
-		Name:       "count",
-		ResultType: FuncValue,
-		Validate:   checkCountArgs,
-		Evaluate:   countFunc,
-	})
-	Register(&Function{
-		Name:       "value",
-		ResultType: FuncValue,
-		Validate:   checkValueArgs,
-		Evaluate:   valueFunc,
-	})
-	Register(&Function{
-		Name:       "match",
-		ResultType: FuncLogical,
-		Validate:   checkMatchArgs,
-		Evaluate:   matchFunc,
-	})
-	Register(&Function{
-		Name:       "search",
-		ResultType: FuncLogical,
-		Validate:   checkSearchArgs,
-		Evaluate:   searchFunc,
-	})
-}
-
-//nolint:gochecknoinits
-func init() { registerFunctions() }
-
-// checkLengthArgs checks the argument expressions to length() and returns an
-// error if there is not exactly one expression that results in a
-// [PathValue]-compatible value.
-//
-//nolint:err113
-func checkLengthArgs(fea []FunctionExprArg) error {
-	if len(fea) != 1 {
-		return fmt.Errorf("expected 1 argument but found %v", len(fea))
-	}
-
-	kind := fea[0].ResultType()
-	if !kind.ConvertsTo(PathValue) {
-		return errors.New("cannot convert argument to ValueType")
-	}
-
-	return nil
-}
-
-// lengthFunc extracts the single argument passed in jv and returns its
-// length. Panics if jv[0] doesn't exist or is not convertible to [ValueType].
-//
-//   - if jv[0] is nil, the result is nil
-//   - If jv[0] is a string, the result is the number of Unicode scalar values
-//     in the string.
-//   - If jv[0] is a []any, the result is the number of elements in the slice.
-//   - If jv[0] is an map[string]any, the result is the number of members in
-//     the map.
-//   - For any other value, the result is nil.
-func lengthFunc(jv []JSONPathValue) JSONPathValue {
-	v := ValueFrom(jv[0])
-	if v == nil {
-		return nil
-	}
-	switch v := v.any.(type) {
-	case string:
-		// Unicode scalar values
-		return &ValueType{utf8.RuneCountInString(v)}
-	case []any:
-		return &ValueType{len(v)}
-	case map[string]any:
-		return &ValueType{len(v)}
-	default:
-		return nil
-	}
-}
-
-// checkCountArgs checks the argument expressions to count() and returns an
-// error if there is not exactly one expression that results in a
-// [PathNodes]-compatible value.
-//
-//nolint:err113
-func checkCountArgs(fea []FunctionExprArg) error {
-	if len(fea) != 1 {
-		return fmt.Errorf("expected 1 argument but found %v", len(fea))
-	}
-
-	kind := fea[0].ResultType()
-	if !kind.ConvertsTo(PathNodes) {
-		return errors.New("cannot convert argument to PathNodes")
-	}
-
-	return nil
-}
-
-// countFunc implements the [RFC 9535]-standard count function. The result is
-// a ValueType containing an unsigned integer for the number of nodes
-// in jv[0]. Panics if jv[0] doesn't exist or is not convertible to
-// [NodesType].
-func countFunc(jv []JSONPathValue) JSONPathValue {
-	return &ValueType{len(NodesFrom(jv[0]))}
-}
-
-// checkValueArgs checks the argument expressions to value() and returns an
-// error if there is not exactly one expression that results in a
-// [PathNodes]-compatible value.
-//
-//nolint:err113
-func checkValueArgs(fea []FunctionExprArg) error {
-	if len(fea) != 1 {
-		return fmt.Errorf("expected 1 argument but found %v", len(fea))
-	}
-
-	kind := fea[0].ResultType()
-	if !kind.ConvertsTo(PathNodes) {
-		return errors.New("cannot convert argument to PathNodes")
-	}
-
-	return nil
-}
-
-// valueFunc implements the [RFC 9535]-standard value function. Panics if
-// jv[0] doesn't exist or is not convertible to [NodesType]. Otherwise:
-//
-//   - If jv[0] contains a single node, the result is the value of the node.
-//   - If jv[0] is empty or contains multiple nodes, the result is nil.
-func valueFunc(jv []JSONPathValue) JSONPathValue {
-	nodes := NodesFrom(jv[0])
-	if len(nodes) == 1 {
-		return &ValueType{nodes[0]}
-	}
-	return nil
-}
-
-// checkMatchArgs checks the argument expressions to match() and returns an
-// error if there are not exactly two expressions that result in
-// [PathValue]-compatible values.
-//
-//nolint:err113
-func checkMatchArgs(fea []FunctionExprArg) error {
-	const matchArgLen = 2
-	if len(fea) != matchArgLen {
-		return fmt.Errorf("expected 2 arguments but found %v", len(fea))
-	}
-
-	for i, arg := range fea {
-		kind := arg.ResultType()
-		if !kind.ConvertsTo(PathValue) {
-			return fmt.Errorf("cannot convert argument %v to PathNodes", i+1)
-		}
-	}
-
-	return nil
-}
-
-// matchFunc implements the [RFC 9535]-standard match function. If jv[0] and
-// jv[1] evaluate to strings, the second is compiled into a regular expression with
-// implied \A and \z anchors and used to match the first, returning LogicalTrue for
-// a match and LogicalFalse for no match. Returns LogicalFalse if either jv value
-// is not a string or if jv[1] fails to compile.
-func matchFunc(jv []JSONPathValue) JSONPathValue {
-	if v, ok := ValueFrom(jv[0]).any.(string); ok {
-		if r, ok := ValueFrom(jv[1]).any.(string); ok {
-			if rc := compileRegex(`\A` + r + `\z`); rc != nil {
-				return LogicalFrom(rc.MatchString(v))
-			}
-		}
-	}
-	return LogicalFalse
-}
-
-// checkSearchArgs checks the argument expressions to search() and returns an
-// error if there are not exactly two expressions that result in
-// [PathValue]-compatible values.
-//
-//nolint:err113
-func checkSearchArgs(fea []FunctionExprArg) error {
-	const searchArgLen = 2
-	if len(fea) != searchArgLen {
-		return fmt.Errorf("expected 2 arguments but found %v", len(fea))
-	}
-
-	for i, arg := range fea {
-		kind := arg.ResultType()
-		if !kind.ConvertsTo(PathValue) {
-			return fmt.Errorf("cannot convert argument %v to PathNodes", i+1)
-		}
-	}
-
-	return nil
-}
-
-// searchFunc implements the [RFC 9535]-standard search function. If both jv[0]
-// and jv[1] contain strings, the latter is compiled into a regular expression and used
-// to match the former, returning LogicalTrue for a match and LogicalFalse for no
-// match. Returns LogicalFalse if either value is not a string, or if jv[1]
-// fails to compile.
-func searchFunc(jv []JSONPathValue) JSONPathValue {
-	if val, ok := ValueFrom(jv[0]).any.(string); ok {
-		if r, ok := ValueFrom(jv[1]).any.(string); ok {
-			if rc := compileRegex(r); rc != nil {
-				return LogicalFrom(rc.MatchString(val))
-			}
-		}
-	}
-	return LogicalFalse
-}
-
-// compileRegex compiles str into a regular expression or returns an error. To
-// comply with RFC 9485 regular expression semantics, all instances of "." are
-// replaced with "[^\n\r]". This sadly requires compiling the regex twice:
-// once to produce an AST to replace "." nodes, and a second time for the
-// final regex.
-func compileRegex(str string) *regexp.Regexp {
-	// First compile AST and replace "." with [^\n\r].
-	// https://www.rfc-editor.org/rfc/rfc9485.html#name-pcre-re2-and-ruby-regexps
-	r, err := syntax.Parse(str, syntax.Perl|syntax.DotNL)
-	if err != nil {
-		// Could use some way to log these errors rather than failing silently.
-		return nil
-	}
-
-	replaceDot(r)
-	re, _ := regexp.Compile(r.String())
-	return re
-}
-
-//nolint:gochecknoglobals
-var clrf, _ = syntax.Parse("[^\n\r]", syntax.Perl)
-
-// replaceDot recurses re to replace all "." nodes with "[^\n\r]" nodes.
-func replaceDot(re *syntax.Regexp) {
-	if re.Op == syntax.OpAnyChar {
-		*re = *clrf
-	} else {
-		for _, re := range re.Sub {
-			replaceDot(re)
-		}
-	}
-}
-
-// Function defines a JSONPath function. Use [Register] to register a new
-// function.
-type Function struct {
-	// Name is the name of the function. Must be unique among all functions.
-	Name string
-
-	// ResultType defines the type of the function return value.
-	ResultType FuncType
-
-	// Validate executes at parse time to validate that all the args to
-	// the function are compatible with the function.
-	Validate func(args []FunctionExprArg) error
-
-	// Evaluate executes the function against args and returns the result of
-	// type ResultType.
-	Evaluate func(args []JSONPathValue) JSONPathValue
-}
-
 // FunctionExprArg defines the interface for function argument expressions.
 type FunctionExprArg interface {
 	stringWriter
 	// evaluate evaluates the function expression against current and root and
 	// returns the resulting JSONPathValue.
-	execute(current, root any) JSONPathValue
+	evaluate(current, root any) JSONPathValue
 	// ResultType returns the FuncType that defines the type of the return
 	// value of JSONPathValue.
 	ResultType() FuncType
@@ -544,9 +245,9 @@ func Literal(lit any) *LiteralArg {
 // Value returns the underlying value of la.
 func (la *LiteralArg) Value() any { return la.literal }
 
-// execute returns a [ValueType] containing the literal value. Defined by the
+// evaluate returns a [ValueType] containing the literal value. Defined by the
 // [FunctionExprArg] interface.
-func (la *LiteralArg) execute(_, _ any) JSONPathValue {
+func (la *LiteralArg) evaluate(_, _ any) JSONPathValue {
 	return &ValueType{la.literal}
 }
 
@@ -585,9 +286,9 @@ func SingularQuery(root bool, selectors []Selector) *SingularQueryExpr {
 	return &SingularQueryExpr{relative: !root, selectors: selectors}
 }
 
-// execute returns a [ValueType] containing the return value of executing sq.
+// evaluate returns a [ValueType] containing the return value of executing sq.
 // Defined by the [FunctionExprArg] interface.
-func (sq *SingularQueryExpr) execute(current, root any) JSONPathValue {
+func (sq *SingularQueryExpr) evaluate(current, root any) JSONPathValue {
 	target := root
 	if sq.relative {
 		target = current
@@ -613,7 +314,7 @@ func (*SingularQueryExpr) ResultType() FuncType {
 // asValue returns the result of executing sq.execute against current and root.
 // Defined by the [comparableVal] interface.
 func (sq *SingularQueryExpr) asValue(current, root any) JSONPathValue {
-	return sq.execute(current, root)
+	return sq.evaluate(current, root)
 }
 
 // writeTo writes a string representation of sq to buf.
@@ -641,9 +342,9 @@ func FilterQuery(q *PathQuery) *FilterQueryExpr {
 	return &FilterQueryExpr{q}
 }
 
-// execute returns a [NodesType] containing the result of executing fq.
+// evaluate returns a [NodesType] containing the result of executing fq.
 // Defined by the [FunctionExprArg] interface.
-func (fq *FilterQueryExpr) execute(current, root any) JSONPathValue {
+func (fq *FilterQueryExpr) evaluate(current, root any) JSONPathValue {
 	return NodesType(fq.Select(current, root))
 }
 
@@ -665,37 +366,26 @@ func (fq *FilterQueryExpr) writeTo(buf *strings.Builder) {
 // function and its arguments.
 type FunctionExpr struct {
 	args []FunctionExprArg
-	fn   *Function
+	fn   Function
 }
 
-var (
-	// ErrUnregistered errors are returned by NewFunctionExpr when the named
-	// function is not in the registry.
-	ErrUnregistered = errors.New("unknown function")
+// Function represents a JSONPath function. See
+// [github.com/theory/jsonpath/registry] for the implementation.
+type Function interface {
+	Name() string
+	ResultType() FuncType
+	Evaluate(args []JSONPathValue) JSONPathValue
+}
 
-	// ErrInvalidArgs errors are returned by NewFunctionExpr when the
-	// registered function does not support the specified argument
-	// expressions.
-	ErrInvalidArgs = errors.New("function")
-)
-
-// NewFunctionExpr creates and returns a new FunctionExpr. Returns an error if
-// the function is not registered or its args are invalid.
-func NewFunctionExpr(name string, args []FunctionExprArg) (*FunctionExpr, error) {
-	registryMu.Lock()
-	defer registryMu.Unlock()
-	if fn, ok := registry[name]; ok {
-		if err := fn.Validate(args); err != nil {
-			return nil, fmt.Errorf("%w %v() %w", ErrInvalidArgs, name, err)
-		}
-		return &FunctionExpr{args: args, fn: fn}, nil
-	}
-	return nil, fmt.Errorf("%w %v()", ErrUnregistered, name)
+// NewFunctionExpr creates an returns a new function expression that will
+// execute fn against the return values of args.
+func NewFunctionExpr(fn Function, args []FunctionExprArg) *FunctionExpr {
+	return &FunctionExpr{args: args, fn: fn}
 }
 
 // writeTo writes the string representation of fe to buf.
 func (fe *FunctionExpr) writeTo(buf *strings.Builder) {
-	buf.WriteString(fe.fn.Name + "(")
+	buf.WriteString(fe.fn.Name() + "(")
 	for i, arg := range fe.args {
 		arg.writeTo(buf)
 		if i < len(fe.args)-1 {
@@ -705,12 +395,12 @@ func (fe *FunctionExpr) writeTo(buf *strings.Builder) {
 	buf.WriteRune(')')
 }
 
-// execute returns a [NodesType] containing the results of executing each
+// evaluate returns a [NodesType] containing the results of executing each
 // argument in fe.args. Defined by the [FunctionExprArg] interface.
-func (fe *FunctionExpr) execute(current, root any) JSONPathValue {
+func (fe *FunctionExpr) evaluate(current, root any) JSONPathValue {
 	res := []JSONPathValue{}
 	for _, a := range fe.args {
-		res = append(res, a.execute(current, root))
+		res = append(res, a.evaluate(current, root))
 	}
 
 	return fe.fn.Evaluate(res)
@@ -719,13 +409,13 @@ func (fe *FunctionExpr) execute(current, root any) JSONPathValue {
 // ResultType returns the result type of the registered function named
 // fe.name. Defined by the [FunctionExprArg] interface.
 func (fe *FunctionExpr) ResultType() FuncType {
-	return fe.fn.ResultType
+	return fe.fn.ResultType()
 }
 
 // asValue returns the result of executing fe.execute against current and root.
 // Defined by the [comparableVal] interface.
 func (fe *FunctionExpr) asValue(current, root any) JSONPathValue {
-	return fe.execute(current, root)
+	return fe.evaluate(current, root)
 }
 
 // testFilter executes fe and returns true if the function returns a truthy
@@ -738,7 +428,7 @@ func (fe *FunctionExpr) asValue(current, root any) JSONPathValue {
 //
 // Returns false in all other cases.
 func (fe *FunctionExpr) testFilter(current, root any) bool {
-	switch res := fe.execute(current, root).(type) {
+	switch res := fe.evaluate(current, root).(type) {
 	case NodesType:
 		return len(res) > 0
 	case *ValueType:

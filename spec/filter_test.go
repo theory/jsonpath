@@ -179,7 +179,7 @@ func TestLogicalOrExpr(t *testing.T) {
 			orExpr := LogicalOr(tc.expr)
 			a.Equal(FuncLogical, orExpr.ResultType())
 			a.Equal(tc.exp, orExpr.testFilter(tc.current, tc.root))
-			a.Equal(LogicalFrom(tc.exp), orExpr.execute(tc.current, tc.root))
+			a.Equal(LogicalFrom(tc.exp), orExpr.evaluate(tc.current, tc.root))
 			a.Equal(tc.str, bufString(orExpr))
 
 			// Test ParenExpr.
