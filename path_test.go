@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -230,18 +229,6 @@ func TestParseCompliance(t *testing.T) {
 	for i, tc := range ts.Tests {
 		t.Run(fmt.Sprintf("test_%03d", i), func(t *testing.T) {
 			t.Parallel()
-
-			// Replace invalid JSON start character in test case 4.
-			if i == 4 {
-				tc.Selector = strings.ReplaceAll(tc.Selector, "☺", "々")
-				if doc, ok := tc.Document.(map[string]any); ok {
-					doc["々"] = doc["☺"]
-					delete(doc, "☺")
-				} else {
-					t.Fatalf("expected map[string]any but got %T", tc.Document)
-				}
-			}
-
 			description := fmt.Sprintf("%v: `%v`", tc.Name, tc.Selector)
 			p, err := p.Parse(tc.Selector)
 			if tc.InvalidSelector {

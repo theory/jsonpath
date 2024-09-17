@@ -7,8 +7,6 @@ import (
 	"unicode"
 	"unicode/utf16"
 	"unicode/utf8"
-
-	"github.com/smasher164/xid"
 )
 
 // token represents a single token in the input stream.
@@ -234,9 +232,9 @@ func (lex *lexer) peekPastBlankSpace() rune {
 	return rune(eof)
 }
 
-// scanIdentifier scans an identifier, including escapes. lex.r should be the
-// first rune in the identifier, and isIdentRune(lex.r, 0) should have already
-// returned true.
+// scanIdentifier scans an identifier, including shorthand names and
+// constants. lex.r should be the first rune in the identifier, and
+// isIdentRune(lex.r, 0) should have already returned true.
 func (lex *lexer) scanIdentifier() token {
 	buf := new(strings.Builder)
 	startPos := lex.rPos
@@ -244,17 +242,8 @@ func (lex *lexer) scanIdentifier() token {
 
 	// Scan the identifier as long as we have legit identifier runes.
 	for isIdentRune(lex.r, 1) {
-		switch lex.r {
-		case backslash:
-			// Handle escapes.
-			if !lex.writeEscape(-1, buf) {
-				return lex.errToken(lex.rPos, "invalid escape after backslash")
-			}
-			escaped = true
-		default:
-			buf.WriteRune(lex.r)
-			lex.next()
-		}
+		buf.WriteRune(lex.r)
+		lex.next()
 	}
 
 	tok := token{identifier, buf.String(), startPos}
@@ -273,12 +262,20 @@ func (lex *lexer) scanIdentifier() token {
 }
 
 // isIdentRune is a predicate controlling the characters accepted as the ith
-// rune in an identifier. These follow JavaScript [identifier syntax], including
-// support for \u0000 and \u{000000} unicode escapes.
+// rune in an identifier. These follow JSONPath [shorthand notation syntax].
 //
-// [identifier syntax]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#identifiers
+// [shorthand notation syntax]: https://www.rfc-editor.org/rfc/rfc9535.html#section-2.5.1.1-2
 func isIdentRune(r rune, i int) bool {
-	return r == '_' || r == '\\' || r == '$' || (i == 0 && xid.Start(r)) || (i > 0 && xid.Continue(r))
+	if i == 0 && ('0' <= r && r <= '9') {
+		return false
+	}
+
+	return (r >= 'a' && r <= 'z') ||
+		('A' <= r && r <= 'Z') ||
+		r == '_' ||
+		('0' <= r && r <= '9') ||
+		(0x80 <= r && r <= 0xd7ff) ||
+		(0xE000 <= r && r <= 0x10FFFF)
 }
 
 // scanNumber scans an integer or decimal number.

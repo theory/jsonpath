@@ -168,35 +168,6 @@ func TestParseSimple(t *testing.T) {
 			path: "$..{x}",
 			err:  `jsonpath: unexpected '{' at position 4`,
 		},
-		{
-			name: "name_with_dollar",
-			path: "$.x$.$y",
-			exp: spec.Query(true, []*spec.Segment{
-				spec.Child(spec.Name("x$")),
-				spec.Child(spec.Name("$y")),
-			}),
-		},
-		{
-			name: "name_with_escape",
-			path: `$.x\r.y\n`,
-			exp: spec.Query(true, []*spec.Segment{
-				spec.Child(spec.Name("x\r")),
-				spec.Child(spec.Name("y\n")),
-			}),
-		},
-		{
-			name: "name_with_unicode_escape",
-			path: `$.fo\u00f8.tune\uD834\uDD1E`,
-			exp: spec.Query(true, []*spec.Segment{
-				spec.Child(spec.Name("foø")),
-				spec.Child(spec.Name("tune𝄞")),
-			}),
-		},
-		{
-			name: "name_with_leading_unicode_escape",
-			path: `$.\u00f8ps`,
-			exp:  spec.Query(true, []*spec.Segment{spec.Child(spec.Name("øps"))}),
-		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()

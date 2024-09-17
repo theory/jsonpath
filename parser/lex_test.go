@@ -182,7 +182,7 @@ func TestScanString(t *testing.T) {
 			a.Equal(tc.tok, lex.scanString())
 
 			// Test identifier.
-			if tc.in != "" && !strings.Contains(tc.name, "emoji") {
+			if tc.in != "" && !strings.ContainsAny(tc.in, "\\$") {
 				lex := newLexer(strings.ReplaceAll(tc.in, ` `, `_`))
 				a.Equal(rune(tc.in[0]), lex.r)
 				if tc.tok.tok == invalid {
@@ -216,9 +216,14 @@ func TestScanIdentifier(t *testing.T) {
 		tok  token
 	}{
 		{
-			name: "stop_at_emoji",
+			name: "with_emoji",
 			in:   "say_😀",
-			tok:  token{identifier, "say_", 0},
+			tok:  token{identifier, "say_😀", 0},
+		},
+		{
+			name: "with_surrogate_pair",
+			in:   "say_\U0001D11E",
+			tok:  token{identifier, "say_𝄞", 0},
 		},
 		{
 			name: "newline",
@@ -256,19 +261,19 @@ func TestScanIdentifier(t *testing.T) {
 			tok:  token{jsonNull, "null", 0},
 		},
 		{
-			name: "true_escaped",
+			name: "true_stop_at_escaped",
 			in:   `tru\u0065`,
-			tok:  token{identifier, "true", 0},
+			tok:  token{identifier, "tru", 0},
 		},
 		{
-			name: "false_escaped",
+			name: "false_stop_at_escaped",
 			in:   `fals\u0065`,
-			tok:  token{identifier, "false", 0},
+			tok:  token{identifier, "fals", 0},
 		},
 		{
-			name: "null_escaped",
+			name: "null_stop_at_escaped",
 			in:   `n\u0075ll`,
-			tok:  token{identifier, "null", 0},
+			tok:  token{identifier, "n", 0},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -722,15 +727,6 @@ func TestScanTokens(t *testing.T) {
 			},
 		},
 		{
-			name: "number_space_ident_invalid_escape",
-			in:   `98.6 foo\x`,
-			tokens: []token{
-				{number, "98.6", 0},
-				{blankSpace, " ", 4},
-				{invalid, "invalid escape after backslash", 9},
-			},
-		},
-		{
 			name: "number_space_string_invalid_unicode",
 			in:   `98.6 'foo\uf3xx'`,
 			tokens: []token{
@@ -740,21 +736,12 @@ func TestScanTokens(t *testing.T) {
 			},
 		},
 		{
-			name: "number_space_ident_invalid_unicode",
-			in:   `98.6 foo\uf3xx`,
-			tokens: []token{
-				{number, "98.6", 0},
-				{blankSpace, " ", 4},
-				{invalid, "invalid escape after backslash", 10},
-			},
-		},
-		{
 			name: "number_space_string_invalid_low_surrogate",
-			in:   `98.6 foo\uD834\uED1E`,
+			in:   `98.6 "foo\uD834\uED1E"`,
 			tokens: []token{
 				{number, "98.6", 0},
 				{blankSpace, " ", 4},
-				{invalid, "invalid escape after backslash", 16},
+				{invalid, "invalid escape after backslash", 17},
 			},
 		},
 	} {
