@@ -7,7 +7,8 @@ jobs:
     strategy:
       matrix:
         os: [[🐧, Ubuntu], [🍎, macOS], [🪟, Windows]]
-    name: ${{ matrix.os[0] }} Test ${{ matrix.os[1] }}
+        go: ["1.23", "1.22"]
+    name: ${{ matrix.os[0] }} Test Go ${{ matrix.go }} on ${{ matrix.os[1] }}
     runs-on: ${{ matrix.os[1] }}-latest
     steps:
       - name: Checkout Repo
@@ -15,7 +16,7 @@ jobs:
         with: { submodules: true }
       - name: Setup Go
         uses: actions/setup-go@v5
-        with: { go-version-file: go.mod, check-latest: true }
+        with: { go-version: "${{ matrix.go }}", check-latest: true }
       - name: Run Tests
         run: make test
   lint:
