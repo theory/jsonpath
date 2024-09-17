@@ -1,4 +1,6 @@
-// Package parser handles parsing RFC 9535 JSONPath queries.
+// Package parser parses RFC 9535 JSONPath queries into parse trees. Most
+// JSONPath users will use package [github.com/theory/jsonpath] instead of
+// this package.
 package parser
 
 import (
@@ -35,10 +37,10 @@ type parser struct {
 
 // Parse parses path, a JSON Path query string, into a PathQuery. Returns a
 // PathParseError on parse failure.
-func Parse(path string) (*spec.PathQuery, error) {
+func Parse(reg *registry.Registry, path string) (*spec.PathQuery, error) {
 	lex := newLexer(path)
 	tok := lex.scan()
-	p := parser{lex, registry.New()}
+	p := parser{lex, reg}
 
 	switch tok.tok {
 	case '$':
@@ -110,8 +112,6 @@ func (p *parser) parseQuery(root bool) (*spec.PathQuery, error) {
 
 // parseNameOrWildcard parses a name or '*' wildcard selector. Returns the
 // parsed Selector.
-//
-//nolint:ireturn
 func parseNameOrWildcard(lex *lexer) (spec.Selector, error) {
 	switch tok := lex.scan(); tok.tok {
 	case identifier:
@@ -356,8 +356,6 @@ func (p *parser) parseLogicalAndExpr() (spec.LogicalAnd, error) {
 // parseBasicExpr parses a [BasicExpr] from lex. A [BasicExpr] may be a
 // parenthesized expression (paren-expr), comparison expression
 // (comparison-expr), or test expression (test-expr).
-//
-//nolint:ireturn
 func (p *parser) parseBasicExpr() (spec.BasicExpr, error) {
 	// Consume blank space.
 	lex := p.lex
@@ -423,8 +421,6 @@ func (p *parser) parseBasicExpr() (spec.BasicExpr, error) {
 // Otherwise it will be a [ComparisonExpr] (comparison-expr), as long as the
 // function call is compared to another expression. Any other configuration
 // returns an error.
-//
-//nolint:ireturn
 func (p *parser) parseFunctionFilterExpr(ident token) (spec.BasicExpr, error) {
 	f, err := p.parseFunction(ident)
 	if err != nil {
@@ -645,8 +641,6 @@ func (p *parser) parseComparableExpr(left spec.CompVal) (*spec.ComparisonExpr, e
 }
 
 // parseComparableVal parses a [CompVal] (comparable) from lex.
-//
-//nolint:ireturn
 func (p *parser) parseComparableVal(tok token) (spec.CompVal, error) {
 	switch tok.tok {
 	case goString, integer, number, boolFalse, boolTrue, jsonNull:

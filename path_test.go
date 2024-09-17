@@ -10,12 +10,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/theory/jsonpath/registry"
 )
 
 func TestParseSpecExamples(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
-	r := require.New(t)
 	val := specExampleJSON(t)
 	store, _ := val["store"].(map[string]any)
 
@@ -26,13 +26,11 @@ func TestParseSpecExamples(t *testing.T) {
 		size int
 		rand bool
 	}{
-		//nolint:dupword
 		{
 			name: "example_1",
 			path: `$.store.book[*].author`,
 			exp:  []any{"Nigel Rees", "Evelyn Waugh", "Herman Melville", "J. R. R. Tolkien"},
 		},
-		//nolint:dupword
 		{
 			name: "example_2",
 			path: `$..author`,
@@ -64,7 +62,6 @@ func TestParseSpecExamples(t *testing.T) {
 		{
 			name: "example_6",
 			path: `$..book[-1]`,
-			//nolint:dupword
 			exp: []any{map[string]any{
 				"category": "fiction",
 				"author":   "J. R. R. Tolkien",
@@ -102,7 +99,6 @@ func TestParseSpecExamples(t *testing.T) {
 					"isbn":     "0-553-21311-3",
 					"price":    8.99,
 				},
-				//nolint:dupword
 				map[string]any{
 					"category": "fiction",
 					"author":   "J. R. R. Tolkien",
@@ -140,8 +136,7 @@ func TestParseSpecExamples(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			p, err := Parse(tc.path)
-			r.NoError(err)
+			p := MustParse(tc.path)
 			a.Equal(p.q, p.Query())
 			a.Equal(p.q.String(), p.String())
 			res := p.Select(val)
@@ -161,7 +156,6 @@ func TestParseSpecExamples(t *testing.T) {
 
 func specExampleJSON(t *testing.T) map[string]any {
 	t.Helper()
-	//nolint:dupword
 	src := []byte(`{
 	  "store": {
 	    "book": [
@@ -211,6 +205,7 @@ func TestParseCompliance(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
 	r := require.New(t)
+	p := NewParser()
 
 	//nolint:tagliatelle
 	type testCase struct {
@@ -248,9 +243,10 @@ func TestParseCompliance(t *testing.T) {
 			}
 
 			description := fmt.Sprintf("%v: `%v`", tc.Name, tc.Selector)
-			p, err := Parse(tc.Selector)
+			p, err := p.Parse(tc.Selector)
 			if tc.InvalidSelector {
 				r.Error(err, description)
+				r.ErrorIs(err, ErrPathParse)
 				a.Nil(p, description)
 				return
 			}
@@ -264,6 +260,76 @@ func TestParseCompliance(t *testing.T) {
 				a.Equal(tc.Result, res, description)
 			case tc.Results != nil:
 				a.Contains(tc.Results, res, description)
+			}
+		})
+	}
+}
+
+func TestParser(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+	r := require.New(t)
+	reg := registry.New()
+
+	for _, tc := range []struct {
+		name string
+		path string
+		reg  *registry.Registry
+		exp  *Path
+		err  string
+	}{
+		{
+			name: "root",
+			path: "$",
+			exp:  MustParse("$"),
+		},
+		{
+			name: "root_reg",
+			path: "$",
+			reg:  reg,
+			exp:  MustParse("$"),
+		},
+		{
+			name: "parse_error",
+			path: "lol",
+			err:  "jsonpath: unexpected identifier at position 1",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Construct a parser.
+			var parser *Parser
+			if tc.reg == nil {
+				parser = NewParser()
+			} else {
+				parser = NewParser(WithRegistry(tc.reg))
+				a.Equal(tc.reg, parser.reg)
+			}
+
+			// Test Parse and MustParse methods.
+			p, err := parser.Parse(tc.path)
+			if tc.err == "" {
+				r.NoError(err)
+				a.Equal(tc.exp, p)
+				a.Equal(tc.exp, parser.MustParse(tc.path))
+			} else {
+				r.EqualError(err, tc.err)
+				r.ErrorIs(err, ErrPathParse)
+				a.PanicsWithError(tc.err, func() { parser.MustParse(tc.path) })
+			}
+
+			if tc.reg == nil {
+				// Test Parse and MustParse functions.
+				if tc.err == "" {
+					r.NoError(err)
+					a.Equal(tc.exp, p)
+					a.Equal(tc.exp, parser.MustParse(tc.path))
+				} else {
+					r.EqualError(err, tc.err)
+					r.ErrorIs(err, ErrPathParse)
+					a.PanicsWithError(tc.err, func() { parser.MustParse(tc.path) })
+				}
 			}
 		})
 	}

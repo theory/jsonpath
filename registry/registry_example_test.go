@@ -9,6 +9,24 @@ import (
 	"github.com/theory/jsonpath/spec"
 )
 
+// Create and registry a custom JSONPath expression, first(), that returns the
+// first node in a list of nodes passed to it. See
+// [github.com/theory/jsonpath.Parser] for a more complete example.
+func Example() {
+	reg := registry.New()
+	err := reg.Register(
+		"first",           // function name
+		spec.FuncValue,    // returns a single value
+		validateFirstArgs, // parse-time validation defined below
+		firstFunc,         // function defined below
+	)
+	if err != nil {
+		log.Fatalf("Error %v", err)
+	}
+	fmt.Printf("%v\n", reg.Get("first").ResultType())
+	// Output:FuncValue
+}
+
 // validateFirstArgs validates that a single argument is passed to the first()
 // function, and that it can be converted to [spec.PathNodes], so that first()
 // can return the first node. It's called by the parser.
@@ -33,21 +51,4 @@ func firstFunc(jv []spec.JSONPathValue) spec.JSONPathValue {
 		return nil
 	}
 	return spec.Value(nodes[0])
-}
-
-// Create and registry a custom JSONPath expression, first(), that returns the
-// first node in a list of nodes passed to it.
-func Example() {
-	reg := registry.New()
-	err := reg.Register(
-		"first",
-		spec.FuncValue,
-		validateFirstArgs,
-		firstFunc,
-	)
-	if err != nil {
-		log.Fatalf("Error %v", err)
-	}
-	fmt.Printf("%v\n", reg.Get("first").ResultType())
-	// Output:FuncValue
 }

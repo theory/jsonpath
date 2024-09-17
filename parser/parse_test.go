@@ -16,7 +16,7 @@ func TestParseRoot(t *testing.T) {
 	a := assert.New(t)
 	r := require.New(t)
 
-	q, err := Parse("$")
+	q, err := Parse(registry.New(), "$")
 	r.NoError(err)
 	a.Equal("$", q.String())
 	a.Empty(q.Segments())
@@ -26,6 +26,7 @@ func TestParseSimple(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
 	r := require.New(t)
+	reg := registry.New()
 
 	for _, tc := range []struct {
 		name string
@@ -199,7 +200,7 @@ func TestParseSimple(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			q, err := Parse(tc.path)
+			q, err := Parse(reg, tc.path)
 			if tc.err == "" {
 				r.NoError(err)
 				a.Equal(tc.exp, q)
@@ -856,6 +857,7 @@ func TestParseSelectors(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
 	r := require.New(t)
+	reg := registry.New()
 
 	for _, tc := range []struct {
 		name string
@@ -1289,7 +1291,7 @@ func TestParseSelectors(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			q, err := Parse(tc.path)
+			q, err := Parse(reg, tc.path)
 			if tc.err == "" {
 				r.NoError(err)
 				a.Equal(tc.exp, q)

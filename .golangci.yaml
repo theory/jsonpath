@@ -115,10 +115,16 @@ linters-settings:
       - empty
       - stdlib
       - generic
-      - JSONPathValue
-      - FunctionExprArg
+      - spec\.JSONPathValue
+      - spec\.FunctionExprArg
+      - spec\.Selector
+      - spec\.BasicExpr
+      - spec\.CompVal
       # You can specify idiomatic endings for interface
       # - (or|er)$
     # reject-list of interfaces
     # reject:
     #   - github.com\/user\/package\/v4\.Type
+  dupword:
+    ignore:
+      - R.
