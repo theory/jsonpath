@@ -134,24 +134,24 @@ func (e *ExistExpr) writeTo(buf *strings.Builder) {
 	buf.WriteString(e.PathQuery.String())
 }
 
-// NotExistsExpr represents a nonexistence expression.
-type NotExistsExpr struct {
+// NonExistExpr represents a nonexistence expression.
+type NonExistExpr struct {
 	*PathQuery
 }
 
-// Nonexistence returns a new NotExistsExpr.
-func Nonexistence(q *PathQuery) *NotExistsExpr {
-	return &NotExistsExpr{PathQuery: q}
+// Nonexistence returns a new NonExistExpr.
+func Nonexistence(q *PathQuery) *NonExistExpr {
+	return &NonExistExpr{PathQuery: q}
 }
 
 // writeTo writes a string representation of ne to buf.
-func (ne NotExistsExpr) writeTo(buf *strings.Builder) {
+func (ne NonExistExpr) writeTo(buf *strings.Builder) {
 	buf.WriteRune('!')
 	buf.WriteString(ne.PathQuery.String())
 }
 
 // testFilter returns true if ne.Query selects no results from current or
 // root.
-func (ne NotExistsExpr) testFilter(current, root any) bool {
+func (ne NonExistExpr) testFilter(current, root any) bool {
 	return len(ne.Select(current, root)) == 0
 }

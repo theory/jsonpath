@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// PathType represents a path type.
+// PathType represents the types of filter expression values.
 type PathType uint8
 
 //revive:disable:exported
@@ -15,7 +15,7 @@ const (
 	// A type containing a single value.
 	PathValue PathType = iota + 1 // ValueType
 
-	// A boolean type.
+	// A logical (boolean) type.
 	PathLogical // LogicalType
 
 	// A type containing a list of nodes.
@@ -366,20 +366,20 @@ func (fq *FilterQueryExpr) writeTo(buf *strings.Builder) {
 // function and its arguments.
 type FunctionExpr struct {
 	args []FunctionExprArg
-	fn   Function
+	fn   PathFunction
 }
 
-// Function represents a JSONPath function. See
+// PathFunction represents a JSONPath function. See
 // [github.com/theory/jsonpath/registry] for the implementation.
-type Function interface {
+type PathFunction interface {
 	Name() string
 	ResultType() FuncType
 	Evaluate(args []JSONPathValue) JSONPathValue
 }
 
-// NewFunctionExpr creates an returns a new function expression that will
-// execute fn against the return values of args.
-func NewFunctionExpr(fn Function, args []FunctionExprArg) *FunctionExpr {
+// Function creates an returns a new function expression that will execute fn
+// against the return values of args.
+func Function(fn PathFunction, args []FunctionExprArg) *FunctionExpr {
 	return &FunctionExpr{args: args, fn: fn}
 }
 
@@ -444,6 +444,13 @@ func (fe *FunctionExpr) testFilter(current, root any) bool {
 // the return value of a function expression.
 type NotFuncExpr struct {
 	*FunctionExpr
+}
+
+// NotFunction creates an returns a new NotFuncExpr that will execute fn
+// against the return values of args and return the inverses of its return
+// value.
+func NotFunction(fn *FunctionExpr) NotFuncExpr {
+	return NotFuncExpr{fn}
 }
 
 // testFilter returns the inverse of nf.FunctionExpr.testFilter().

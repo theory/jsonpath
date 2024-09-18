@@ -241,8 +241,8 @@ func TestExistExpr(t *testing.T) {
 			exist.writeTo(buf)
 			a.Equal(tc.query.String(), buf.String())
 
-			// Test notExistExpr.
-			ne := NotExistsExpr{tc.query}
+			// Test NonExistExpr.
+			ne := NonExistExpr{tc.query}
 			a.Equal(!tc.exp, ne.testFilter(tc.current, tc.root))
 			buf.Reset()
 			ne.writeTo(buf)

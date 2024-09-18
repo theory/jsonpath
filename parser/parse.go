@@ -377,11 +377,11 @@ func (p *parser) parseBasicExpr() (spec.BasicExpr, error) {
 			if err != nil {
 				return nil, err
 			}
-			return spec.NotFuncExpr{FunctionExpr: f}, nil
+			return spec.NotFunction(f), nil
 		}
 
 		// test-expr or comparison-expr
-		return p.parseNotExistsExpr(next)
+		return p.parseNonExistExpr(next)
 	case '(':
 		return p.parseParenExpr()
 	case goString, integer, number, boolFalse, boolTrue, jsonNull:
@@ -408,7 +408,7 @@ func (p *parser) parseBasicExpr() (spec.BasicExpr, error) {
 				return p.parseComparableExpr(sing)
 			}
 		}
-		return &spec.ExistExpr{PathQuery: q}, nil
+		return spec.Existence(q), nil
 	}
 
 	return nil, unexpected(tok)
@@ -440,8 +440,8 @@ func (p *parser) parseFunctionFilterExpr(ident token) (spec.BasicExpr, error) {
 	return nil, makeError(p.lex.scan(), "missing comparison to function result")
 }
 
-// parseNotExistsExpr parses a [spec.NotExistsExpr] (non-existence) from lex.
-func (p *parser) parseNotExistsExpr(tok token) (*spec.NotExistsExpr, error) {
+// parseNonExistExpr parses a [spec.NonExistExpr] (non-existence) from lex.
+func (p *parser) parseNonExistExpr(tok token) (*spec.NonExistExpr, error) {
 	q, err := p.parseFilterQuery(tok)
 	if err != nil {
 		return nil, err
@@ -522,7 +522,7 @@ func (p *parser) parseFunction(tok token) (*spec.FunctionExpr, error) {
 		return nil, makeError(paren, fmt.Sprintf("function %v() %v", tok.val, err.Error()))
 	}
 
-	return spec.NewFunctionExpr(function, args), nil
+	return spec.Function(function, args), nil
 }
 
 // parseFunctionArgs parses the comma-delimited arguments to a function from
@@ -637,7 +637,7 @@ func (p *parser) parseComparableExpr(left spec.CompVal) (*spec.ComparisonExpr, e
 		return nil, err
 	}
 
-	return &spec.ComparisonExpr{Left: left, Op: op, Right: right}, nil
+	return spec.Comparison(left, op, right), nil
 }
 
 // parseComparableVal parses a [CompVal] (comparable) from lex.

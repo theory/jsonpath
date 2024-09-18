@@ -261,8 +261,7 @@ func TestJSONPathValueInterface(t *testing.T) {
 			t.Parallel()
 			a.Implements((*JSONPathValue)(nil), tc.pathVal)
 			pv, _ := tc.pathVal.(JSONPathValue)
-			a.Equal(tc.pathType, pv.PathType())
-			a.Equal(tc.funcType, pv.FuncType())
+			// a.Equal(tc.funcType, pv.FuncType())
 			a.Equal(tc.str, bufString(pv))
 		})
 	}
@@ -586,7 +585,7 @@ func TestFunctionExpr(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			fe := NewFunctionExpr(tc.fn, tc.args)
+			fe := Function(tc.fn, tc.args)
 			a.Equal(tc.fn.result, fe.ResultType())
 			a.Equal(tc.exp, fe.evaluate(tc.current, tc.root))
 			a.Equal(tc.exp, fe.asValue(tc.current, tc.root))

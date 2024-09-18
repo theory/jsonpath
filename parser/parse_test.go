@@ -253,7 +253,7 @@ func TestParseFilter(t *testing.T) {
 				})),
 			}}),
 		},
-		// NotExistExpr
+		// NonExistExpr
 		{
 			name:  "current_not_exists",
 			query: "!@",
@@ -422,7 +422,7 @@ func TestParseFilter(t *testing.T) {
 			name:  "function_current",
 			query: "__true(@)",
 			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
-				spec.NewFunctionExpr(trueFunc, []spec.FunctionExprArg{
+				spec.Function(trueFunc, []spec.FunctionExprArg{
 					spec.SingularQuery(false, []spec.Selector{}),
 				}),
 			}}),
@@ -431,7 +431,7 @@ func TestParseFilter(t *testing.T) {
 			name:  "function_match_current_integer",
 			query: "match( @,  42  )",
 			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
-				spec.NewFunctionExpr(reg.Get("match"), []spec.FunctionExprArg{
+				spec.Function(reg.Get("match"), []spec.FunctionExprArg{
 					spec.SingularQuery(false, []spec.Selector{}),
 					spec.Literal(int64(42)),
 				}),
@@ -441,7 +441,7 @@ func TestParseFilter(t *testing.T) {
 			name:  "function_search_two_queries",
 			query: "search( $.x,  @[0]  )",
 			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
-				spec.NewFunctionExpr(reg.Get("search"), []spec.FunctionExprArg{
+				spec.Function(reg.Get("search"), []spec.FunctionExprArg{
 					spec.SingularQuery(true, []spec.Selector{spec.Name("x")}),
 					spec.SingularQuery(false, []spec.Selector{spec.Index(0)}),
 				}),
@@ -452,7 +452,7 @@ func TestParseFilter(t *testing.T) {
 			query: `length("hi") == 2`,
 			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
 				spec.Comparison(
-					spec.NewFunctionExpr(
+					spec.Function(
 						reg.Get("length"),
 						[]spec.FunctionExprArg{spec.Literal("hi")},
 					),
@@ -466,7 +466,7 @@ func TestParseFilter(t *testing.T) {
 			query: `length(true) == 1`,
 			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
 				spec.Comparison(
-					spec.NewFunctionExpr(
+					spec.Function(
 						reg.Get("length"),
 						[]spec.FunctionExprArg{spec.Literal(true)},
 					),
@@ -480,7 +480,7 @@ func TestParseFilter(t *testing.T) {
 			query: `length(false)==1`,
 			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
 				spec.Comparison(
-					spec.NewFunctionExpr(
+					spec.Function(
 						reg.Get("length"),
 						[]spec.FunctionExprArg{spec.Literal(false)},
 					),
@@ -493,7 +493,7 @@ func TestParseFilter(t *testing.T) {
 			name:  "function_value_null",
 			query: `__true(null)`, // defined in function_test.go
 			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
-				spec.NewFunctionExpr(trueFunc, []spec.FunctionExprArg{
+				spec.Function(trueFunc, []spec.FunctionExprArg{
 					spec.Literal(nil),
 				}),
 			}}),
@@ -502,8 +502,8 @@ func TestParseFilter(t *testing.T) {
 			name:  "nested_function",
 			query: `__true(count(@))`, // defined in function_test.go
 			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
-				spec.NewFunctionExpr(trueFunc, []spec.FunctionExprArg{
-					spec.NewFunctionExpr(reg.Get("count"), []spec.FunctionExprArg{
+				spec.Function(trueFunc, []spec.FunctionExprArg{
+					spec.Function(reg.Get("count"), []spec.FunctionExprArg{
 						spec.SingularQuery(false, []spec.Selector{}),
 					}),
 				}),
@@ -513,7 +513,7 @@ func TestParseFilter(t *testing.T) {
 			name:  "function_paren_logical_expr",
 			query: `__true((@.x))`, // defined in function_test.go
 			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
-				spec.NewFunctionExpr(trueFunc, []spec.FunctionExprArg{
+				spec.Function(trueFunc, []spec.FunctionExprArg{
 					spec.LogicalOr{spec.LogicalAnd{
 						spec.Existence(spec.Query(false, []*spec.Segment{
 							spec.Child(spec.Name("x")),
@@ -526,7 +526,7 @@ func TestParseFilter(t *testing.T) {
 			name:  "function_paren_logical_not_expr",
 			query: `__true((!@.x))`, // defined in function_test.go
 			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
-				spec.NewFunctionExpr(trueFunc, []spec.FunctionExprArg{
+				spec.Function(trueFunc, []spec.FunctionExprArg{
 					spec.LogicalOr{spec.LogicalAnd{
 						spec.Nonexistence(spec.Query(false, []*spec.Segment{
 							spec.Child(spec.Name("x")),
@@ -539,7 +539,7 @@ func TestParseFilter(t *testing.T) {
 			name:  "function_lots_of_literals",
 			query: `__true("hi", 42, true, false, null, 98.6)`,
 			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
-				spec.NewFunctionExpr(trueFunc, []spec.FunctionExprArg{
+				spec.Function(trueFunc, []spec.FunctionExprArg{
 					spec.Literal("hi"),
 					spec.Literal(int64(42)),
 					spec.Literal(true),
@@ -553,7 +553,7 @@ func TestParseFilter(t *testing.T) {
 			name:  "function_no_args",
 			query: `__true()`,
 			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
-				spec.NewFunctionExpr(trueFunc, []spec.FunctionExprArg{}),
+				spec.Function(trueFunc, []spec.FunctionExprArg{}),
 			}}),
 		},
 		// ComparisonExpr
@@ -582,7 +582,7 @@ func TestParseFilter(t *testing.T) {
 				spec.Comparison(
 					spec.Literal(int64(42)),
 					spec.GreaterThan,
-					spec.NewFunctionExpr(reg.Get("length"), []spec.FunctionExprArg{
+					spec.Function(reg.Get("length"), []spec.FunctionExprArg{
 						spec.Literal("hi"),
 					}),
 				),
@@ -593,7 +593,7 @@ func TestParseFilter(t *testing.T) {
 			query: `length("hi") <=   @[0]["a"]`,
 			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
 				spec.Comparison(
-					spec.NewFunctionExpr(
+					spec.Function(
 						reg.Get("length"),
 						[]spec.FunctionExprArg{spec.Literal("hi")},
 					),
@@ -618,7 +618,7 @@ func TestParseFilter(t *testing.T) {
 			query: `length("hi") <   42 `,
 			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
 				spec.Comparison(
-					spec.NewFunctionExpr(
+					spec.Function(
 						reg.Get("length"),
 						[]spec.FunctionExprArg{spec.Literal("hi")},
 					),
@@ -631,7 +631,7 @@ func TestParseFilter(t *testing.T) {
 			name:  "not_function",
 			query: `!__true()`,
 			filter: spec.Filter(spec.LogicalOr{spec.LogicalAnd{
-				spec.NotFuncExpr{FunctionExpr: spec.NewFunctionExpr(
+				spec.NotFuncExpr{FunctionExpr: spec.Function(
 					trueFunc, []spec.FunctionExprArg{},
 				)},
 			}}),

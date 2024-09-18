@@ -159,7 +159,7 @@ func TestCheckSingularFuncArgs(t *testing.T) {
 		},
 		{
 			name: "logical_function_expr",
-			expr: []spec.FunctionExprArg{spec.NewFunctionExpr(reg.Get("match"),
+			expr: []spec.FunctionExprArg{spec.Function(reg.Get("match"),
 				[]spec.FunctionExprArg{
 					spec.FilterQuery(
 						spec.Query(true, []*spec.Segment{spec.Child(spec.Name("x"))}),
@@ -277,7 +277,7 @@ func TestCheckRegexFuncArgs(t *testing.T) {
 		{
 			name: "function_expr_1",
 			expr: []spec.FunctionExprArg{
-				spec.NewFunctionExpr(reg.Get("match"),
+				spec.Function(reg.Get("match"),
 					[]spec.FunctionExprArg{
 						spec.FilterQuery(
 							spec.Query(true, []*spec.Segment{spec.Child(spec.Name("x"))}),
@@ -293,7 +293,7 @@ func TestCheckRegexFuncArgs(t *testing.T) {
 			name: "function_expr_2",
 			expr: []spec.FunctionExprArg{
 				spec.Literal("hi"),
-				spec.NewFunctionExpr(reg.Get("match"),
+				spec.Function(reg.Get("match"),
 					[]spec.FunctionExprArg{
 						spec.FilterQuery(
 							spec.Query(true, []*spec.Segment{spec.Child(spec.Name("x"))}),
