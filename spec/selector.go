@@ -1,5 +1,6 @@
 // Package spec provides object definitions and execution for RFC 9535
-// JSONPath query expressions.
+// JSONPath query expressions. It remains under active development therefore
+// should generally not be used directly except for experimental purposes.
 package spec
 
 import (
