@@ -22,7 +22,7 @@ A brief overview of RFC [9535 JSONPath] syntax:
 | `'name'`           | name selector: selects a named child of an object                       |
 | `*`                | wildcard selector: selects all children of a node                       |
 | `3`                | index selector: selects an indexed child of an array (from 0)           |
-| `0:100:5`          | array slice selector: start:end:step for arrays                         |
+| `0:100:5`          | array slice selector: `start:end:step` for arrays                       |
 | `?<logical-expr>`  | filter selector: selects particular children using a logical expression |
 | `length(@.foo)`    | function extension: invokes  a function in a filter expression          |
 
