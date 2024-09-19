@@ -9,21 +9,21 @@ The jsonpath package provides [RFC 9535 JSONPath] functionality in Go.
 
 A brief overview of RFC [9535 JSONPath] syntax:
 
-| Syntax Element     | Description**                                                         |
+| Syntax Element     | Description**                                                           |
 | ------------------ | ----------------------------------------------------------------------- |
 | `$`                | root node identifier                                                    |
 | `@`                | current node identifier (valid only within filter selectors)            |
 | `[<selectors>]`    | child segment: selects zero or more children of a node                  |
-| `.name`            | shorthand for ['name']                                                  |
-| `.*`               | shorthand for [*]                                                       |
+| `.name`            | shorthand for `['name']`                                                |
+| `.*`               | shorthand for `[*]`                                                     |
 | `..[<selectors>]`  | descendant segment: selects zero or more descendants of a node          |
-| `..name`           | shorthand for ..['name']                                                |
-| `..*`              | shorthand for ..[*]                                                     |
+| `..name`           | shorthand for `..['name']`                                              |
+| `..*`              | shorthand for `..[*]`                                                   |
 | `'name'`           | name selector: selects a named child of an object                       |
 | `*`                | wildcard selector: selects all children of a node                       |
 | `3`                | index selector: selects an indexed child of an array (from 0)           |
 | `0:100:5`          | array slice selector: start:end:step for arrays                         |
-| `?<logical-expr>`  | filter selector: selects particular children using a logical expression |                                     |
+| `?<logical-expr>`  | filter selector: selects particular children using a logical expression |
 | `length(@.foo)`    | function extension: invokes  a function in a filter expression          |
 
 ## Package Stability
