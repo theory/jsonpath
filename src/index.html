@@ -1,0 +1,209 @@
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>Go JSONPath Playground</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="play.css">
+  <script src="wasm_exec.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const $ = (id) => document.getElementById(id);
+      const $$ = (q) => document.querySelector(q);
+
+      const optionNames = [
+        "optIndent",
+      ];
+
+      const EXAMPLE_JSON = {
+        "store": {
+          "book": [
+          {
+            "category": "reference",
+            "author": "Nigel Rees",
+            "title": "Sayings of the Century",
+            "price": 8.95
+          },
+          {
+            "category": "fiction",
+            "author": "Evelyn Waugh",
+            "title": "Sword of Honour",
+            "price": 12.99
+          },
+          {
+            "category": "fiction",
+            "author": "Herman Melville",
+            "title": "Moby Dick",
+            "isbn": "0-553-21311-3",
+            "price": 8.99
+          },
+          {
+            "category": "fiction",
+            "author": "J. R. R. Tolkien",
+            "title": "The Lord of the Rings",
+            "isbn": "0-395-19395-8",
+            "price": 22.99
+          }
+          ],
+          "bicycle": {
+          "color": "red",
+          "price": 399
+          }
+        }
+      }
+
+      const QUERY_EXAMPLES = [
+        "$.store.book[?@.author == 'Herman Melville']['title', 'author', 'price']",
+        "$.store.book[?search(@.author, 'Waugh|Tolkien')]",
+        "$.store.book[?@.price < 20 && @.price > 10]",
+        "$..book[?@.price < 20].title",
+        "$..book[?@.category == 'reference'].*",
+        "$.store.book[::-1]",
+        "$..author",
+        "$..price",
+      ];
+
+      const getQueryExample = () => QUERY_EXAMPLES[Math.floor(Math.random() * QUERY_EXAMPLES.length)];
+
+      const getOptions = function() {
+        let options = 0;
+        for (const optionName of optionNames) {
+          if (document.getElementById(optionName).checked) {
+            options |= window[optionName];
+          }
+        }
+        return options;
+      };
+
+      const setOptions = function(value) {
+        value = !value ? 0 : parseInt(value);
+        for (const optionName of optionNames) {
+          document.getElementById(optionName).checked =
+            (window[optionName] & value) === window[optionName];
+        }
+      };
+
+      const execute = function() {
+        $('message').innerText = "";
+        const options = getOptions();
+        const outputElm= $$('#values');
+        outputElm.value = query($('path').value, $('json').value, options);
+        fit(outputElm);
+      }
+
+      const execPermalink = function() {
+        const u = new URL(location.href);
+        u.searchParams.set("p", encodeURIComponent($('path').value));
+        u.searchParams.set("j", encodeURIComponent($('json').value));
+        u.searchParams.set("o", getOptions());
+        window.location = u.href;
+      }
+
+      const fit = function(elem) {
+        elem.style.height = "";
+        elem.style.height = elem.scrollHeight + 3 + "px"
+      }
+
+      const go = new Go();
+      const WASM_URL = './play.wasm';
+
+      var wasm;
+      const onload = function(obj) {
+        wasm = obj.instance;
+        go.run(wasm);
+
+        const u = new URL(location.href);
+        if (u.searchParams.has("o")) {
+          setOptions(u.searchParams.get("o"));
+        }
+        $("path").value = u.searchParams.has("p")
+          ? decodeURIComponent(u.searchParams.get("p"))
+          : getQueryExample();
+
+        const json = $("json");
+        json.value = u.searchParams.has("j")
+          ? decodeURIComponent(u.searchParams.get("j"))
+          : JSON.stringify(EXAMPLE_JSON, null, 2);
+        fit(json);
+
+        execute()
+      };
+
+      if ('instantiateStreaming' in WebAssembly) {
+        WebAssembly.instantiateStreaming(fetch(WASM_URL), go.importObject).then(onload);
+      } else {
+        fetch(WASM_URL).then(resp =>
+          resp.arrayBuffer()
+        ).then(bytes => WebAssembly.instantiate(bytes, go.importObject).then(onload));
+      }
+
+      $('exec-btn').addEventListener('click', _ => { execute() });
+      $('permalink').addEventListener('click', _ => { execPermalink() });
+      $('json').addEventListener('input', event => { fit(event.target) });
+      $('values').addEventListener('input', event => { fit(event.target) });
+      $('btn-info').addEventListener('click', _ => { const d = $('about'); d.open = !d.open });
+    });
+  </script>
+</head>
+
+<body>
+  <header>
+    <h1>Go JSONPath Playground</h1>
+    <button type="button" id="btn-info" title="About the Go JSONPath Playground">
+      <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" height="18" width="18" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"></path><path d="M11 11h2v6h-2zm0-4h2v2h-2z"></path></svg>
+    </button>
+  </header>
+  <details id="about">
+    <summary>About</summary>
+    <h2>
+      <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" height="1em" width="1em"
+        xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"></path>
+        <path d="M11 11h2v6h-2zm0-4h2v2h-2z"></path>
+      </svg>
+      About
+    </h2>
+    <p>This is the playground for <strong>github.com/theory/jsonpath</strong>, a Go package that executes <a href="https://www.rfc-editor.org/rfc/rfc9535.html">RFC 9535 JSONPath</a> queries to select values from arbitrary JSON data.</p>
+    <p>The playground runs entirely in the browser thanks to <a href="https://tinygo.org" title="TinyGo — A Go Compiler For Small Places">TinyGo</a>, which compiles the <strong>github.com/theory/jsonpath</strong> package into Web Assembly.</p>
+    <p>Learn more about JSONPath by reading the <a href="https://www.rfc-editor.org/rfc/rfc9535.html">IETF JSONPath Standard</a>, and more about <strong>github.com/theory/jsonpath</strong> by following the links at the bottom of the page. The code for this website can be found <a href="https://github.com/theory/jsonpath/tree/playground">on GitHub</a>.
+  </details>
+  <section id="message">
+    <noscript class="warn">JavaScript must be enabled to run this app.</noscript>
+  </section>
+  <div id="fluid">
+    <input id="path" placeholder="Enter a JSONPath query…"/>
+    <button class="btn" id="exec-btn">Run Query</button>
+    <button class="btn" id="permalink" title="Reload with a permanent link that populates all the fields and executes the path">Permalink</button>
+  </div>
+  <div id="container">
+    <div id="jsonpath">
+      <label title="The JSON against which to execute the Path expression">JSON Input
+        <textarea id="json" title="The JSON against which to execute the Path expression"></textarea>
+      </label>
+    </div>
+    <div id="output">
+      <label for="values" title="The values selected from the JSON Input">Query Output</label>
+      <label for="optIndent">
+        <input id="optIndent" type="checkbox" checked />
+        Pretty
+      </label>
+      <textarea id="values" title="The JSON against which to execute the Path expression" readonly></textarea>
+    </div>
+  </div>
+  <footer>
+    <p>Queries powered by the Go <strong>github.com/theory/jsonpath</strong> package:</p>
+    <div id="refs">
+      <a href="https://github.com/theory/jsonpath" title="GitHub Repository">
+        <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 16 16" type="logo" color="#adb5bd" style="color: rgb(173, 181, 189);" height="24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path></svg>
+      </a>
+      <a href="https://github.com/theory/jsonpath/blob/main/README.md" title="Documentation">
+        <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" color="#adb5bd" style="color: rgb(173, 181, 189);" height="26" width="26" xmlns="http://www.w3.org/2000/svg"><path d="M21 3h-7a2.98 2.98 0 0 0-2 .78A2.98 2.98 0 0 0 10 3H3a1 1 0 0 0-1 1v15a1 1 0 0 0 1 1h5.758c.526 0 1.042.214 1.414.586l1.121 1.121c.009.009.021.012.03.021.086.079.182.149.294.196h.002a.996.996 0 0 0 .762 0h.002c.112-.047.208-.117.294-.196.009-.009.021-.012.03-.021l1.121-1.121A2.015 2.015 0 0 1 15.242 20H21a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1zM8.758 18H4V5h6c.552 0 1 .449 1 1v12.689A4.032 4.032 0 0 0 8.758 18zM20 18h-4.758c-.799 0-1.584.246-2.242.689V6c0-.551.448-1 1-1h6v13z"></path></svg>
+      </a>
+      <a href="https://pkg.go.dev/github.com/theory/jsonpath" title="Go Package">
+        <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" type="logo" color="#adb5bd" style="color: rgb(173, 181, 189);" height="26" width="26" xmlns="http://www.w3.org/2000/svg"><path d="M22 8a.76.76 0 0 0 0-.21v-.08a.77.77 0 0 0-.07-.16.35.35 0 0 0-.05-.08l-.1-.13-.08-.06-.12-.09-9-5a1 1 0 0 0-1 0l-9 5-.09.07-.11.08a.41.41 0 0 0-.07.11.39.39 0 0 0-.08.1.59.59 0 0 0-.06.14.3.3 0 0 0 0 .1A.76.76 0 0 0 2 8v8a1 1 0 0 0 .52.87l9 5a.75.75 0 0 0 .13.06h.1a1.06 1.06 0 0 0 .5 0h.1l.14-.06 9-5A1 1 0 0 0 22 16V8zm-10 3.87L5.06 8l2.76-1.52 6.83 3.9zm0-7.72L18.94 8 16.7 9.25 9.87 5.34zM4 9.7l7 3.92v5.68l-7-3.89zm9 9.6v-5.68l3-1.68V15l2-1v-3.18l2-1.11v5.7z"></path></svg>
+      </a>
+    </div>
+    </footer>
+</body>
+
+</html>
