@@ -590,7 +590,7 @@ func TestFunctionExpr(t *testing.T) {
 			a.Equal(tc.exp, fe.evaluate(tc.current, tc.root))
 			a.Equal(tc.exp, fe.asValue(tc.current, tc.root))
 			a.Equal(tc.logical, fe.testFilter(tc.current, tc.root))
-			a.Equal(!tc.logical, NotFuncExpr{fe}.testFilter(tc.current, tc.root))
+			a.Equal(!tc.logical, NotFunction(fe).testFilter(tc.current, tc.root))
 			a.Equal(tc.str, bufString(fe))
 		})
 	}
