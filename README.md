@@ -5,6 +5,13 @@ RFC 9535 JSONPath in Go
 
 The jsonpath package provides [RFC 9535 JSONPath] functionality in Go.
 
+## Learn More
+
+*   📦 See the [package documentation][docs] for usage and examples.
+*   📚 See the [RFC 9535 JSONPath] standard for details on the JSONPath query
+    syntax and examples of its usage.
+*   🛝 Try it out in the [Playground].
+
 ## JSONPath Expressions
 
 A brief overview of RFC [9535 JSONPath] syntax:
@@ -62,3 +69,4 @@ Copyright © 2024 David E. Wheeler
   [cov]: https://codecov.io/gh/theory/jsonpath "📊 Code Coverage"
   [RFC 9535 JSONPath]: https://www.rfc-editor.org/rfc/rfc9535.html
     "RFC 9535 JSONPath: Query Expressions for JSON"
+  [Playground]: https://theory.github.io/jsonpath/ "Go JSONPath Playground"
