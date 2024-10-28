@@ -16,7 +16,19 @@ lint: .golangci.yaml
 .PHONY: clean # Remove generated files
 clean:
 	$(GO) clean
-	@rm -rf cover.out
+	@rm -rf cover.out _build
+
+# WASM
+.PHONY: wasm # Build a simple app with Go and TinyGo WASM compilation.
+wasm: _build/go.wasm _build/tinygo.wasm
+
+_build/go.wasm: internal/wasm/wasm.go
+	@mkdir -p $(@D)
+	GOOS=js GOARCH=wasm $(GO) build -o $@ $<
+
+_build/tinygo.wasm: internal/wasm/wasm.go
+	@mkdir -p $(@D)
+	GOOS=js GOARCH=wasm tinygo build -no-debug -size short -o $@ $<
 
 ############################################################################
 # Utilities.

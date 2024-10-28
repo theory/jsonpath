@@ -7,12 +7,34 @@ All notable changes to this project will be documented in this file. It uses the
   [Semantic Versioning]: https://semver.org/spec/v2.0.0.html
     "Semantic Versioning 2.0.0"
 
+## [v0.1.2] — Unreleased
+
+### 🪲 Bug Fixes
+
+*   Eliminated a lexer variable that prevented [TinyGo] compilation.
+
+### 🏗️ Build Setup
+
+*   Added simple tests to ensure the package compiles properly as Go and
+    TinyGo WASM.
+*   Added the WASM compile test to the [Test and Lint] GitHub action.
+
+  [v0.1.2]: https://github.com/theory/jsonpath/compare/v0.1.1...v0.1.2
+  [TinyGo]: https://tinygo.org "TinyGo — A Go Compiler For Small Places"
+  [Test and Lint]: https://github.com/theory/jsonpath/actions/workflows/ci.yml
+
+### 📚 Documentation
+
+*   Fixed version header links here in CHANGELOG.md.
+
 ## [v0.1.1] — 2024-09-19
 
 ### 📚 Documentation
 
 *   Neatened the formatting of the README table for improved display on
     pkg.go.dev.
+
+  [v0.1.1]: https://github.com/theory/jsonpath/compare/v0.1.0...v0.1.1
 
 ## [v0.1.0] — 2024-09-19
 
@@ -43,6 +65,7 @@ The theme of this release is *Standards Matter.*
     may change
 *   More detailed documentation to come
 
+  [v0.1.0]: https://github.com/theory/jsonpath/compare/a7279e6...v0.1.0
   [RFC 9535]: https://www.rfc-editor.org/rfc/rfc9535.html
     "RFC 9535 JSONPath: Query Expressions for JSON"
   [JSONPath Compliance Test Suite]: https://github.com/jsonpath-standard/jsonpath-compliance-test-suite
