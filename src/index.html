@@ -125,8 +125,6 @@
           ? decodeURIComponent(u.searchParams.get("j"))
           : JSON.stringify(EXAMPLE_JSON, null, 2);
         fit(json);
-
-        execute()
       };
 
       if ('instantiateStreaming' in WebAssembly) {
@@ -187,7 +185,7 @@
         <input id="optIndent" type="checkbox" checked />
         Pretty
       </label>
-      <textarea id="values" title="The JSON against which to execute the Path expression" readonly></textarea>
+      <textarea id="values" title="The JSON against which to execute the Path expression" readonly>[]</textarea>
     </div>
   </div>
   <footer>
