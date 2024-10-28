@@ -1,0 +1,38 @@
+name: 🛝 Deploy Playground
+on:
+  push:
+    # branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with: { go-version: "1.23", check-latest: true }
+      - name: Setup TinyGo
+        uses: acifani/setup-tinygo@v2
+        with: { tinygo-version: 0.34.0 }
+      - name: Generate App
+        run: make playground
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v3
+        with: { path: ./pub }
+
+  deploy:
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: "pages"
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
