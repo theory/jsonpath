@@ -25,6 +25,8 @@ go.work
 
 # Build artifacts
 pub/
+_build/
+jsonpath-compliance-test-suite/
 
 # OS Stuff
 .DS_Store
