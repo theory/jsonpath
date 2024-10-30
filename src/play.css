@@ -132,7 +132,7 @@ body hr {
   border: 0;
 }
 
-body input, body button {
+body input, body button, body table {
   font: inherit;
   margin: 0;
   overflow: scroll;
@@ -185,12 +185,7 @@ body p {
   margin-bottom: 10px;
 }
 
-body tt,
-body code {
-  font-weight: 200;
-}
-
-body textarea, body input {
+body textarea, body input, body tt, body code {
   font-family: var(--font);
   font-size: inherit;
   width:100%;
@@ -352,7 +347,7 @@ footer > p {
   margin: 0 .3rem;
 }
 
-#about[open] {
+details[open] {
   background-color: var(--color-canvas-muted);
   padding: .75rem;
   border: 1px solid var(--color-input-bg);
@@ -363,6 +358,26 @@ footer > p {
   margin-top: 0;
 }
 
-#about summary {
+details summary {
   display: none;
+}
+
+body table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+body thead th {
+  border-bottom: 1px solid var(--color-fg-default);
+  padding-bottom: .5rem;
+  font-weight: bold;
+}
+
+body tbody td {
+  border-bottom: 1px solid var(--color-border-default);
+  padding: .25rem;
+}
+
+body tbody tr td:first-child{
+  font-weight: bold;
 }
