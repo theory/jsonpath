@@ -214,7 +214,7 @@ body details {
     flex-direction: row;
   }
 
-  #jsonpath {
+  #input {
     flex-direction: column;
     padding-top: 1em;
     width: 50%;
@@ -238,18 +238,14 @@ body details {
     flex-direction: column;
   }
 
-  #jsonpath {
+  #input, #output {
     flex-direction: column;
     width: 100%;
-  }
-
-  #output {
-    flex-direction: column;
-    width: 100%;
+    padding: 1rem 0;
   }
 }
 
-#jsonpath div {
+#input div {
   margin-bottom: 1em;
 }
 
@@ -307,7 +303,7 @@ body details {
     flex-flow: column;
   }
   #go {
-    padding: .5rem 0;
+    padding-top: .5rem;
     flex: 0 0 auto;
     height: 2.5rem;
   }
