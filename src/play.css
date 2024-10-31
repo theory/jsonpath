@@ -214,6 +214,10 @@ body details {
     flex-direction: row;
   }
 
+  #container textarea {
+    max-height: 70vh !important;
+  }
+
   #input {
     flex-direction: column;
     padding-top: 1em;
@@ -342,6 +346,7 @@ label[for=optIndent] {
   border: 1px solid var(--color-input-bg);
   padding: .5rem;
   border-radius: .5rem;
+  max-height: 40vh;
 }
 
 footer {
