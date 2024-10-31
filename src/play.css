@@ -228,7 +228,7 @@ body details {
     flex-direction: column;
     width: 50%;
     height: 100%;
-    padding: 1em;
+    padding: 1rem 0 .5rem 1rem;
   }
 }
 
@@ -279,8 +279,11 @@ body details {
   border-radius: .5rem;
 }
 
-.btn {
-  flex: 0 0 auto;
+#go {
+  display: flex;
+}
+
+#go button {
   line-height: 1.5rem;
   margin-left: .5rem;
   font-size: inherit;
@@ -291,12 +294,29 @@ body details {
   border-radius: .5rem;
 }
 
-.btn:hover {
+#go button:hover {
   background-color: var(--color-button-hover-bg)
 }
 
-.btn:disabled {
+#go button:disabled {
   background-color: var(--color-disabled-hover-bg)
+}
+
+@media screen and (max-width:576px) {
+  #fluid {
+    flex-flow: column;
+  }
+  #go {
+    padding: .5rem 0;
+    flex: 0 0 auto;
+    height: 2.5rem;
+  }
+  #go button {
+    flex: 1 0;
+  }
+  #go button:first-child {
+    margin: 0;
+  }
 }
 
 #message .warn {
