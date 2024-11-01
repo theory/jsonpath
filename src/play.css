@@ -208,7 +208,7 @@ body ol,
 body dl,
 body table,
 body pre,
-body details {
+body details, .warn {
   margin-top: 0;
   margin-bottom: 16px;
 }
@@ -372,7 +372,7 @@ footer > * {
   text-decoration: none;
 }
 
-details[open] {
+details[open], .warn {
   background-color: var(--color-canvas-muted);
   padding: .75rem;
   border: 1px solid var(--color-input-bg);

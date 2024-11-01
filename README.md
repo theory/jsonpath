@@ -50,8 +50,8 @@ field will contain the JSON object used in examples from [RFC 9535].
 
 Copyright (c) 2024 David E. Wheeler. Distributed under the [MIT License].
 
-Based on [Goldmark Playground] the [serde_json_path Sandbox], both distributed
-under the [MIT License].
+Based on [Goldmark Playground] the [serde_json_path Sandbox], with icons from
+[Boxicons], all distributed under the [MIT License].
 
   [Go JSONPath Playground]: https://theory.github.io/jsonpath/playground
   [Go RFC 9535 JSONPath]: https://pkg.go.dev/github.com/theory/jsonpath
@@ -63,3 +63,4 @@ under the [MIT License].
   [privacy statement]: https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement
   [RFC 9535]: https://www.rfc-editor.org/rfc/rfc9535.html
   [MIT License]: https://opensource.org/license/mit
+  [Boxicons]: https://boxicons.com
