@@ -84,7 +84,6 @@
       };
 
       const execute = function () {
-        $('message').innerText = "";
         const options = getOptions();
         const outputElm = $$('#values');
         outputElm.value = query($('path').value, $('json').value, options);

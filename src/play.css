@@ -324,11 +324,6 @@ body details, .warn {
   }
 }
 
-#message .warn {
-  padding-top: 1em;
-  color: var(--color-danger-fg);
-}
-
 .nowrap {
   white-space: nowrap;
 }
