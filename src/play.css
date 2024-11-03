@@ -17,7 +17,8 @@
     --color-danger-fg: #f85149;
     --color-button-lite: #666;
     --color-button-lite-hover: #161c1c;
-    --color-input-bg: #555;
+    --color-input-bg: #1e1e1e;
+    --color-input-border: #555;
   }
 }
 
@@ -27,7 +28,7 @@
     --color-fg-default: #24292f;
     --color-fg-muted: #57606a;
     --color-fg-subtle: #6e7781;
-    --color-canvas-default: #ffffff;
+    --color-canvas-default: #fff;
     --color-canvas-muted: #ededed;
     --color-canvas-subtle: #f6f8fa;
     --color-border-default: #d0d7de;
@@ -40,7 +41,8 @@
     --color-danger-fg: #cf222e;
     --color-button-lite: #bbb;
     --color-button-lite-hover: #eee;
-    --color-input-bg: #ccc;
+    --color-input-bg: #fff;
+    --color-input-border: #ccc;
   }
 }
 
@@ -279,8 +281,8 @@ body details, .warn {
   width: 100%;
   flex: 1 0;
   padding-left: .5rem;
-  line-height: 1.5rem;
-  border: 1px solid var(--color-input-bg);
+  background-color: var(--color-input-bg);
+  border: 1px solid var(--color-input-border);
   border-radius: .5rem;
 }
 
@@ -343,7 +345,7 @@ label[for=optIndent] {
 #container textarea {
   margin-top: .3rem;
   background-color: var(--color-canvas-subtle);
-  border: 1px solid var(--color-input-bg);
+  border: 1px solid var(--color-input-border);
   padding: .5rem;
   border-radius: .5rem;
   max-height: 40vh;
@@ -370,7 +372,7 @@ footer > * {
 details[open], .warn {
   background-color: var(--color-canvas-muted);
   padding: .75rem;
-  border: 1px solid var(--color-input-bg);
+  border: 1px solid var(--color-input-border);
   border-radius: .5rem;
 }
 
