@@ -25,6 +25,7 @@ go.work
 
 # Build artifacts
 _build/
+pub/
 
 # OS Stuff
 .DS_Store
