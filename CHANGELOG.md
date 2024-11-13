@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file. It uses the
   [Semantic Versioning]: https://semver.org/spec/v2.0.0.html
     "Semantic Versioning 2.0.0"
 
-## [v0.1.3] — Unreleased
+## [v0.2.0] — 2024-11-13
 
 ### ⚡ Improvements
 
@@ -27,7 +27,7 @@ All notable changes to this project will be documented in this file. It uses the
 *   Made the underlying struct defining `spec.Wildcard` public, named it
     `spec.WildcardSelector`.
 
-  [v0.1.3]: https://github.com/theory/jsonpath/compare/v0.1.2...v0.1.3
+  [v0.2.0]: https://github.com/theory/jsonpath/compare/v0.1.2...v0.2.0
 
 ## [v0.1.2] — 2024-10-28
 
