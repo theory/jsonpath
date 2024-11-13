@@ -85,3 +85,7 @@ func (s *Segment) isSingular() bool {
 	}
 	return s.selectors[0].isSingular()
 }
+
+// IsDescendant returns true if the segment is a descendant selector that
+// recursively select the children of a JSON value.
+func (s *Segment) IsDescendant() bool { return s.descendant }

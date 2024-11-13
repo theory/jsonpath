@@ -787,14 +787,14 @@ func TestQueryDescendants(t *testing.T) {
 
 	for _, tc := range []queryTestCase{
 		{
-			name:  "descendent_name",
+			name:  "descendant_name",
 			segs:  []*Segment{Descendant(Name("j"))},
 			input: json,
 			exp:   []any{1, 4},
 			rand:  true,
 		},
 		{
-			name:  "un_descendent_name",
+			name:  "un_descendant_name",
 			segs:  []*Segment{Descendant(Name("o"))},
 			input: json,
 			exp:   []any{map[string]any{"j": 1, "k": 2}},

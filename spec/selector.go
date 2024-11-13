@@ -59,28 +59,28 @@ func (n Name) Select(input, _ any) []any {
 	return make([]any, 0)
 }
 
-// wc is the underlying nil value used by [Wildcard].
-type wc struct{}
+// WildcardSelector is the underlying nil value used by [Wildcard].
+type WildcardSelector struct{}
 
 // Wildcard is a wildcard selector, e.g., * or [*].
 //
 //nolint:gochecknoglobals
-var Wildcard = wc{}
+var Wildcard = WildcardSelector{}
 
 // writeTo  writes "*" to buf.
-func (wc) writeTo(buf *strings.Builder) { buf.WriteByte('*') }
+func (WildcardSelector) writeTo(buf *strings.Builder) { buf.WriteByte('*') }
 
 // String returns "*".
-func (wc) String() string { return "*" }
+func (WildcardSelector) String() string { return "*" }
 
 // isSingular returns false because a wild card can select more than one value
 // from an object or array. Defined by the [Selector] interface.
-func (wc) isSingular() bool { return false }
+func (WildcardSelector) isSingular() bool { return false }
 
 // Select selects the values from input and returns them in a slice. Returns
 // an empty slice if input is not []any map[string]any. Defined by the
 // [Selector] interface.
-func (wc) Select(input, _ any) []any {
+func (WildcardSelector) Select(input, _ any) []any {
 	switch val := input.(type) {
 	case []any:
 		return val
@@ -152,6 +152,7 @@ func Slice(args ...any) SliceSelector {
 	s := SliceSelector{0, math.MaxInt, 1}
 	switch len(args) - 1 {
 	case stepArg:
+		//nolint:gosec // disable G602 https://github.com/securego/gosec/issues/1250
 		switch step := args[stepArg].(type) {
 		case int:
 			s.step = step
@@ -162,6 +163,7 @@ func Slice(args ...any) SliceSelector {
 		}
 		fallthrough
 	case endArg:
+		//nolint:gosec // disable G602 https://github.com/securego/gosec/issues/1250
 		switch end := args[endArg].(type) {
 		case int:
 			s.end = end
@@ -218,7 +220,7 @@ func (s SliceSelector) String() string {
 // [Selector] interface.
 func (s SliceSelector) Select(input, _ any) []any {
 	if val, ok := input.([]any); ok {
-		lower, upper := s.bounds(len(val))
+		lower, upper := s.Bounds(len(val))
 		res := make([]any, 0, len(val))
 		switch {
 		case s.step > 0:
@@ -250,9 +252,9 @@ func (s SliceSelector) Step() int {
 	return s.step
 }
 
-// bounds returns the lower and upper bounds for selecting from a slice of
+// Bounds returns the lower and upper bounds for selecting from a slice of
 // length.
-func (s SliceSelector) bounds(length int) (int, int) {
+func (s SliceSelector) Bounds(length int) (int, int) {
 	start := normalize(s.start, length)
 	end := normalize(s.end, length)
 	switch {
@@ -293,6 +295,7 @@ func (f *FilterSelector) String() string {
 
 // writeTo writes a string representation of f to buf.
 func (f *FilterSelector) writeTo(buf *strings.Builder) {
+	buf.WriteRune('?')
 	f.LogicalOr.writeTo(buf)
 }
 
@@ -304,19 +307,26 @@ func (f *FilterSelector) Select(current, root any) []any {
 	switch current := current.(type) {
 	case []any:
 		for _, v := range current {
-			if f.LogicalOr.testFilter(v, root) {
+			if f.Eval(v, root) {
 				ret = append(ret, v)
 			}
 		}
 	case map[string]any:
 		for _, v := range current {
-			if f.LogicalOr.testFilter(v, root) {
+			if f.Eval(v, root) {
 				ret = append(ret, v)
 			}
 		}
 	}
 
 	return ret
+}
+
+// Eval evaluates the f's logical expression against node and root. Used
+// [Select] as it iterates over nodes, and always passes the root value($) for
+// filter expressions that reference it.
+func (f *FilterSelector) Eval(node, root any) bool {
+	return f.LogicalOr.testFilter(node, root)
 }
 
 // isSingular returns false because Filters can return more than one value.

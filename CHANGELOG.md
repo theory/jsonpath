@@ -7,6 +7,28 @@ All notable changes to this project will be documented in this file. It uses the
   [Semantic Versioning]: https://semver.org/spec/v2.0.0.html
     "Semantic Versioning 2.0.0"
 
+## [v0.1.3] — Unreleased
+
+### ⚡ Improvements
+
+*   Added `spec.Filter.Eval` to allow public evaluation of a single JSON node.
+    Used internally by `spec.FilterSelector.Select`.
+*   Added `spec.Segment.IsDescendant` to tell wether a segments selects just
+    from the current child node or also recursively selects from all of its
+    descendants.
+
+### 🪲 Bug Fixes
+
+*   Added missing "?" to the stringification of `spec.FilterSelector`.
+
+### 📔 Notes
+
+*   Made `spec.SliceSelector.Bounds` public.
+*   Made the underlying struct defining `spec.Wildcard` public, named it
+    `spec.WildcardSelector`.
+
+  [v0.1.3]: https://github.com/theory/jsonpath/compare/v0.1.2...v0.1.3
+
 ## [v0.1.2] — 2024-10-28
 
 ### 🪲 Bug Fixes

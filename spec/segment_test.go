@@ -83,6 +83,7 @@ func TestSegmentString(t *testing.T) {
 			t.Parallel()
 			a.Equal(tc.str, tc.seg.String())
 			a.Equal(tc.sing, tc.seg.isSingular())
+			a.Equal(tc.seg.descendant, tc.seg.IsDescendant())
 		})
 	}
 }
@@ -237,6 +238,7 @@ func TestSegmentQuery(t *testing.T) {
 			t.Parallel()
 			a.Equal(tc.seg.selectors, tc.seg.Selectors())
 			a.Equal(tc.sing, tc.seg.isSingular())
+			a.Equal(tc.seg.descendant, tc.seg.IsDescendant())
 			if tc.rand {
 				a.ElementsMatch(tc.exp, tc.seg.Select(tc.src, nil))
 			} else {
@@ -433,6 +435,7 @@ func TestDescendantSegmentQuery(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			a.False(tc.seg.isSingular())
+			a.True(tc.seg.IsDescendant())
 			if tc.rand {
 				a.ElementsMatch(tc.exp, tc.seg.Select(tc.src, nil))
 			} else {

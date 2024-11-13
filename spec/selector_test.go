@@ -151,7 +151,7 @@ func TestSliceBounds(t *testing.T) {
 	json := []any{"a", "b", "c", "d", "e", "f", "g"}
 
 	extract := func(s SliceSelector) []any {
-		lower, upper := s.bounds(len(json))
+		lower, upper := s.Bounds(len(json))
 		res := make([]any, 0, len(json))
 		switch {
 		case s.step > 0:
@@ -273,7 +273,7 @@ func TestSliceBounds(t *testing.T) {
 			t.Parallel()
 			a.False(tc.slice.isSingular())
 			for _, lc := range tc.cases {
-				lower, upper := tc.slice.bounds(lc.length)
+				lower, upper := tc.slice.Bounds(lc.length)
 				a.Equal(lc.lower, lower)
 				a.Equal(lc.upper, upper)
 			}
@@ -543,7 +543,7 @@ func TestFilterSelector(t *testing.T) {
 			name:   "no_filter",
 			filter: Filter(LogicalOr{}),
 			exp:    []any{},
-			str:    "",
+			str:    "?",
 		},
 		{
 			name: "array_root",
@@ -553,7 +553,7 @@ func TestFilterSelector(t *testing.T) {
 			root:    []any{42, true, "hi"},
 			current: map[string]any{"x": 2},
 			exp:     []any{2},
-			str:     `$[0]`,
+			str:     `?$[0]`,
 		},
 		{
 			name: "array_root_false",
@@ -563,7 +563,7 @@ func TestFilterSelector(t *testing.T) {
 			root:    []any{42, true, "hi"},
 			current: map[string]any{"x": 2},
 			exp:     []any{},
-			str:     `$[4]`,
+			str:     `?$[4]`,
 		},
 		{
 			name: "object_root",
@@ -573,7 +573,7 @@ func TestFilterSelector(t *testing.T) {
 			root:    map[string]any{"x": 42, "y": "hi"},
 			current: map[string]any{"a": 2, "b": 3},
 			exp:     []any{2, 3},
-			str:     `$["y"]`,
+			str:     `?$["y"]`,
 			rand:    true,
 		},
 		{
@@ -584,7 +584,7 @@ func TestFilterSelector(t *testing.T) {
 			root:    map[string]any{"x": 42, "y": "hi"},
 			current: map[string]any{"a": 2, "b": 3},
 			exp:     []any{},
-			str:     `$["z"]`,
+			str:     `?$["z"]`,
 			rand:    true,
 		},
 		{
@@ -594,7 +594,7 @@ func TestFilterSelector(t *testing.T) {
 			}}}),
 			current: []any{[]any{42}},
 			exp:     []any{[]any{42}},
-			str:     `@[0]`,
+			str:     `?@[0]`,
 		},
 		{
 			name: "array_current_false",
@@ -603,7 +603,7 @@ func TestFilterSelector(t *testing.T) {
 			}}}),
 			current: []any{[]any{42}},
 			exp:     []any{},
-			str:     `@[1]`,
+			str:     `?@[1]`,
 		},
 		{
 			name: "object_current",
@@ -612,7 +612,7 @@ func TestFilterSelector(t *testing.T) {
 			}}}),
 			current: []any{map[string]any{"x": 42}},
 			exp:     []any{map[string]any{"x": 42}},
-			str:     `@["x"]`,
+			str:     `?@["x"]`,
 		},
 		{
 			name: "object_current_false",
@@ -621,7 +621,7 @@ func TestFilterSelector(t *testing.T) {
 			}}}),
 			current: []any{map[string]any{"x": 42}},
 			exp:     []any{},
-			str:     `@["y"]`,
+			str:     `?@["y"]`,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
