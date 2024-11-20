@@ -52,3 +52,9 @@ generate:
 .git/hooks/pre-commit:
 	@printf "#!/bin/sh\nmake lint\n" > $@
 	@chmod +x $@
+
+submodules:
+	git submodule update --init
+
+update-submodules:
+	git pull --recurse-submodules
