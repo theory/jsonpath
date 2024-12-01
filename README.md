@@ -14,9 +14,9 @@ The jsonpath package provides [RFC 9535 JSONPath] functionality in Go.
 
 ## JSONPath Expressions
 
-A brief overview of RFC [9535 JSONPath] syntax:
+A brief overview of [RFC 9535 JSONPath] syntax:
 
-| Syntax Element     | Description**                                                           |
+| Syntax Element     | Description                                                             |
 | ------------------ | ----------------------------------------------------------------------- |
 | `$`                | root node identifier                                                    |
 | `@`                | current node identifier (valid only within filter selectors)            |
