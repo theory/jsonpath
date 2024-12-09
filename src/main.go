@@ -39,7 +39,7 @@ func execute(query, target string, opts int) string {
 		return fmt.Sprintf("Error parsing JSON: %v", err)
 	}
 
-	// Parse the SQL jsonpath query.
+	// Parse the JSONPath query.
 	p, err := jsonpath.Parse(query)
 	if err != nil {
 		return fmt.Sprintf("Error parsing %v", err)
