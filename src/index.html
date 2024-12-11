@@ -104,6 +104,8 @@
       }
 
       const go = new Go();
+      // https://github.com/tinygo-org/tinygo/issues/1140#issuecomment-1783897193
+      go.importObject.gojs["syscall/js.finalizeRef"] = _ => 0;
       const WASM_URL = './play.wasm';
 
       var wasm;
@@ -162,9 +164,8 @@
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" style="fill:currentcolor; "><path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"></path></svg>
       About
     </h2>
-    <p>This is the playground for <strong>github.com/theory/jsonpath</strong>, a Go package that executes <a
-        href="https://www.rfc-editor.org/rfc/rfc9535.html">RFC 9535 JSONPath</a> queries to select values from arbitrary
-      JSON data.</p>
+    <p>This is the playground for <strong>github.com/theory/jsonpath</strong>, a Go package that executes an <a
+        href="https://www.rfc-editor.org/rfc/rfc9535.html">RFC 9535 JSONPath</a> query to select values from JSON data.</p>
     <p>The playground runs entirely in the browser thanks to <a href="https://tinygo.org"
         title="TinyGo — A Go Compiler For Small Places">TinyGo</a>, which compiles the
       <strong>github.com/theory/jsonpath</strong> package into Web Assembly.</p>
@@ -269,11 +270,11 @@
   <div id="container">
     <div id="input">
       <label title="The JSON against which to execute the Path expression">JSON Input
-        <textarea id="json" title="The JSON against which to execute the Path expression"></textarea>
+        <textarea id="json"></textarea>
       </label>
     </div>
     <div id="output">
-      <label for="optIndent" title ="Pretty print the JSON value">
+      <label for="optIndent" class="opt" title ="Pretty print the JSON value">
         <input id="optIndent" type="checkbox" checked />
         Pretty
       </label>

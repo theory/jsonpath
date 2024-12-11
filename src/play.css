@@ -334,11 +334,11 @@ body details, .warn {
   margin-right: 0.5em;
 }
 
-#optIndent {
+#output input {
   width: auto;
 }
 
-label[for=optIndent] {
+#output label.opt {
   float: right;
 }
 
