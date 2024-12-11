@@ -1,7 +1,6 @@
 name: 🛝 Deploy Playground
 on:
   push:
-    # branches: [main]
 
 jobs:
   build:
@@ -18,11 +17,13 @@ jobs:
       - name: Generate App
         run: make playground
       - name: Upload Artifact
+        if: github.ref == 'refs/heads/playground'
         uses: actions/upload-pages-artifact@v3
         with: { path: ./pub }
 
   deploy:
     needs: build
+    if: github.ref == 'refs/heads/playground'
     permissions:
       pages: write
       id-token: write
