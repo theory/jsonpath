@@ -39,7 +39,7 @@ debian-lint-depends:
 
 .PHONY: lint # Lint the project
 lint: .pre-commit-config.yaml
-	@pre-commit run --show-diff-on-failure --color=always --all-files
+	@GOOS=js GOARCH=wasm pre-commit run --show-diff-on-failure --color=always --all-files
 
 .PHONY: golangci-lint # Run golangci-lint
 golangci-lint: .golangci.yaml

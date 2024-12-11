@@ -32,3 +32,4 @@ repos:
       - id: prettier
         name: JSON and YAML formatting
         types_or: [json, yaml]
+        exclude: ^.vscode/

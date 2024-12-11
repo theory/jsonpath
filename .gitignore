@@ -21,7 +21,7 @@ vendor/
 go.work
 
 # Editor files
-.vscode/
+# .vscode/
 
 # Build artifacts
 pub/

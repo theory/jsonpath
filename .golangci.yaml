@@ -52,11 +52,11 @@ linters:
     # Deprecated
     - execinquery # Archived by the owner
     - gomnd # Renamed to mnd
+    - exportloopref
 
     # Too strict.
     - depguard
     - gci
-    - typecheck # Ignore syscall/js
     - cyclop # redundant, covered by gocyclo
     - nlreturn
     - wsl

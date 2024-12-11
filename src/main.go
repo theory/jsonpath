@@ -1,11 +1,10 @@
+// package main provides the Wasm app.
 package main
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-
-	//nolint
 	"syscall/js"
 
 	"github.com/theory/jsonpath"
@@ -16,12 +15,12 @@ const (
 )
 
 func main() {
-	c := make(chan struct{}, 0)
+	stream := make(chan struct{})
 
 	js.Global().Set("query", js.FuncOf(query))
 	js.Global().Set("optIndent", js.ValueOf(optIndent))
 
-	<-c
+	<-stream
 }
 
 func query(_ js.Value, args []js.Value) any {
@@ -40,13 +39,13 @@ func execute(query, target string, opts int) string {
 	}
 
 	// Parse the JSONPath query.
-	p, err := jsonpath.Parse(query)
+	path, err := jsonpath.Parse(query)
 	if err != nil {
 		return fmt.Sprintf("Error parsing %v", err)
 	}
 
 	// Execute the query against the JSON.
-	res := p.Select(value)
+	res := path.Select(value)
 
 	// Serialize the result
 	var buf bytes.Buffer
