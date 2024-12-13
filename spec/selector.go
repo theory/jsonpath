@@ -194,11 +194,11 @@ func Slice(args ...any) SliceSelector {
 
 // writeTo writes a string representation of s to buf.
 func (s SliceSelector) writeTo(buf *strings.Builder) {
-	if s.start != 0 {
+	if s.start != 0 && (s.step >= 0 || s.start != math.MaxInt) {
 		buf.WriteString(strconv.FormatInt(int64(s.start), 10))
 	}
 	buf.WriteByte(':')
-	if s.end != math.MaxInt {
+	if s.end != math.MaxInt && (s.step >= 0 || s.end != math.MinInt) {
 		buf.WriteString(strconv.FormatInt(int64(s.end), 10))
 	}
 	if s.step != 1 {

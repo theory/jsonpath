@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"fmt"
 	"math"
 	"strings"
 	"testing"
@@ -126,6 +127,51 @@ func TestSelectorString(t *testing.T) {
 			name: "slice_step",
 			tok:  Slice(nil, nil, 3),
 			str:  "::3",
+		},
+		{
+			name: "slice_neg_step",
+			tok:  Slice(nil, nil, -1),
+			str:  "::-1",
+		},
+		{
+			name: "slice_max_start",
+			tok:  Slice(math.MaxInt),
+			str:  fmt.Sprintf("%v:", math.MaxInt),
+		},
+		{
+			name: "slice_max_start_neg_step",
+			tok:  Slice(math.MaxInt, nil, -1),
+			str:  "::-1",
+		},
+		{
+			name: "slice_min_start",
+			tok:  Slice(math.MinInt),
+			str:  fmt.Sprintf("%v:", math.MinInt),
+		},
+		{
+			name: "slice_min_start_neg_step",
+			tok:  Slice(math.MinInt, nil, -1),
+			str:  fmt.Sprintf("%v::-1", math.MinInt),
+		},
+		{
+			name: "slice_max_end",
+			tok:  Slice(0, math.MaxInt),
+			str:  ":",
+		},
+		{
+			name: "slice_max_end_neg_step",
+			tok:  Slice(0, math.MaxInt, -1),
+			str:  "::-1",
+		},
+		{
+			name: "slice_min_end",
+			tok:  Slice(0, math.MinInt),
+			str:  fmt.Sprintf(":%v", math.MinInt),
+		},
+		{
+			name: "slice_min_end_neg_step",
+			tok:  Slice(0, math.MinInt, -1),
+			str:  "::-1",
 		},
 		{
 			name: "wildcard",
