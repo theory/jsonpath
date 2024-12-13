@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file. It uses the
   [Semantic Versioning]: https://semver.org/spec/v2.0.0.html
     "Semantic Versioning 2.0.0"
 
-## [v0.2.1 ] — Unreleased
+## [v0.2.1 ] — 2024-12-12
 
 ### 🪲 Bug Fixes
 
