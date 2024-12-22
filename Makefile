@@ -45,6 +45,11 @@ lint: .pre-commit-config.yaml
 golangci-lint: .golangci.yaml
 	golangci-lint run --fix --timeout=5m
 
+## .git/hooks/pre-commit: Install the pre-commit hook
+.git/hooks/pre-commit:
+	@printf "#!/bin/sh\nmake lint\n" > $@
+	@chmod +x $@
+
 .PHONY: clean
 clean:
 	rm -rf $(DST_DIR)
