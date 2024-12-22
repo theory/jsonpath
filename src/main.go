@@ -11,14 +11,14 @@ import (
 )
 
 const (
-	optIndent int = 1 << iota
+	optLocated int = 1 << iota
 )
 
 func main() {
 	stream := make(chan struct{})
 
 	js.Global().Set("query", js.FuncOf(query))
-	js.Global().Set("optIndent", js.ValueOf(optIndent))
+	// js.Global().Set("optLocated", js.ValueOf(optLocated))
 
 	<-stream
 }
@@ -51,8 +51,9 @@ func execute(query, target string, opts int) string {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 	enc.SetEscapeHTML(false)
-	if opts&optIndent == optIndent {
-		enc.SetIndent("", "  ")
+	enc.SetIndent("", "  ")
+	if opts&optLocated == optLocated {
+		_ = optLocated
 	}
 	if err := enc.Encode(res); err != nil {
 		return fmt.Sprintf("Error parsing results: %v", err)

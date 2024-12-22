@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-  <meta charset="utf-8" />
+  <meta charset="utf-8">
   <title>Go JSONPath Playground</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="play.css">
@@ -11,7 +11,7 @@
       const $$ = (q) => document.querySelector(q);
 
       const optionNames = [
-        "optIndent",
+        //"optLocated",
       ];
 
       const EXAMPLE_JSON = {
@@ -264,7 +264,7 @@
     </div>
   </noscript>
   <div id="fluid">
-    <input id="path" placeholder="Enter a JSONPath query…" />
+    <input id="path" placeholder="Enter a JSONPath query…">
     <div id="go">
       <button id="exec-btn">Run Query</button>
       <button id="permalink"
@@ -278,10 +278,12 @@
       </label>
     </div>
     <div id="output">
-      <label for="optIndent" class="opt" title ="Pretty print the JSON value">
-        <input id="optIndent" type="checkbox" checked />
-        Pretty
+      <!--
+      <label for="optLocated" class="opt" title ="Show the normalized path location of each value">
+        <input id="optLocated" type="checkbox">
+        Located
       </label>
+      -->
       <label for="values" title="The values selected from the JSON Input">Query Output
         <textarea id="values" readonly>[]</textarea>
       </label>
