@@ -3,20 +3,33 @@ Go RFC 9535 JSONPath Playground
 
 The source for the [Go JSONPath Playground], a stateless single-page web site
 for experimenting with the [Go RFC 9535 JSONPath] package. Compiled via
-[TinyGo] into a ca. 254K [Wasm] file and loaded directly into the page. All
-functionality implemented in JavaScript and Go, heavily borrowed from the
-[Goldmark Playground] and [serde_json_path Sandbox].
+[TinyGo] into a ca. 670 K (254 K compressed) [Wasm] file and loaded directly
+into the page. All functionality implemented in JavaScript and Go, heavily
+borrowed from the [Goldmark Playground] and [serde_json_path Sandbox].
 
 Usage
 -----
 
-Write a JSONPath query in the input field and hit the "Run Query" button to
-select values from the JSON in the "JSON Input" field. The results will appear
-in the "Query Output" field.
+On load, the form will be filled with sample JSON and a randomly-selected
+example query. Hit the "Run Query" button to see the values the path query
+selects from the JSON.
+
+To try your own, paste the JSON to query into the "JSON" field and input the
+JSONpath query into the "Path" field, then hit the "Run Query" button.
 
 That's it.
 
 Read on for details and additional features.
+
+### Docs
+
+The two buttons in the top-right corner provide documentation and links.
+
+*   Hit the button with the circled question mark in the top right corner to
+    reveal a table summarizing the JSONPath syntax.
+
+*   Hit the button with the circled i for information about the JSONPath
+    playground.
 
 ### Options
 

@@ -117,6 +117,7 @@ body header h1 {
 body header button {
   flex: 0 0 auto;
   padding: .5rem;
+  line-height: 0;
   color: var(--color-button-lite);
   background-color: var(--color-canvas-subtle);
   border: 1px solid var(--color-button-lite);
