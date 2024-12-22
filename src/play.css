@@ -216,6 +216,15 @@ body details, .warn {
   margin-bottom: 16px;
 }
 
+body ul, body ol {
+  list-style-position: inside;
+  padding-left: 0;
+}
+
+#about ul {
+  list-style: none;
+}
+
 @media screen and (min-width: 768px) {
   #container {
     display: flex;
