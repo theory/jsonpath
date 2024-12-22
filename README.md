@@ -12,7 +12,7 @@ Usage
 
 On load, the form will be filled with sample JSON and a randomly-selected
 example query. Hit the "Run Query" button to see the values the path query
-selects from the JSON.
+selects from the JSON appear in the "Query Output" field.
 
 To try your own, paste the JSON to query into the "JSON" field and input the
 JSONpath query into the "Path" field, then hit the "Run Query" button.
