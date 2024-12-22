@@ -19,7 +19,7 @@ $(DST_DIR)/play.css: $(SRC_DIR)/play.css
 
 $(DST_DIR)/index.html: $(SRC_DIR)/index.html
 	mkdir -p $(@D)
-	cp $< $@
+	version=$$(grep jsonpath go.mod | awk '{print $$3}'); cat $< | sed -e "s!{{version}}!$${version}!g" > $@	
 
 $(DST_DIR)/wasm_exec.js: $(WASM_EXEC)
 	mkdir -p $(@D)
