@@ -5,12 +5,12 @@
     --color-fg-muted: #8b949e;
     --color-fg-subtle: #484f58;
     --color-canvas-default: #0d1117;
-    --color-canvas-subtle: #24292f;
+    --color-canvas-subtle: #212222;
     --color-canvas-muted: #161c1c;
     --color-border-default: #30363d;
     --color-border-muted: #21262d;
     --color-neutral-muted: rgba(110,118,129,0.4);
-    --color-accent-fg: #58a6ff;
+    --color-accent-fg: #118a7e;
     --color-strong-fg: #118a7e;
     --color-accent-emphasis: #1f6feb;
     --color-attention-subtle: rgba(187,128,9,0.15);
@@ -19,7 +19,7 @@
     --color-button-lite-hover: #161c1c;
     --color-input-bg: #1e1e1e;
     --color-input-border: #555;
-  }
+    }
 }
 
 @media (prefers-color-scheme: light) {
@@ -34,7 +34,7 @@
     --color-border-default: #d0d7de;
     --color-border-muted: hsla(210,18%,87%,1);
     --color-neutral-muted: rgba(175,184,193,0.2);
-    --color-accent-fg: #0969da;
+    --color-accent-fg: #118a7e;
     --color-strong-fg: #118a7e;
     --color-accent-emphasis: #0969da;
     --color-attention-subtle: #fff8c5;
@@ -51,8 +51,8 @@ body {
   -webkit-text-size-adjust: 100%;
   --font: ui-monospace,SFMono-Regular,SF Mono,Menlo,Consolas,Liberation Mono,monospace;
   --color-button: #eee;
-  --color-button-bg: #0d6efd;
-  --color-button-hover-bg: #0b5ed7;
+  --color-button-bg: #118a7e;
+  --color-button-hover-bg: #0f776c;
   --color-button-disabled-bg: #485871;  margin: 2em;
   color: var(--color-fg-default);
   background-color: var(--color-canvas-subtle);
@@ -111,6 +111,7 @@ body header h1 {
   flex-direction: column;
   width: 100%;
   flex: 1 0;
+  font-weight: 600;
 }
 
 body header button {
