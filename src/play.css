@@ -53,7 +53,8 @@ body {
   --color-button: #eee;
   --color-button-bg: #118a7e;
   --color-button-hover-bg: #0f776c;
-  --color-button-disabled-bg: #485871;  margin: 2em;
+  --color-button-disabled-bg: #485871;
+  margin: 2rem;
   color: var(--color-fg-default);
   background-color: var(--color-canvas-subtle);
   font-family: var(--font);
@@ -255,6 +256,9 @@ body ul, body ol {
 }
 
 @media screen and (max-width: 768px) {
+  body {
+    margin: 1rem;
+  }
   #container {
     display: flex;
     flex-direction: column;
@@ -295,6 +299,7 @@ body ul, body ol {
   background-color: var(--color-input-bg);
   border: 1px solid var(--color-input-border);
   border-radius: .5rem;
+  box-sizing: border-box;
 }
 
 #go {
