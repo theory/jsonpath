@@ -25,6 +25,10 @@ type Selector interface {
 	// Select selects values from current and/or root and returns them.
 	Select(current, root any) []any
 
+	// SelectLocated selects values from current and/or root and returns them
+	// in [LocatedNode] structs with their located normalized paths
+	SelectLocated(current, root any, parent NormalizedPath) []*LocatedNode
+
 	// isSingular returns true for selectors that can only return a single
 	// value.
 	isSingular() bool
@@ -57,6 +61,52 @@ func (n Name) Select(input, _ any) []any {
 		}
 	}
 	return make([]any, 0)
+}
+
+// SelectLocated selects n from input and returns it with its normalized path
+// as a single [LocatedNode] in a slice. Returns an empty slice if input is
+// not a map[string]any or if it does not contain n. Defined by the [Selector]
+// interface.
+func (n Name) SelectLocated(input, _ any, parent NormalizedPath) []*LocatedNode {
+	if obj, ok := input.(map[string]any); ok {
+		if val, ok := obj[string(n)]; ok {
+			return []*LocatedNode{newLocatedNode(append(parent, n), val)}
+		}
+	}
+	return make([]*LocatedNode, 0)
+}
+
+// writeNormalizedTo writes n to buf formatted as a [normalized path] element.
+// Implements [NormalSelector].
+//
+// [normalized path]: https://www.rfc-editor.org/rfc/rfc9535#section-2.7
+func (n Name) writeNormalizedTo(buf *strings.Builder) {
+	// https://www.rfc-editor.org/rfc/rfc9535#section-2.7
+	buf.WriteString("['")
+	for _, r := range string(n) {
+		switch r {
+		case '\b': //  b BS backspace U+0008
+			buf.WriteString(`\b`)
+		case '\f': // f FF form feed U+000C
+			buf.WriteString(`\f`)
+		case '\n': // n LF line feed U+000A
+			buf.WriteString(`\n`)
+		case '\r': // r CR carriage return U+000D
+			buf.WriteString(`\r`)
+		case '\t': // t HT horizontal tab U+0009
+			buf.WriteString(`\t`)
+		case '\'': // ' apostrophe U+0027
+			buf.WriteString(`\'`)
+		case '\\': // \ backslash (reverse solidus) U+005C
+			buf.WriteString(`\\`)
+		case '\x00', '\x01', '\x02', '\x03', '\x04', '\x05', '\x06', '\x07', '\x0b', '\x0e', '\x0f':
+			// "00"-"07", "0b", "0e"-"0f"
+			buf.WriteString(fmt.Sprintf(`\u000%x`, r))
+		default:
+			buf.WriteRune(r)
+		}
+	}
+	buf.WriteString("']")
 }
 
 // WildcardSelector is the underlying nil value used by [Wildcard].
@@ -94,6 +144,28 @@ func (WildcardSelector) Select(input, _ any) []any {
 	return make([]any, 0)
 }
 
+// SelectLocated selects the values from input and returns them with their
+// normalized paths in a slice of [LocatedNode] structs. Returns an empty
+// slice if input is not []any map[string]any. Defined by the [Selector]
+// interface.
+func (WildcardSelector) SelectLocated(input, _ any, parent NormalizedPath) []*LocatedNode {
+	switch val := input.(type) {
+	case []any:
+		vals := make([]*LocatedNode, len(val))
+		for i, v := range val {
+			vals[i] = newLocatedNode(append(parent, Index(i)), v)
+		}
+		return vals
+	case map[string]any:
+		vals := make([]*LocatedNode, 0, len(val))
+		for k, v := range val {
+			vals = append(vals, newLocatedNode(append(parent, Name(k)), v))
+		}
+		return vals
+	}
+	return make([]*LocatedNode, 0)
+}
+
 // Index is an array index selector, e.g., [3].
 type Index int
 
@@ -124,6 +196,34 @@ func (i Index) Select(input, _ any) []any {
 		}
 	}
 	return make([]any, 0)
+}
+
+// SelectLocated selects i from input and returns it with its normalized path
+// as a single [LocatedNode] in a slice. Returns an empty slice if input is
+// not a slice or if i it outside the bounds of input. Defined by the
+// [Selector] interface.
+func (i Index) SelectLocated(input, _ any, parent NormalizedPath) []*LocatedNode {
+	if val, ok := input.([]any); ok {
+		idx := int(i)
+		if idx < 0 {
+			if idx = len(val) + idx; idx >= 0 {
+				return []*LocatedNode{newLocatedNode(append(parent, Index(idx)), val[idx])}
+			}
+		} else if idx < len(val) {
+			return []*LocatedNode{newLocatedNode(append(parent, Index(idx)), val[idx])}
+		}
+	}
+	return make([]*LocatedNode, 0)
+}
+
+// writeNormalizedTo writes n to buf formatted as a [normalized path] element.
+// Implements [NormalSelector].
+//
+// [normalized path]: https://www.rfc-editor.org/rfc/rfc9535#section-2.7
+func (i Index) writeNormalizedTo(buf *strings.Builder) {
+	buf.WriteRune('[')
+	buf.WriteString(strconv.FormatInt(int64(i), 10))
+	buf.WriteRune(']')
 }
 
 // SliceSelector is a slice selector, e.g., [0:100:5].
@@ -237,6 +337,30 @@ func (s SliceSelector) Select(input, _ any) []any {
 	return make([]any, 0)
 }
 
+// SelectLocated selects values from input for the indexes specified by s and
+// returns thm with their normalized paths as [LocatedNode] structs. Returns
+// an empty slice if input is not a slice. Indexes outside the bounds of input
+// will not be included in the return value. Defined by the [Selector]
+// interface.
+func (s SliceSelector) SelectLocated(input, _ any, parent NormalizedPath) []*LocatedNode {
+	if val, ok := input.([]any); ok {
+		lower, upper := s.Bounds(len(val))
+		res := make([]*LocatedNode, 0, len(val))
+		switch {
+		case s.step > 0:
+			for i := lower; i < upper; i += s.step {
+				res = append(res, newLocatedNode(append(parent, Index(i)), val[i]))
+			}
+		case s.step < 0:
+			for i := upper; lower < i; i += s.step {
+				res = append(res, newLocatedNode(append(parent, Index(i)), val[i]))
+			}
+		}
+		return res
+	}
+	return make([]*LocatedNode, 0)
+}
+
 // Start returns the start position.
 func (s SliceSelector) Start() int {
 	return s.start
@@ -315,6 +439,30 @@ func (f *FilterSelector) Select(current, root any) []any {
 		for _, v := range current {
 			if f.Eval(v, root) {
 				ret = append(ret, v)
+			}
+		}
+	}
+
+	return ret
+}
+
+// SelectLocated selects and returns [LocatedNode] structs with values that f
+// filters from current. Filter expressions may evaluate the current value
+// (@), the root value ($), or any path expression. Defined by the [Selector]
+// interface.
+func (f *FilterSelector) SelectLocated(current, root any, parent NormalizedPath) []*LocatedNode {
+	ret := []*LocatedNode{}
+	switch current := current.(type) {
+	case []any:
+		for i, v := range current {
+			if f.Eval(v, root) {
+				ret = append(ret, newLocatedNode(append(parent, Index(i)), v))
+			}
+		}
+	case map[string]any:
+		for k, v := range current {
+			if f.Eval(v, root) {
+				ret = append(ret, newLocatedNode(append(parent, Name(k)), v))
 			}
 		}
 	}

@@ -60,6 +60,20 @@ func (s *Segment) Select(current, root any) []any {
 	return ret
 }
 
+// SelectLocated selects and returns values as [LocatedNode] structs from
+// current or root for each of seg's selectors. Defined by the [Selector]
+// interface.
+func (s *Segment) SelectLocated(current, root any, parent NormalizedPath) []*LocatedNode {
+	ret := []*LocatedNode{}
+	for _, sel := range s.selectors {
+		ret = append(ret, sel.SelectLocated(current, root, parent)...)
+	}
+	if s.descendant {
+		ret = append(ret, s.descendLocated(current, root, parent)...)
+	}
+	return ret
+}
+
 // descend recursively executes seg.Select for each value in current and/or
 // root and returns the results.
 func (s *Segment) descend(current, root any) []any {
@@ -72,6 +86,23 @@ func (s *Segment) descend(current, root any) []any {
 	case map[string]any:
 		for _, v := range val {
 			ret = append(ret, s.Select(v, root)...)
+		}
+	}
+	return ret
+}
+
+// descend recursively executes seg.Select for each value in current and/or
+// root and returns the results.
+func (s *Segment) descendLocated(current, root any, parent NormalizedPath) []*LocatedNode {
+	ret := []*LocatedNode{}
+	switch val := current.(type) {
+	case []any:
+		for i, v := range val {
+			ret = append(ret, s.SelectLocated(v, root, append(parent, Index(i)))...)
+		}
+	case map[string]any:
+		for k, v := range val {
+			ret = append(ret, s.SelectLocated(v, root, append(parent, Name(k)))...)
 		}
 	}
 	return ret

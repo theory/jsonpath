@@ -62,8 +62,7 @@ linters:
   # https://golangci-lint.run/usage/linters/#disabled-by-default
   disable:
     # Deprecated
-    - execinquery # Archived by the owner
-    - gomnd # Renamed to mnd
+    - exportloopref # Replaced by copyloopvar
 
     # Too strict.
     - depguard

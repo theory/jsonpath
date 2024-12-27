@@ -49,6 +49,16 @@ func (p *Path) Select(input any) []any {
 	return p.q.Select(nil, input)
 }
 
+// SelectLocated returns the values that JSONPath query p selects from input
+// as [spec.LocatedNode] structs pair the values with the [normalized paths]
+// that identify them. Unless you have a specific need for the unique
+// normalized path for each value, you probably want to use [Path.Select].
+//
+// [normalized paths]: https://www.rfc-editor.org/rfc/rfc9535#section-2.7
+func (p *Path) SelectLocated(input any) []*spec.LocatedNode {
+	return p.q.SelectLocated(nil, input, spec.NormalizedPath{})
+}
+
 // Parser parses JSONPath strings into [*Path]s.
 type Parser struct {
 	reg *registry.Registry

@@ -33,7 +33,7 @@ func (q *PathQuery) String() string {
 }
 
 // Select selects q.segments from current or root and returns the result.
-// Returns just input if q has no segments. Defined by the [Selector]
+// Returns just current if q has no segments. Defined by the [Selector]
 // interface.
 func (q *PathQuery) Select(current, root any) []any {
 	res := []any{current}
@@ -44,6 +44,27 @@ func (q *PathQuery) Select(current, root any) []any {
 		segRes := []any{}
 		for _, v := range res {
 			segRes = append(segRes, seg.Select(v, root)...)
+		}
+		res = segRes
+	}
+
+	return res
+}
+
+// SelectLocated selects q.segments from current or root and returns the
+// resulting values as [LocatedNode] structs. Returns just current if q has no
+// segments. Defined by the [Selector] interface.
+func (q *PathQuery) SelectLocated(current, root any, parent NormalizedPath) []*LocatedNode {
+	res := []*LocatedNode{nil}
+	if q.root {
+		res[0] = newLocatedNode(nil, root)
+	} else {
+		res[0] = newLocatedNode(parent, current)
+	}
+	for _, seg := range q.segments {
+		segRes := []*LocatedNode{}
+		for _, v := range res {
+			segRes = append(segRes, seg.SelectLocated(v.Node, root, v.Path)...)
 		}
 		res = segRes
 	}
