@@ -33,6 +33,51 @@ func Example() {
 	// Output: ["Nigel Rees","Evelyn Waugh","Herman Melville","J. R. R. Tolkien"]
 }
 
+func ExamplePath_Select() {
+	// Load some JSON.
+	menu := map[string]any{
+		"apps": map[string]any{
+			"guacamole": 19.99,
+			"salsa":     5.99,
+		},
+	}
+
+	// Parse a JSONPath and select from the input.
+	p := jsonpath.MustParse("$.apps.*")
+	result := p.Select(menu)
+
+	// Show the result.
+	for _, val := range result {
+		fmt.Printf("%v\n", val)
+	}
+	// Unordered output:
+	// 19.99
+	// 5.99
+}
+
+func ExamplePath_SelectLocated() {
+	// Load some JSON.
+	menu := map[string]any{
+		"apps": map[string]any{
+			"guacamole": 19.99,
+			"salsa":     5.99,
+		},
+	}
+
+	// Parse a JSONPath and select from the input.
+	p := jsonpath.MustParse("$.apps.*")
+	result := p.SelectLocated(menu)
+
+	// Show the result.
+	for _, node := range result {
+		fmt.Printf("%v: %v\n", node.Path, node.Node)
+	}
+
+	// Unordered output:
+	// $['apps']['guacamole']: 19.99
+	// $['apps']['salsa']: 5.99
+}
+
 // Use the Parser to parse a collection of paths.
 func ExampleParser() {
 	// Create a new parser using the default function registry.

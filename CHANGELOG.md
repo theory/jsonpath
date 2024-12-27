@@ -7,6 +7,22 @@ All notable changes to this project will be documented in this file. It uses the
   [Semantic Versioning]: https://semver.org/spec/v2.0.0.html
     "Semantic Versioning 2.0.0"
 
+## [v0.3.0 ] — Unreleased
+
+### ⚡ Improvements
+
+*   Added `SelectLocated`. It works just like `Select`, but returns a slice of
+    `LocatedNode`s that pair the selected nodes with [RFC 9535-defined]
+    `NormalizedPath`s that uniquely identify their locations within the JSON
+    query argument.
+
+### 📚 Documentation
+
+*   Added `Select` and `SelectLocated` examples to the Go docs.
+
+  [v0.3.0]: https://github.com/theory/jsonpath/compare/v0.2.1...v0.3.0
+  [RFC 9535-defined]: https://www.rfc-editor.org/rfc/rfc9535#section-2.7
+
 ## [v0.2.1 ] — 2024-12-12
 
 ### 🪲 Bug Fixes
