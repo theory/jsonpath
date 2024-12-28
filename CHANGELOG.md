@@ -7,18 +7,33 @@ All notable changes to this project will be documented in this file. It uses the
   [Semantic Versioning]: https://semver.org/spec/v2.0.0.html
     "Semantic Versioning 2.0.0"
 
-## [v0.3.0 ] — Unreleased
+## [v0.3.0] — Unreleased
 
 ### ⚡ Improvements
 
-*   Added `SelectLocated`. It works just like `Select`, but returns a slice of
+*   Added `SelectLocated`. It works just like `Select`, but returns
     `LocatedNode`s that pair the selected nodes with [RFC 9535-defined]
     `NormalizedPath`s that uniquely identify their locations within the JSON
     query argument.
+*   Added `LocatedNodeList`, the return value from `SelectLocated`. It
+    contains methods for working with the selected nodes, including iterators
+    for its nodes & `NormalizedPath`s, deduplication, sorting, and cloning.
+*   Added `Compare` to `NormalizedPath`, which enables the sorting of
+    `LocatedNodeList`s.
+
+### 📔 Notes
+
+*   Requires Go 1.23 to take advantage of its iterator support.
+*   Changed the return value of `Select` from `[]any` to `NodeList`, which is
+    an alias for `[]any`. Done to pair with `LocatedNodeList`, the return
+    value of `SelectLocated`. Features an `All` method, which returns an
+    iterator over all the nodes in the list. It may gain additional methods in
+    the future.
 
 ### 📚 Documentation
 
-*   Added `Select` and `SelectLocated` examples to the Go docs.
+*   Added `Select`, `SelectLocated`, `NodeList`, and `LocatedNodeList`
+    examples to the Go docs.
 
   [v0.3.0]: https://github.com/theory/jsonpath/compare/v0.2.1...v0.3.0
   [RFC 9535-defined]: https://www.rfc-editor.org/rfc/rfc9535#section-2.7

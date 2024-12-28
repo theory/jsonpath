@@ -7,7 +7,7 @@ jobs:
     strategy:
       matrix:
         os: [[🐧, Ubuntu], [🍎, macOS], [🪟, Windows]]
-        go: ["1.23", "1.22"]
+        go: ["1.23"]
     name: ${{ matrix.os[0] }} Test Go ${{ matrix.go }} on ${{ matrix.os[1] }}
     runs-on: ${{ matrix.os[1] }}-latest
     steps:

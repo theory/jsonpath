@@ -1,6 +1,7 @@
 package spec
 
 import (
+	"cmp"
 	"strings"
 )
 
@@ -27,6 +28,42 @@ func (np NormalizedPath) String() string {
 		e.writeNormalizedTo(buf)
 	}
 	return buf.String()
+}
+
+// Compare compares np to np2 and returns -1 if np is less than np2, 1 if it's
+// greater than np2, and 0 if they're equal. Indexes are always considered
+// less than names.
+func (np NormalizedPath) Compare(np2 NormalizedPath) int {
+	for i := range np {
+		if i >= len(np2) {
+			return 1
+		}
+		switch v1 := np[i].(type) {
+		case Name:
+			switch v2 := np2[i].(type) {
+			case Name:
+				if x := cmp.Compare(v1, v2); x != 0 {
+					return x
+				}
+			case Index:
+				return 1
+			}
+		case Index:
+			switch v2 := np2[i].(type) {
+			case Index:
+				if x := cmp.Compare(v1, v2); x != 0 {
+					return x
+				}
+			case Name:
+				return -1
+			}
+		}
+	}
+
+	if len(np2) > len(np) {
+		return -1
+	}
+	return 0
 }
 
 // MarshalText marshals np into text. It implements [encoding.TextMarshaler].

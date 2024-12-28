@@ -21,10 +21,10 @@ func Example() {
 
 	// Select values from unmarshaled JSON input.
 	store := bookstore()
-	result := p.Select(store)
+	nodes := p.Select(store)
 
-	// Show the result.
-	items, err := json.Marshal(result)
+	// Show the selected values.
+	items, err := json.Marshal(nodes)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -44,11 +44,11 @@ func ExamplePath_Select() {
 
 	// Parse a JSONPath and select from the input.
 	p := jsonpath.MustParse("$.apps.*")
-	result := p.Select(menu)
+	nodes := p.Select(menu)
 
-	// Show the result.
-	for _, val := range result {
-		fmt.Printf("%v\n", val)
+	// Show the selected values.
+	for node := range nodes.All() {
+		fmt.Printf("%v\n", node)
 	}
 	// Unordered output:
 	// 19.99
@@ -66,16 +66,122 @@ func ExamplePath_SelectLocated() {
 
 	// Parse a JSONPath and select from the input.
 	p := jsonpath.MustParse("$.apps.*")
-	result := p.SelectLocated(menu)
+	nodes := p.SelectLocated(menu)
 
-	// Show the result.
-	for _, node := range result {
+	// Show the selected nodes.
+	for node := range nodes.All() {
 		fmt.Printf("%v: %v\n", node.Path, node.Node)
 	}
 
 	// Unordered output:
 	// $['apps']['guacamole']: 19.99
 	// $['apps']['salsa']: 5.99
+}
+
+func ExampleLocatedNodeList() {
+	// Load some JSON.
+	menu := map[string]any{
+		"apps": map[string]any{
+			"guacamole": 19.99,
+			"salsa":     5.99,
+		},
+	}
+
+	// Parse a JSONPath and select from the input.
+	p := jsonpath.MustParse(`$.apps["salsa", "guacamole"]`)
+	nodes := p.SelectLocated(menu)
+
+	// Show the nodes.
+	fmt.Println("Nodes:")
+	for n := range nodes.Nodes() {
+		fmt.Printf("  %v\n", n)
+	}
+
+	// Show the paths.
+	fmt.Println("\nPaths:")
+	for p := range nodes.Paths() {
+		fmt.Printf("  %v\n", p)
+	}
+
+	// Output:
+	// Nodes:
+	//   5.99
+	//   19.99
+	//
+	// Paths:
+	//   $['apps']['salsa']
+	//   $['apps']['guacamole']
+}
+
+func ExampleLocatedNodeList_Deduplicate() {
+	// Load some JSON.
+	pallet := map[string]any{"colors": []any{"red", "blue"}}
+
+	// Parse a JSONPath and select from the input.
+	p := jsonpath.MustParse("$.colors[0, 1, 1, 0]")
+	nodes := p.SelectLocated(pallet)
+	fmt.Printf("Items: %v\n", len(nodes))
+
+	// Deduplicate
+	nodes = nodes.Deduplicate()
+	fmt.Printf("Items: %v\n", len(nodes))
+
+	// Output:
+	// Items: 4
+	// Items: 2
+}
+
+func ExampleLocatedNodeList_Sort() {
+	// Load some JSON.
+	pallet := map[string]any{"colors": []any{"red", "blue", "green"}}
+
+	// Parse a JSONPath and select from the input.
+	p := jsonpath.MustParse("$.colors[2, 0, 1]")
+	nodes := p.SelectLocated(pallet)
+
+	// Show selected.
+	fmt.Println("Selected:")
+	for _, node := range nodes {
+		fmt.Printf("  %v: %v\n", node.Path, node.Node)
+	}
+
+	// Sort by normalized paths and show selected again.
+	nodes.Sort()
+	fmt.Println("\nSorted:")
+	for _, node := range nodes {
+		fmt.Printf("  %v: %v\n", node.Path, node.Node)
+	}
+
+	// Output:
+	// Selected:
+	//   $['colors'][2]: green
+	//   $['colors'][0]: red
+	//   $['colors'][1]: blue
+	//
+	// Sorted:
+	//   $['colors'][0]: red
+	//   $['colors'][1]: blue
+	//   $['colors'][2]: green
+}
+
+func ExampleLocatedNodeList_Clone() {
+	// Load some JSON.
+	items := []any{1, 2, 3, 4, 5}
+
+	// Parse a JSONPath and select from the input.
+	p := jsonpath.MustParse("$[2, 0, 1, 0, 1]")
+	nodes := p.SelectLocated(items)
+
+	// Clone the selected nodes then deduplicate.
+	orig := nodes.Clone()
+	nodes = nodes.Deduplicate()
+
+	// Cloned nodes have the original count.
+	fmt.Printf("Unique Count:   %v\nOriginal Count: %v\n", len(nodes), len(orig))
+
+	// Output:
+	// Unique Count:   3
+	// Original Count: 5
 }
 
 // Use the Parser to parse a collection of paths.
@@ -156,8 +262,8 @@ func ExampleParser_functionExtension() {
 		[]any{6, 7, 8, 9},
 		[]any{4, 8, 12},
 	}
-	result := path.Select(input)
-	fmt.Printf("%v\n", result)
+	nodes := path.Select(input)
+	fmt.Printf("%v\n", nodes)
 	// Output: [[6 7 8 9]]
 }
 

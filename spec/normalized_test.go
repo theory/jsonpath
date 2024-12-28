@@ -110,6 +110,118 @@ func TestNormalizedPath(t *testing.T) {
 	}
 }
 
+func TestNormalizedPathCompare(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+
+	for _, tc := range []struct {
+		name string
+		p1   NormalizedPath
+		p2   NormalizedPath
+		exp  int
+	}{
+		{
+			name: "empty_paths",
+			exp:  0,
+		},
+		{
+			name: "same_name",
+			p1:   NormalizedPath{Name("a")},
+			p2:   NormalizedPath{Name("a")},
+			exp:  0,
+		},
+		{
+			name: "diff_names",
+			p1:   NormalizedPath{Name("a")},
+			p2:   NormalizedPath{Name("b")},
+			exp:  -1,
+		},
+		{
+			name: "diff_names_rev",
+			p1:   NormalizedPath{Name("b")},
+			p2:   NormalizedPath{Name("a")},
+			exp:  1,
+		},
+		{
+			name: "same_name_diff_lengths",
+			p1:   NormalizedPath{Name("a"), Name("b")},
+			p2:   NormalizedPath{Name("a")},
+			exp:  1,
+		},
+		{
+			name: "same_name_diff_lengths_rev",
+			p1:   NormalizedPath{Name("a")},
+			p2:   NormalizedPath{Name("a"), Name("b")},
+			exp:  -1,
+		},
+		{
+			name: "same_multi_names",
+			p1:   NormalizedPath{Name("a"), Name("b")},
+			p2:   NormalizedPath{Name("a"), Name("b")},
+			exp:  0,
+		},
+		{
+			name: "diff_nested_names",
+			p1:   NormalizedPath{Name("a"), Name("a")},
+			p2:   NormalizedPath{Name("a"), Name("b")},
+			exp:  -1,
+		},
+		{
+			name: "diff_nested_names_rev",
+			p1:   NormalizedPath{Name("a"), Name("b")},
+			p2:   NormalizedPath{Name("a"), Name("a")},
+			exp:  1,
+		},
+		{
+			name: "name_vs_index",
+			p1:   NormalizedPath{Name("a")},
+			p2:   NormalizedPath{Index(0)},
+			exp:  1,
+		},
+		{
+			name: "name_vs_index_rev",
+			p1:   NormalizedPath{Index(0)},
+			p2:   NormalizedPath{Name("a")},
+			exp:  -1,
+		},
+		{
+			name: "diff_nested_types",
+			p1:   NormalizedPath{Name("a"), Index(1024)},
+			p2:   NormalizedPath{Name("a"), Name("b")},
+			exp:  -1,
+		},
+		{
+			name: "diff_nested_types_rev",
+			p1:   NormalizedPath{Name("a"), Name("b")},
+			p2:   NormalizedPath{Name("a"), Index(1024)},
+			exp:  1,
+		},
+		{
+			name: "same_index",
+			p1:   NormalizedPath{Index(42)},
+			p2:   NormalizedPath{Index(42)},
+			exp:  0,
+		},
+		{
+			name: "diff_indexes",
+			p1:   NormalizedPath{Index(42)},
+			p2:   NormalizedPath{Index(99)},
+			exp:  -1,
+		},
+		{
+			name: "diff_indexes_rev",
+			p1:   NormalizedPath{Index(99)},
+			p2:   NormalizedPath{Index(42)},
+			exp:  1,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			a.Equal(tc.exp, tc.p1.Compare(tc.p2))
+		})
+	}
+}
+
 func TestLocatedNode(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
