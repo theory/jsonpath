@@ -18,7 +18,7 @@ func main() {
 	stream := make(chan struct{})
 
 	js.Global().Set("query", js.FuncOf(query))
-	// js.Global().Set("optLocated", js.ValueOf(optLocated))
+	js.Global().Set("optLocated", js.ValueOf(optLocated))
 
 	<-stream
 }
@@ -45,16 +45,18 @@ func execute(query, target string, opts int) string {
 	}
 
 	// Execute the query against the JSON.
-	res := path.Select(value)
+	var res any
+	if opts&optLocated == optLocated {
+		res = path.SelectLocated(value)
+	} else {
+		res = path.Select(value)
+	}
 
 	// Serialize the result
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 	enc.SetEscapeHTML(false)
 	enc.SetIndent("", "  ")
-	if opts&optLocated == optLocated {
-		_ = optLocated
-	}
 	if err := enc.Encode(res); err != nil {
 		return fmt.Sprintf("Error parsing results: %v", err)
 	}

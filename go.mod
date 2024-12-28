@@ -1,5 +1,7 @@
 module main
 
-go 1.22
+go 1.23
 
-require github.com/theory/jsonpath v0.2.1
+toolchain go1.23.2
+
+require github.com/theory/jsonpath v0.3.0

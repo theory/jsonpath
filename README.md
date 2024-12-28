@@ -31,12 +31,12 @@ The two buttons in the top-right corner provide documentation and links.
 *   Hit the button with the circled i for information about the JSONPath
     playground.
 
-<!-- ### Options
+### Options
 
 Select options for execution and the display of results:
 
 *   **Located**: Show the normalized path location of each value.
- -->
+
 ### Permalink
 
 Hit the "Permalink" button instead of "Run Query" to reload the page with a
