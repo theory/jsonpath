@@ -38,7 +38,7 @@ All notable changes to this project will be documented in this file. It uses the
   [v0.3.0]: https://github.com/theory/jsonpath/compare/v0.2.1...v0.3.0
   [RFC 9535-defined]: https://www.rfc-editor.org/rfc/rfc9535#section-2.7
 
-## [v0.2.1 ] — 2024-12-12
+## [v0.2.1] — 2024-12-12
 
 ### 🪲 Bug Fixes
 
