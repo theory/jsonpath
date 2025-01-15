@@ -1,8 +1,6 @@
 // Package registry provides a RFC 9535 JSONPath function registry.
 package registry
 
-//go:generate stringer -linecomment -output registry_string.go -type FuncType
-
 import (
 	"errors"
 	"fmt"
