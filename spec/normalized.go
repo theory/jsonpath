@@ -8,10 +8,17 @@ import (
 // NormalSelector represents a single selector in a normalized path.
 // Implemented by [Name] and [Index].
 type NormalSelector interface {
-	// writeNormalizedTo writes n to buf formatted as a [normalized path] element.
+	// writeNormalizedTo writes the selector to buf formatted as a [normalized
+	// path] element.
 	//
 	// [normalized path]: https://www.rfc-editor.org/rfc/rfc9535#section-2.7
 	writeNormalizedTo(buf *strings.Builder)
+
+	// writePointerTo writes the selector to buf formatted as a [JSON Pointer]
+	// reference token.
+	//
+	// [JSON Pointer]: https://www.rfc-editor.org/rfc/rfc6901
+	writePointerTo(buf *strings.Builder)
 }
 
 // NormalizedPath represents a normalized path identifying a single value in a
@@ -26,6 +33,18 @@ func (np NormalizedPath) String() string {
 	buf.WriteRune('$')
 	for _, e := range np {
 		e.writeNormalizedTo(buf)
+	}
+	return buf.String()
+}
+
+// Pointer returns an [RFC 6901 JSON Pointer] string representation of np.
+//
+// [RFC 6901 JSON Pointer]: https://www.rfc-editor.org/rfc/rfc6901
+func (np NormalizedPath) Pointer() string {
+	buf := new(strings.Builder)
+	for _, e := range np {
+		buf.WriteRune('/')
+		e.writePointerTo(buf)
 	}
 	return buf.String()
 }

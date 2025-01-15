@@ -77,7 +77,7 @@ func (n Name) SelectLocated(input, _ any, parent NormalizedPath) []*LocatedNode 
 }
 
 // writeNormalizedTo writes n to buf formatted as a [normalized path] element.
-// Implements [NormalSelector].
+// Defined by [NormalSelector].
 //
 // [normalized path]: https://www.rfc-editor.org/rfc/rfc9535#section-2.7
 func (n Name) writeNormalizedTo(buf *strings.Builder) {
@@ -107,6 +107,17 @@ func (n Name) writeNormalizedTo(buf *strings.Builder) {
 		}
 	}
 	buf.WriteString("']")
+}
+
+// writePointerTo writes n to buf formatted as a [JSON Pointer] reference
+// token. Defined by [NormalSelector].
+//
+// [JSON Pointer]: https://www.rfc-editor.org/rfc/rfc6901
+func (n Name) writePointerTo(buf *strings.Builder) {
+	buf.WriteString(strings.ReplaceAll(
+		strings.ReplaceAll(string(n), "~", "~0"),
+		"/", "~1",
+	))
 }
 
 // WildcardSelector is the underlying nil value used by [Wildcard].
@@ -224,6 +235,14 @@ func (i Index) writeNormalizedTo(buf *strings.Builder) {
 	buf.WriteRune('[')
 	buf.WriteString(strconv.FormatInt(int64(i), 10))
 	buf.WriteRune(']')
+}
+
+// writePointerTo writes n to buf formatted as a [JSON Pointer] reference
+// token. Defined by [NormalSelector].
+//
+// [JSON Pointer]: https://www.rfc-editor.org/rfc/rfc6901
+func (i Index) writePointerTo(buf *strings.Builder) {
+	buf.WriteString(strconv.FormatInt(int64(i), 10))
 }
 
 // SliceSelector is a slice selector, e.g., [0:100:5].

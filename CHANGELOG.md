@@ -7,6 +7,16 @@ All notable changes to this project will be documented in this file. It uses the
   [Semantic Versioning]: https://semver.org/spec/v2.0.0.html
     "Semantic Versioning 2.0.0"
 
+## [v0.4.0] — Unreleased
+
+### ⚡ Improvements
+
+*   Added the `Pointer` method to `NormalizedPath`. It returns an [RFC 9535
+    JSON Pointer] string representation of the normalized path.
+
+  [v0.4.0]: https://github.com/theory/jsonpath/compare/v0.3.0...v0.4.0
+  [RFC 9535 JSON Pointer]: https://www.rfc-editor.org/rfc/rfc9535#name-normalized-paths
+
 ## [v0.3.0] — 2024-12-28
 
 ### ⚡ Improvements

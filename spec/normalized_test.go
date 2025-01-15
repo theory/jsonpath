@@ -16,49 +16,66 @@ func TestNormalSelector(t *testing.T) {
 	for _, tc := range []struct {
 		name string
 		elem NormalSelector
-		exp  string
+		str  string
+		ptr  string
 	}{
 		{
 			name: "object_value",
 			elem: Name("a"),
-			exp:  `['a']`,
+			str:  `['a']`,
+			ptr:  `a`,
 		},
 		{
 			name: "array_index",
 			elem: Index(1),
-			exp:  `[1]`,
+			str:  `[1]`,
+			ptr:  `1`,
 		},
 		{
 			name: "escape_apostrophes",
 			elem: Name("'hi'"),
-			exp:  `['\'hi\'']`,
+			str:  `['\'hi\'']`,
+			ptr:  "'hi'",
 		},
 		{
 			name: "escapes",
 			elem: Name("'\b\f\n\r\t\\'"),
-			exp:  `['\'\b\f\n\r\t\\\'']`,
+			str:  `['\'\b\f\n\r\t\\\'']`,
+			ptr:  "'\b\f\n\r\t\\'",
 		},
 		{
 			name: "escape_vertical_unicode",
 			elem: Name("\u000B"),
-			exp:  `['\u000b']`,
+			str:  `['\u000b']`,
+			ptr:  "\u000B",
 		},
 		{
 			name: "escape_unicode_null",
 			elem: Name("\u0000"),
-			exp:  `['\u0000']`,
+			str:  `['\u0000']`,
+			ptr:  "\u0000",
 		},
 		{
 			name: "escape_unicode_runes",
 			elem: Name("\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u000e\u000F"),
-			exp:  `['\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u000e\u000f']`,
+			str:  `['\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u000e\u000f']`,
+			ptr:  "\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u000e\u000F",
+		},
+		{
+			name: "escape_pointer",
+			elem: Name("this / ~that"),
+			str:  `['this / ~that']`,
+			ptr:  "this ~1 ~0that",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			buf := new(strings.Builder)
 			tc.elem.writeNormalizedTo(buf)
-			a.Equal(tc.exp, buf.String())
+			a.Equal(tc.str, buf.String())
+			buf.Reset()
+			tc.elem.writePointerTo(buf)
+			a.Equal(tc.ptr, buf.String())
 		})
 	}
 }
@@ -70,42 +87,62 @@ func TestNormalizedPath(t *testing.T) {
 	for _, tc := range []struct {
 		name string
 		path NormalizedPath
-		exp  string
+		str  string
+		ptr  string
 	}{
+		{
+			name: "empty_path",
+			path: NormalizedPath{},
+			str:  "$",
+			ptr:  "",
+		},
 		{
 			name: "object_value",
 			path: NormalizedPath{Name("a")},
-			exp:  "$['a']",
+			str:  "$['a']",
+			ptr:  "/a",
 		},
 		{
 			name: "array_index",
 			path: NormalizedPath{Index(1)},
-			exp:  "$[1]",
+			str:  "$[1]",
+			ptr:  "/1",
 		},
 		{
 			name: "neg_for_len_5",
 			path: NormalizedPath{Index(2)},
-			exp:  "$[2]",
+			str:  "$[2]",
+			ptr:  "/2",
 		},
 		{
 			name: "nested_structure",
 			path: NormalizedPath{Name("a"), Name("b"), Index(1)},
-			exp:  "$['a']['b'][1]",
+			str:  "$['a']['b'][1]",
+			ptr:  "/a/b/1",
 		},
 		{
 			name: "unicode_escape",
 			path: NormalizedPath{Name("\u000B")},
-			exp:  `$['\u000b']`,
+			str:  `$['\u000b']`,
+			ptr:  "/\u000b",
 		},
 		{
 			name: "unicode_character",
 			path: NormalizedPath{Name("\u0061")},
-			exp:  "$['a']",
+			str:  "$['a']",
+			ptr:  "/a",
+		},
+		{
+			name: "nested_structure_pointer_stuff",
+			path: NormalizedPath{Name("a~x"), Name("b/2"), Index(1)},
+			str:  "$['a~x']['b/2'][1]",
+			ptr:  "/a~0x/b~12/1",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			a.Equal(tc.exp, tc.path.String())
+			a.Equal(tc.str, tc.path.String())
+			a.Equal(tc.ptr, tc.path.Pointer())
 		})
 	}
 }
