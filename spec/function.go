@@ -107,7 +107,6 @@ func (NodesType) writeTo(buf *strings.Builder) {
 // LogicalType is a JSONPath type that represents true or false.
 type LogicalType uint8
 
-//revive:disable:exported
 const (
 	LogicalFalse LogicalType = iota // false
 	LogicalTrue                     // true
