@@ -278,7 +278,7 @@ func Slice(args ...any) SliceSelector {
 		case nil:
 			// Nothing to do
 		default:
-			panic("Third value passed to NewSlice is not an integer")
+			panic("Third value passed to Slice is not an integer")
 		}
 		fallthrough
 	case endArg:
@@ -292,7 +292,7 @@ func Slice(args ...any) SliceSelector {
 				s.end = math.MinInt
 			}
 		default:
-			panic("Second value passed to NewSlice is not an integer")
+			panic("Second value passed to Slice is not an integer")
 		}
 		fallthrough
 	case startArg:
@@ -305,7 +305,7 @@ func Slice(args ...any) SliceSelector {
 				s.start = math.MaxInt
 			}
 		default:
-			panic("First value passed to NewSlice is not an integer")
+			panic("First value passed to Slice is not an integer")
 		}
 	}
 	return s

@@ -2,11 +2,11 @@ GO ?= go
 
 .PHONY: test # Run the unit tests
 test:
-	$(GO) test ./... -count=1
+	GOTOOLCHAIN=local $(GO) test ./... -count=1
 
 .PHONY: cover # Run test coverage
 cover: $(shell find . -name \*.go)
-	$(GO) test -v -coverprofile=cover.out -covermode=count ./...
+	GOTOOLCHAIN=local $(GO) test -v -coverprofile=cover.out -covermode=count ./...
 	@$(GO) tool cover -html=cover.out
 
 .PHONY: lint # Lint the project

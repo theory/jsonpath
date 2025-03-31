@@ -336,15 +336,15 @@ func TestSlicePanic(t *testing.T) {
 	a := assert.New(t)
 
 	a.PanicsWithValue(
-		"First value passed to NewSlice is not an integer",
+		"First value passed to Slice is not an integer",
 		func() { Slice("hi") },
 	)
 	a.PanicsWithValue(
-		"Second value passed to NewSlice is not an integer",
+		"Second value passed to Slice is not an integer",
 		func() { Slice(nil, "hi") },
 	)
 	a.PanicsWithValue(
-		"Third value passed to NewSlice is not an integer",
+		"Third value passed to Slice is not an integer",
 		func() { Slice(nil, 42, "hi") },
 	)
 }

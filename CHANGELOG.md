@@ -7,6 +7,15 @@ All notable changes to this project will be documented in this file. It uses the
   [Semantic Versioning]: https://semver.org/spec/v2.0.0.html
     "Semantic Versioning 2.0.0"
 
+## [v0.4.1] — Unreleased
+
+### 🪲 Bug Fixes
+
+*   Fixed the panic messages from `spec.Slice` to properly report coming from
+    `Slice` and not `NewSlice`.
+
+  [v0.4.1]: https://github.com/theory/jsonpath/compare/v0.4.0...v0.4.1
+
 ## [v0.4.0] — 2025-01-15
 
 ### ⚡ Improvements
