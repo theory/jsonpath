@@ -21,10 +21,9 @@ jobs:
         run: make test
       - name: Setup TinyGo
         uses: acifani/setup-tinygo@v2
-        with: { tinygo-version: 0.34.0 }
+        with: { tinygo-version: 0.37.0 }
       - name: Test WASM
         run: make wasm
-        if: matrix.go != '1.24'
   lint:
     name: 📊 Lint and Cover
     runs-on: ubuntu-latest

@@ -101,7 +101,7 @@ func (n Name) writeNormalizedTo(buf *strings.Builder) {
 			buf.WriteString(`\\`)
 		case '\x00', '\x01', '\x02', '\x03', '\x04', '\x05', '\x06', '\x07', '\x0b', '\x0e', '\x0f':
 			// "00"-"07", "0b", "0e"-"0f"
-			buf.WriteString(fmt.Sprintf(`\u000%x`, r))
+			fmt.Fprintf(buf, `\u000%x`, r)
 		default:
 			buf.WriteRune(r)
 		}
@@ -493,7 +493,7 @@ func (f *FilterSelector) SelectLocated(current, root any, parent NormalizedPath)
 // [Select] as it iterates over nodes, and always passes the root value($) for
 // filter expressions that reference it.
 func (f *FilterSelector) Eval(node, root any) bool {
-	return f.LogicalOr.testFilter(node, root)
+	return f.testFilter(node, root)
 }
 
 // isSingular returns false because Filters can return more than one value.

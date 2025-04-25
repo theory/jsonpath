@@ -304,10 +304,7 @@ func (p *parser) parseLogicalOrExpr() (spec.LogicalOr, error) {
 
 	ands = append(ands, land)
 	lex.scanBlankSpace()
-	for {
-		if lex.r != '|' {
-			break
-		}
+	for lex.r == '|' {
 		lex.scan()
 		next := lex.scan()
 		if next.tok != '|' {
@@ -334,10 +331,7 @@ func (p *parser) parseLogicalAndExpr() (spec.LogicalAnd, error) {
 	ors := []spec.BasicExpr{expr}
 	lex := p.lex
 	lex.scanBlankSpace()
-	for {
-		if lex.r != '&' {
-			break
-		}
+	for lex.r == '&' {
 		lex.scan()
 		next := lex.scan()
 		if next.tok != '&' {

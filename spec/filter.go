@@ -131,7 +131,7 @@ func (e *ExistExpr) testFilter(current, root any) bool {
 
 // writeTo writes a string representation of e to buf.
 func (e *ExistExpr) writeTo(buf *strings.Builder) {
-	buf.WriteString(e.PathQuery.String())
+	buf.WriteString(e.String())
 }
 
 // NonExistExpr represents a nonexistence expression.
@@ -147,7 +147,7 @@ func Nonexistence(q *PathQuery) *NonExistExpr {
 // writeTo writes a string representation of ne to buf.
 func (ne NonExistExpr) writeTo(buf *strings.Builder) {
 	buf.WriteRune('!')
-	buf.WriteString(ne.PathQuery.String())
+	buf.WriteString(ne.String())
 }
 
 // testFilter returns true if ne.Query selects no results from current or

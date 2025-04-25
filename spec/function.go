@@ -358,7 +358,7 @@ func (fq *FilterQueryExpr) ResultType() FuncType {
 
 // writeTo writes a string representation of fq to buf.
 func (fq *FilterQueryExpr) writeTo(buf *strings.Builder) {
-	buf.WriteString(fq.PathQuery.String())
+	buf.WriteString(fq.String())
 }
 
 // FunctionExpr represents a function expression, consisting of a named

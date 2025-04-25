@@ -14,6 +14,11 @@ All notable changes to this project will be documented in this file. It uses the
 *   Fixed the panic messages from `spec.Slice` to properly report coming from
     `Slice` and not `NewSlice`.
 
+### 📔 Notes
+
+*   Upgraded to and fixed issues reported by `golangci-lint` v2.1.5.
+*   Added TinyGo testing on Go v1.24.
+
   [v0.4.1]: https://github.com/theory/jsonpath/compare/v0.4.0...v0.4.1
 
 ## [v0.4.0] — 2025-01-15
