@@ -103,8 +103,6 @@
       }
 
       const go = new Go();
-      // https://github.com/tinygo-org/tinygo/issues/1140#issuecomment-1783897193
-      go.importObject.gojs["syscall/js.finalizeRef"] = _ => 0;
       const WASM_URL = './play.wasm';
 
       var wasm;
