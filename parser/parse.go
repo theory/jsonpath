@@ -96,7 +96,7 @@ func (p *parser) parseQuery(root bool) (*spec.PathQuery, error) {
 				return nil, err
 			}
 			segs = append(segs, spec.Child(sel))
-		case lex.isBlankSpace(lex.r):
+		case isBlankSpace(lex.r):
 			switch lex.peekPastBlankSpace() {
 			case '.', '[':
 				lex.scanBlankSpace()

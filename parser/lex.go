@@ -50,6 +50,9 @@ const (
 	// Token literals.
 	nullByte  = 0x00
 	backslash = '\\'
+
+	// blanks selects blank space characters.
+	blanks = uint64(1<<'\t' | 1<<'\n' | 1<<'\r' | 1<<' ')
 )
 
 // name returns the token name, a string for special tokens and a quoted rune
@@ -149,7 +152,7 @@ func (lex *lexer) scan() token {
 		lex.prev = lex.scanNumber()
 	case lex.r == '"' || lex.r == '\'':
 		lex.prev = lex.scanString()
-	case lex.isBlankSpace(lex.r):
+	case isBlankSpace(lex.r):
 		lex.prev = lex.scanBlankSpace()
 	default:
 		lex.prev = token{lex.r, "", lex.rPos}
@@ -194,7 +197,7 @@ func (lex *lexer) peek() rune {
 // scanBlankSpace scan and returns a token of blank spaces.
 func (lex *lexer) scanBlankSpace() token {
 	startPos := lex.rPos
-	for lex.isBlankSpace(lex.r) {
+	for isBlankSpace(lex.r) {
 		lex.next()
 	}
 	return token{blankSpace, lex.buf[startPos:lex.rPos], startPos}
@@ -203,19 +206,15 @@ func (lex *lexer) scanBlankSpace() token {
 // skipBlankSpace skips blank spaces from the current position until the next
 // non-blank space token.
 func (lex *lexer) skipBlankSpace() rune {
-	if lex.isBlankSpace(lex.r) {
+	if isBlankSpace(lex.r) {
 		lex.scan()
 	}
 	return lex.r
 }
 
 // isBlankSpace returns true if r is blank space.
-func (lex *lexer) isBlankSpace(r rune) bool {
-	switch r {
-	case '\t', '\n', '\r', ' ':
-		return true
-	}
-	return false
+func isBlankSpace(r rune) bool {
+	return blanks&(1<<uint64(r)) != 0
 }
 
 // peekPastBlankSpace returns the next non-blank space rune from the current
@@ -224,7 +223,7 @@ func (lex *lexer) peekPastBlankSpace() rune {
 	np := lex.nextPos
 	for np < len(lex.buf) {
 		r := rune(lex.buf[np])
-		if !lex.isBlankSpace(r) {
+		if !isBlankSpace(r) {
 			return r
 		}
 		np++
