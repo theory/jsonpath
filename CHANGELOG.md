@@ -13,14 +13,22 @@ All notable changes to this project will be documented in this file. It uses the
 
 *   Made significant changes to the `spec` package toward public stability,
     usability, and greater comprehension. The names of things are more
-    consistent, the APIs more legible and user-friendly, and the documentation
-    thorough, with examples for each significant type. See [PR #14] for
+    consistent, the APIs more legible and user-friendly. See [PR #14] for
     details.
-*   Removed the "Package Stability" statement from the README, as all packages
-    are considered stable.
 *   Added support for [json.Number] values to complement the existing support
     for Go core numeric types. This should allow for transparent handling of
     values marshaled with [json.Decoder.UseNumber] enabled.
+
+### 📚 Documentation
+
+*   Vastly expanded the `spec` package documentation to make it much more
+    thorough and accurate, with copious links to relevant parts of [RFC 9535]
+    and complete lists of interface implementations and examples for each
+    significant type. See [PR #14] for details.
+*   Removed the "Package Stability" statement from the README, as all packages
+    are considered stable.
+*   Fixed links and typos in the main package documentation, and moved the
+    registry example under `WithRegistry`.
 
 ### 📔 Notes
 
@@ -32,6 +40,8 @@ All notable changes to this project will be documented in this file. It uses the
   [json.Decoder.UseNumber]: https://pkg.go.dev/encoding/json#Decoder.UseNumber
   [PR #14]: https://github.com/theory/jsonpath/pull/14
   [compliance test suite]: https://github.com/jsonpath-standard/jsonpath-compliance-test-suite
+  [RFC 9535]: https://www.rfc-editor.org/rfc/rfc9535.html
+    "RFC 9535 JSONPath: Query Expressions for JSON"
 
 ## [v0.4.1] — 2025-05-02
 

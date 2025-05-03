@@ -228,13 +228,13 @@ func ExampleParser() {
 	// ["Sayings of the Century","Moby Dick"]
 }
 
-// The second use case for the Parser is to provide a [registry.Registry]
+// Use WithRegistry to create a [Parser] that uses a [registry.Registry]
 // containing function extensions, as [defined by the standard]. This example
 // creates a function named "first" that returns the first item in a list of
 // nodes.
 //
 // [defined by the standard]: https://www.rfc-editor.org/rfc/rfc9535.html#name-function-extensions
-func ExampleParser_functionExtension() {
+func ExampleWithRegistry() {
 	// Register the first function.
 	reg := registry.New()
 	err := reg.Register(
@@ -268,14 +268,14 @@ func ExampleParser_functionExtension() {
 }
 
 // validateFirstArgs validates that a single argument is passed to the first()
-// function, and that it can be converted to [spec.FuncNodes], so that first()
+// function, and that it can be converted to [spec.NodesType], so that first()
 // can return the first node. It's called by the parser.
-func validateFirstArgs(fea []spec.FuncExprArg) error {
-	if len(fea) != 1 {
-		return fmt.Errorf("expected 1 argument but found %v", len(fea))
+func validateFirstArgs(args []spec.FuncExprArg) error {
+	if len(args) != 1 {
+		return fmt.Errorf("expected 1 argument but found %v", len(args))
 	}
 
-	if !fea[0].ResultType().ConvertsToNodes() {
+	if !args[0].ResultType().ConvertsToNodes() {
 		return errors.New("cannot convert argument to nodes")
 	}
 
@@ -283,7 +283,7 @@ func validateFirstArgs(fea []spec.FuncExprArg) error {
 }
 
 // firstFunc defines the custom first() JSONPath function. It converts its
-// single argument to a [spec.NodesType] value and returns a [*spec.ValueType]
+// single argument to a [spec.NodesType] value and returns a [spec.ValueType]
 // that contains the first node. If there are no nodes it returns nil.
 func firstFunc(jv []spec.JSONPathValue) spec.JSONPathValue {
 	nodes := spec.NodesFrom(jv[0])

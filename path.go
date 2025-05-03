@@ -20,18 +20,18 @@ type Path struct {
 	q *spec.PathQuery
 }
 
-// New creates and returns a new Path consisting of q.
+// New creates and returns a new [Path] consisting of q.
 func New(q *spec.PathQuery) *Path {
 	return &Path{q: q}
 }
 
-// Parse parses path, a JSONPath query string, into a Path. Returns an
-// ErrPathParse on parse failure.
+// Parse parses path, a JSONPath query string, into a [Path]. Returns an
+// [ErrPathParse] on parse failure.
 func Parse(path string) (*Path, error) {
 	return NewParser().Parse(path)
 }
 
-// MustParse parses path into a Path. Panics with an ErrPathParse on parse
+// MustParse parses path into a [Path]. Panics with an [ErrPathParse] on parse
 // failure.
 func MustParse(path string) *Path {
 	return NewParser().MustParse(path)
@@ -42,20 +42,21 @@ func (p *Path) String() string {
 	return p.q.String()
 }
 
-// Query returns p's root Query.
+// Query returns p's root [spec.PathQuery].
 func (p *Path) Query() *spec.PathQuery {
 	return p.q
 }
 
-// Select returns the values that JSONPath query p selects from input.
+// Select returns the nodes that JSONPath query p selects from input.
 func (p *Path) Select(input any) NodeList {
 	return p.q.Select(nil, input)
 }
 
-// SelectLocated returns the values that JSONPath query p selects from input
-// as [spec.LocatedNode] values that pair the values with the [normalized
-// paths] that identify them. Unless you have a specific need for the unique
-// normalized path for each value, you probably want to use [Path.Select].
+// SelectLocated returns the nodes that JSONPath query p selects from input as
+// [spec.LocatedNode] values that pair the nodes with the [normalized paths]
+// that identify them. Unless you have a specific need for the unique
+// [spec.NormalizedPath] for each value, you probably want to use
+// [Path.Select].
 //
 // [normalized paths]: https://www.rfc-editor.org/rfc/rfc9535#section-2.7
 func (p *Path) SelectLocated(input any) LocatedNodeList {
@@ -70,13 +71,13 @@ type Parser struct {
 // Option defines a parser option.
 type Option func(*Parser)
 
-// WithRegistry configures a Parser with a function Registry, which may
-// contain function extensions. See [Parser] for an example.
+// WithRegistry configures a [Parser] with a [registry.Registry], which may
+// contain function extensions.
 func WithRegistry(reg *registry.Registry) Option {
 	return func(p *Parser) { p.reg = reg }
 }
 
-// NewParser creates a new Parser configured by opt.
+// NewParser creates a new [Parser] configured by opt.
 func NewParser(opt ...Option) *Parser {
 	p := &Parser{}
 	for _, o := range opt {
@@ -90,20 +91,19 @@ func NewParser(opt ...Option) *Parser {
 	return p
 }
 
-// Parse parses path, a JSON Path query string, into a Path. Returns an
-// ErrPathParse on parse failure.
-//
-//nolint:wrapcheck
+// Parse parses path, a JSONPath query string, into a [Path]. Returns an
+// [ErrPathParse] on parse failure.
 func (c *Parser) Parse(path string) (*Path, error) {
 	q, err := parser.Parse(c.reg, path)
 	if err != nil {
+		//nolint:wrapcheck
 		return nil, err
 	}
 	return New(q), nil
 }
 
-// MustParse parses path, a JSON Path query string, into a Path. Panics with
-// an ErrPathParse on parse failure.
+// MustParse parses path, a JSONPath query string, into a [Path]. Panics with
+// an [ErrPathParse] on parse failure.
 func (c *Parser) MustParse(path string) *Path {
 	q, err := parser.Parse(c.reg, path)
 	if err != nil {
@@ -131,7 +131,7 @@ func (list NodeList) All() iter.Seq[any] {
 }
 
 // LocatedNodeList is a list of nodes selected by a JSONPath query, along with
-// their locations. Returned by [Path.SelectLocated].
+// their [NormalizedPath] locations. Returned by [Path.SelectLocated].
 type LocatedNodeList []*spec.LocatedNode
 
 // All returns an iterator over all the nodes in list.
@@ -147,8 +147,8 @@ func (list LocatedNodeList) All() iter.Seq[*spec.LocatedNode] {
 	}
 }
 
-// Nodes returns an iterator over all the nodes in list. This is effectively
-// the same data a returned by [Path.Select].
+// Nodes returns an iterator over all the nodes in list. This is the same data
+// as returned by [Path.Select].
 func (list LocatedNodeList) Nodes() iter.Seq[any] {
 	return func(yield func(any) bool) {
 		for _, v := range list {
@@ -159,7 +159,7 @@ func (list LocatedNodeList) Nodes() iter.Seq[any] {
 	}
 }
 
-// Paths returns an iterator over all the normalized paths in list.
+// Paths returns an iterator over all the [NormalizedPath] values in list.
 func (list LocatedNodeList) Paths() iter.Seq[spec.NormalizedPath] {
 	return func(yield func(spec.NormalizedPath) bool) {
 		for _, v := range list {
@@ -170,10 +170,10 @@ func (list LocatedNodeList) Paths() iter.Seq[spec.NormalizedPath] {
 	}
 }
 
-// Deduplicate deduplicates the nodes in list based on their normalized paths,
-// modifying the contents of list. It returns the modified list, which may
-// have a smaller length, and zeroes the elements between the new length and
-// the original length.
+// Deduplicate deduplicates the nodes in list based on their [NormalizedPath]
+// values, modifying the contents of list. It returns the modified list, which
+// may have a shorter length, and zeroes the elements between the new length
+// and the original length.
 func (list LocatedNodeList) Deduplicate() LocatedNodeList {
 	if len(list) <= 1 {
 		return list
@@ -192,7 +192,7 @@ func (list LocatedNodeList) Deduplicate() LocatedNodeList {
 	return slices.Clip(uniq)
 }
 
-// Sort sorts list by the normalized path of each node.
+// Sort sorts list by the [NormalizedPath] of each node.
 func (list LocatedNodeList) Sort() {
 	slices.SortFunc(list, func(a, b *spec.LocatedNode) int {
 		return a.Path.Compare(b.Path)

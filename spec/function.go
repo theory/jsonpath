@@ -67,7 +67,7 @@ func (ft FuncType) ConvertsToNodes() bool {
 	return ft == FuncNodes || ft == FuncSingularQuery
 }
 
-// JSONPathValue defines the interface for JSON path values used as comparison
+// JSONPathValue defines the interface for JSONPath values used as comparison
 // operands, filter expression results, and function parameters & return
 // values.
 //

@@ -35,8 +35,8 @@ type parser struct {
 	reg *registry.Registry
 }
 
-// Parse parses path, a JSON Path query string, into a PathQuery. Returns a
-// PathParseError on parse failure.
+// Parse parses path, a JSONPath query string, into a [spec.PathQuery].
+// Returns a [ErrPathParse] on parse failure.
 func Parse(reg *registry.Registry, path string) (*spec.PathQuery, error) {
 	lex := newLexer(path)
 	tok := lex.scan()
