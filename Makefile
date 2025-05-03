@@ -57,4 +57,4 @@ submodules:
 	git submodule update --init
 
 update-submodules:
-	git pull --recurse-submodules
+	git submodule update --recursive --remote --init

@@ -203,20 +203,23 @@ func TestParseCompliance(t *testing.T) {
 
 	//nolint:tagliatelle
 	type testCase struct {
-		Name            string
-		Selector        string
-		Document        any
-		Result          NodeList
-		Results         []NodeList
-		InvalidSelector bool `json:"invalid_selector"`
+		Name            string     `json:"name"`
+		Selector        string     `json:"selector"`
+		Document        any        `json:"document"`
+		Result          NodeList   `json:"result"`
+		Results         []NodeList `json:"results"`
+		ResultPaths     []string   `json:"result_paths"`
+		ResultsPaths    [][]string `json:"results_paths"`
+		InvalidSelector bool       `json:"invalid_selector"`
 	}
 
 	rawJSON, err := os.ReadFile(
 		filepath.Join("jsonpath-compliance-test-suite", "cts.json"),
 	)
 	r.NoError(err)
-	var ts struct{ Tests []testCase }
-	//nolint:musttag
+	var ts struct {
+		Tests []testCase `json:"tests"`
+	}
 	if err := json.Unmarshal(rawJSON, &ts); err != nil {
 		t.Fatal(err)
 	}
@@ -242,6 +245,23 @@ func TestParseCompliance(t *testing.T) {
 				a.Equal(tc.Result, res, description)
 			case tc.Results != nil:
 				a.Contains(tc.Results, res, description)
+			}
+
+			// Assemble and test located nodes.
+			nodes := NodeList{}
+			paths := []string{}
+			for l := range p.SelectLocated(tc.Document).All() {
+				nodes = append(nodes, l.Node)
+				paths = append(paths, l.Path.String())
+			}
+
+			switch {
+			case tc.ResultPaths != nil:
+				a.Equal(tc.ResultPaths, paths, description)
+				a.Equal(tc.Result, nodes, description)
+			case tc.ResultsPaths != nil:
+				a.Contains(tc.Results, nodes, description)
+				a.Contains(tc.ResultsPaths, paths, description)
 			}
 		})
 	}

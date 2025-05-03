@@ -22,10 +22,16 @@ All notable changes to this project will be documented in this file. It uses the
     for Go core numeric types. This should allow for transparent handling of
     values marshaled with [json.Decoder.UseNumber] enabled.
 
+### 📔 Notes
+
+*   Upgraded the [compliance test suite] and integrated its located path test
+    expectations. All tests passed, no changes required.
+
   [v0.4.1]: https://github.com/theory/jsonpath/compare/v0.4.1...v0.10.0
   [json.Number]: https://pkg.go.dev/encoding/json#Number
   [json.Decoder.UseNumber]: https://pkg.go.dev/encoding/json#Decoder.UseNumber
   [PR #14]: https://github.com/theory/jsonpath/pull/14
+  [compliance test suite]: https://github.com/jsonpath-standard/jsonpath-compliance-test-suite
 
 ## [v0.4.1] — 2025-05-02
 
