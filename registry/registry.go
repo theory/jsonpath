@@ -72,7 +72,7 @@ func New() *Registry {
 
 // Validator functions validate that the args expressions to a function can be
 // processed by the function.
-type Validator func(args []spec.FunctionExprArg) error
+type Validator func(args []spec.FuncExprArg) error
 
 // Evaluator functions execute a function against the values returned by args.
 type Evaluator func(args []spec.JSONPathValue) spec.JSONPathValue
@@ -130,7 +130,7 @@ type Function struct {
 
 	// validator executes at parse time to validate that all the args to
 	// the function are compatible with the function.
-	validator func(args []spec.FunctionExprArg) error
+	validator func(args []spec.FuncExprArg) error
 
 	// evaluator executes the function against args and returns the result of
 	// type ResultType.
@@ -148,7 +148,7 @@ type Function struct {
 func NewFunction(
 	name string,
 	resultType spec.FuncType,
-	validator func(args []spec.FunctionExprArg) error,
+	validator func(args []spec.FuncExprArg) error,
 	evaluator func(args []spec.JSONPathValue,
 	) spec.JSONPathValue,
 ) *Function {
@@ -169,12 +169,6 @@ func (f *Function) Evaluate(args []spec.JSONPathValue) spec.JSONPathValue {
 
 // Validate executes at parse time to validate that all the args to the
 // function are compatible with the function.
-func (f *Function) Validate(args []spec.FunctionExprArg) error {
+func (f *Function) Validate(args []spec.FuncExprArg) error {
 	return f.validator((args))
 }
-
-// type Function interface {
-// 	Evaluate(args []JSONPathValue) JSONPathValue
-// 	ResultType() FuncType
-// 	Name() string
-// }

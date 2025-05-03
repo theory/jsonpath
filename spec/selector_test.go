@@ -365,14 +365,14 @@ func TestNameSelect(t *testing.T) {
 			sel:  Name("hi"),
 			src:  map[string]any{"hi": 42},
 			exp:  []any{42},
-			loc:  []*LocatedNode{{Path: NormalizedPath{Name("hi")}, Node: 42}},
+			loc:  []*LocatedNode{{Path: Normalized(Name("hi")), Node: 42}},
 		},
 		{
 			name: "got_name_array",
 			sel:  Name("hi"),
 			src:  map[string]any{"hi": []any{42, true}},
 			exp:  []any{[]any{42, true}},
-			loc:  []*LocatedNode{{Path: NormalizedPath{Name("hi")}, Node: []any{42, true}}},
+			loc:  []*LocatedNode{{Path: Normalized(Name("hi")), Node: []any{42, true}}},
 		},
 		{
 			name: "no_name",
@@ -392,7 +392,7 @@ func TestNameSelect(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			a.Equal(tc.exp, tc.sel.Select(tc.src, nil))
-			a.Equal(tc.loc, tc.sel.SelectLocated(tc.src, nil, NormalizedPath{}))
+			a.Equal(tc.loc, tc.sel.SelectLocated(tc.src, nil, Normalized()))
 		})
 	}
 }
@@ -413,28 +413,28 @@ func TestIndexSelect(t *testing.T) {
 			sel:  Index(0),
 			src:  []any{42, true, "hi"},
 			exp:  []any{42},
-			loc:  []*LocatedNode{{Path: NormalizedPath{Index(0)}, Node: 42}},
+			loc:  []*LocatedNode{{Path: Normalized(Index(0)), Node: 42}},
 		},
 		{
 			name: "index_two",
 			sel:  Index(2),
 			src:  []any{42, true, "hi"},
 			exp:  []any{"hi"},
-			loc:  []*LocatedNode{{Path: NormalizedPath{Index(2)}, Node: "hi"}},
+			loc:  []*LocatedNode{{Path: Normalized(Index(2)), Node: "hi"}},
 		},
 		{
 			name: "index_neg_one",
 			sel:  Index(-1),
 			src:  []any{42, true, "hi"},
 			exp:  []any{"hi"},
-			loc:  []*LocatedNode{{Path: NormalizedPath{Index(2)}, Node: "hi"}},
+			loc:  []*LocatedNode{{Path: Normalized(Index(2)), Node: "hi"}},
 		},
 		{
 			name: "index_neg_two",
 			sel:  Index(-2),
 			src:  []any{42, true, "hi"},
 			exp:  []any{true},
-			loc:  []*LocatedNode{{Path: NormalizedPath{Index(1)}, Node: true}},
+			loc:  []*LocatedNode{{Path: Normalized(Index(1)), Node: true}},
 		},
 		{
 			name: "out_of_range",
@@ -461,7 +461,7 @@ func TestIndexSelect(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			a.Equal(tc.exp, tc.sel.Select(tc.src, nil))
-			a.Equal(tc.loc, tc.sel.SelectLocated(tc.src, nil, NormalizedPath{}))
+			a.Equal(tc.loc, tc.sel.SelectLocated(tc.src, nil, Normalized()))
 		})
 	}
 }
@@ -481,8 +481,8 @@ func TestWildcardSelect(t *testing.T) {
 			src:  map[string]any{"x": true, "y": []any{true}},
 			exp:  []any{true, []any{true}},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("x")}, Node: true},
-				{Path: NormalizedPath{Name("y")}, Node: []any{true}},
+				{Path: Normalized(Name("x")), Node: true},
+				{Path: Normalized(Name("y")), Node: []any{true}},
 			},
 		},
 		{
@@ -490,9 +490,9 @@ func TestWildcardSelect(t *testing.T) {
 			src:  []any{true, 42, map[string]any{"x": 6}},
 			exp:  []any{true, 42, map[string]any{"x": 6}},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0)}, Node: true},
-				{Path: NormalizedPath{Index(1)}, Node: 42},
-				{Path: NormalizedPath{Index(2)}, Node: map[string]any{"x": 6}},
+				{Path: Normalized(Index(0)), Node: true},
+				{Path: Normalized(Index(1)), Node: 42},
+				{Path: Normalized(Index(2)), Node: map[string]any{"x": 6}},
 			},
 		},
 		{
@@ -506,10 +506,10 @@ func TestWildcardSelect(t *testing.T) {
 			t.Parallel()
 			if _, ok := tc.src.(map[string]any); ok {
 				a.ElementsMatch(tc.exp, Wildcard.Select(tc.src, nil))
-				a.ElementsMatch(tc.loc, Wildcard.SelectLocated(tc.src, nil, NormalizedPath{}))
+				a.ElementsMatch(tc.loc, Wildcard.SelectLocated(tc.src, nil, Normalized()))
 			} else {
 				a.Equal(tc.exp, Wildcard.Select(tc.src, nil))
-				a.Equal(tc.loc, Wildcard.SelectLocated(tc.src, nil, NormalizedPath{}))
+				a.Equal(tc.loc, Wildcard.SelectLocated(tc.src, nil, Normalized()))
 			}
 		})
 	}
@@ -532,8 +532,8 @@ func TestSliceSelect(t *testing.T) {
 			src:  []any{42, true, "hi"},
 			exp:  []any{42, true},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0)}, Node: 42},
-				{Path: NormalizedPath{Index(1)}, Node: true},
+				{Path: Normalized(Index(0)), Node: 42},
+				{Path: Normalized(Index(1)), Node: true},
 			},
 		},
 		{
@@ -542,7 +542,7 @@ func TestSliceSelect(t *testing.T) {
 			src:  []any{[]any{42, false}, true, "hi"},
 			exp:  []any{[]any{42, false}},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0)}, Node: []any{42, false}},
+				{Path: Normalized(Index(0)), Node: []any{42, false}},
 			},
 		},
 		{
@@ -551,9 +551,9 @@ func TestSliceSelect(t *testing.T) {
 			src:  []any{[]any{42, false}, true, "hi", 98.6, 73, "hi", 22},
 			exp:  []any{"hi", 98.6, 73},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(2)}, Node: "hi"},
-				{Path: NormalizedPath{Index(3)}, Node: 98.6},
-				{Path: NormalizedPath{Index(4)}, Node: 73},
+				{Path: Normalized(Index(2)), Node: "hi"},
+				{Path: Normalized(Index(3)), Node: 98.6},
+				{Path: Normalized(Index(4)), Node: 73},
 			},
 		},
 		{
@@ -562,7 +562,7 @@ func TestSliceSelect(t *testing.T) {
 			src:  []any{"x", true, "y"},
 			exp:  []any{"y"},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(2)}, Node: "y"},
+				{Path: Normalized(Index(2)), Node: "y"},
 			},
 		},
 		{
@@ -571,10 +571,10 @@ func TestSliceSelect(t *testing.T) {
 			src:  []any{"x", nil, "y", 42},
 			exp:  []any{"x", nil, "y", 42},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0)}, Node: "x"},
-				{Path: NormalizedPath{Index(1)}, Node: nil},
-				{Path: NormalizedPath{Index(2)}, Node: "y"},
-				{Path: NormalizedPath{Index(3)}, Node: 42},
+				{Path: Normalized(Index(0)), Node: "x"},
+				{Path: Normalized(Index(1)), Node: nil},
+				{Path: Normalized(Index(2)), Node: "y"},
+				{Path: Normalized(Index(3)), Node: 42},
 			},
 		},
 		{
@@ -583,9 +583,9 @@ func TestSliceSelect(t *testing.T) {
 			src:  []any{"x", nil, "y", 42, 98.6, 54},
 			exp:  []any{"x", nil, "y"},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0)}, Node: "x"},
-				{Path: NormalizedPath{Index(1)}, Node: nil},
-				{Path: NormalizedPath{Index(2)}, Node: "y"},
+				{Path: Normalized(Index(0)), Node: "x"},
+				{Path: Normalized(Index(1)), Node: nil},
+				{Path: Normalized(Index(2)), Node: "y"},
 			},
 		},
 		{
@@ -594,10 +594,10 @@ func TestSliceSelect(t *testing.T) {
 			src:  []any{"x", true, "y", 42, 98.6, 54},
 			exp:  []any{"y", 42, 98.6, 54},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(2)}, Node: "y"},
-				{Path: NormalizedPath{Index(3)}, Node: 42},
-				{Path: NormalizedPath{Index(4)}, Node: 98.6},
-				{Path: NormalizedPath{Index(5)}, Node: 54},
+				{Path: Normalized(Index(2)), Node: "y"},
+				{Path: Normalized(Index(3)), Node: 42},
+				{Path: Normalized(Index(4)), Node: 98.6},
+				{Path: Normalized(Index(5)), Node: 54},
 			},
 		},
 		{
@@ -606,9 +606,9 @@ func TestSliceSelect(t *testing.T) {
 			src:  []any{"x", true, "y", 42, 98.6, 54},
 			exp:  []any{"x", "y", 98.6},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0)}, Node: "x"},
-				{Path: NormalizedPath{Index(2)}, Node: "y"},
-				{Path: NormalizedPath{Index(4)}, Node: 98.6},
+				{Path: Normalized(Index(0)), Node: "x"},
+				{Path: Normalized(Index(2)), Node: "y"},
+				{Path: Normalized(Index(4)), Node: 98.6},
 			},
 		},
 		{
@@ -617,9 +617,9 @@ func TestSliceSelect(t *testing.T) {
 			src:  []any{"x", true, "y", 42, 98.6, 54, 98, 73},
 			exp:  []any{"x", 42, 98},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0)}, Node: "x"},
-				{Path: NormalizedPath{Index(3)}, Node: 42},
-				{Path: NormalizedPath{Index(6)}, Node: 98},
+				{Path: Normalized(Index(0)), Node: "x"},
+				{Path: Normalized(Index(3)), Node: 42},
+				{Path: Normalized(Index(6)), Node: 98},
 			},
 		},
 		{
@@ -628,10 +628,10 @@ func TestSliceSelect(t *testing.T) {
 			src:  []any{"x", true, "y", []any{1, 2}},
 			exp:  []any{[]any{1, 2}, "y", true, "x"},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(3)}, Node: []any{1, 2}},
-				{Path: NormalizedPath{Index(2)}, Node: "y"},
-				{Path: NormalizedPath{Index(1)}, Node: true},
-				{Path: NormalizedPath{Index(0)}, Node: "x"},
+				{Path: Normalized(Index(3)), Node: []any{1, 2}},
+				{Path: Normalized(Index(2)), Node: "y"},
+				{Path: Normalized(Index(1)), Node: true},
+				{Path: Normalized(Index(0)), Node: "x"},
 			},
 		},
 		{
@@ -640,9 +640,9 @@ func TestSliceSelect(t *testing.T) {
 			src:  []any{"x", true, "y", 8, 13, 25, 23, 78, 13},
 			exp:  []any{25, 8, true},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(5)}, Node: 25},
-				{Path: NormalizedPath{Index(3)}, Node: 8},
-				{Path: NormalizedPath{Index(1)}, Node: true},
+				{Path: Normalized(Index(5)), Node: 25},
+				{Path: Normalized(Index(3)), Node: 8},
+				{Path: Normalized(Index(1)), Node: true},
 			},
 		},
 		{
@@ -656,7 +656,7 @@ func TestSliceSelect(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			a.Equal(tc.exp, tc.sel.Select(tc.src, nil))
-			a.Equal(tc.loc, tc.sel.SelectLocated(tc.src, nil, NormalizedPath{}))
+			a.Equal(tc.loc, tc.sel.SelectLocated(tc.src, nil, Normalized()))
 		})
 	}
 }
@@ -677,29 +677,25 @@ func TestFilterSelector(t *testing.T) {
 	}{
 		{
 			name:   "no_filter",
-			filter: Filter(LogicalOr{}),
+			filter: Filter(),
 			exp:    []any{},
 			loc:    []*LocatedNode{},
 			str:    "?",
 		},
 		{
-			name: "array_root",
-			filter: Filter(LogicalOr{LogicalAnd{&ExistExpr{
-				Query(true, []*Segment{Child(Index(0))}),
-			}}}),
+			name:    "array_root",
+			filter:  Filter(And(Existence(Query(true, Child(Index(0)))))),
 			root:    []any{42, true, "hi"},
 			current: map[string]any{"x": 2},
 			exp:     []any{2},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("x")}, Node: 2},
+				{Path: Normalized(Name("x")), Node: 2},
 			},
 			str: `?$[0]`,
 		},
 		{
-			name: "array_root_false",
-			filter: Filter(LogicalOr{LogicalAnd{&ExistExpr{
-				Query(true, []*Segment{Child(Index(4))}),
-			}}}),
+			name:    "array_root_false",
+			filter:  Filter(And(Existence(Query(true, Child(Index(4)))))),
 			root:    []any{42, true, "hi"},
 			current: map[string]any{"x": 2},
 			exp:     []any{},
@@ -707,25 +703,21 @@ func TestFilterSelector(t *testing.T) {
 			str:     `?$[4]`,
 		},
 		{
-			name: "object_root",
-			filter: Filter(LogicalOr{LogicalAnd{&ExistExpr{
-				Query(true, []*Segment{Child(Name("y"))}),
-			}}}),
+			name:    "object_root",
+			filter:  Filter(And(Existence(Query(true, Child(Name("y")))))),
 			root:    map[string]any{"x": 42, "y": "hi"},
 			current: map[string]any{"a": 2, "b": 3},
 			exp:     []any{2, 3},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("a")}, Node: 2},
-				{Path: NormalizedPath{Name("b")}, Node: 3},
+				{Path: Normalized(Name("a")), Node: 2},
+				{Path: Normalized(Name("b")), Node: 3},
 			},
 			str:  `?$["y"]`,
 			rand: true,
 		},
 		{
-			name: "object_root_false",
-			filter: Filter(LogicalOr{LogicalAnd{&ExistExpr{
-				Query(true, []*Segment{Child(Name("z"))}),
-			}}}),
+			name:    "object_root_false",
+			filter:  Filter(And(Existence(Query(true, Child(Name("z")))))),
 			root:    map[string]any{"x": 42, "y": "hi"},
 			current: map[string]any{"a": 2, "b": 3},
 			exp:     []any{},
@@ -734,44 +726,36 @@ func TestFilterSelector(t *testing.T) {
 			rand:    true,
 		},
 		{
-			name: "array_current",
-			filter: Filter(LogicalOr{LogicalAnd{&ExistExpr{
-				Query(false, []*Segment{Child(Index(0))}),
-			}}}),
+			name:    "array_current",
+			filter:  Filter(And(Existence(Query(false, Child(Index(0)))))),
 			current: []any{[]any{42}},
 			exp:     []any{[]any{42}},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0)}, Node: []any{42}},
+				{Path: Normalized(Index(0)), Node: []any{42}},
 			},
 			str: `?@[0]`,
 		},
 		{
-			name: "array_current_false",
-			filter: Filter(LogicalOr{LogicalAnd{&ExistExpr{
-				Query(false, []*Segment{Child(Index(1))}),
-			}}}),
+			name:    "array_current_false",
+			filter:  Filter(And(Existence(Query(false, Child(Index(1)))))),
 			current: []any{[]any{42}},
 			exp:     []any{},
 			loc:     []*LocatedNode{},
 			str:     `?@[1]`,
 		},
 		{
-			name: "object_current",
-			filter: Filter(LogicalOr{LogicalAnd{&ExistExpr{
-				Query(false, []*Segment{Child(Name("x"))}),
-			}}}),
+			name:    "object_current",
+			filter:  Filter(And(Existence(Query(false, Child(Name("x")))))),
 			current: []any{map[string]any{"x": 42}},
 			exp:     []any{map[string]any{"x": 42}},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0)}, Node: map[string]any{"x": 42}},
+				{Path: Normalized(Index(0)), Node: map[string]any{"x": 42}},
 			},
 			str: `?@["x"]`,
 		},
 		{
-			name: "object_current_false",
-			filter: Filter(LogicalOr{LogicalAnd{&ExistExpr{
-				Query(false, []*Segment{Child(Name("y"))}),
-			}}}),
+			name:    "object_current_false",
+			filter:  Filter(And(Existence(Query(false, Child(Name("y")))))),
 			current: []any{map[string]any{"x": 42}},
 			exp:     []any{},
 			loc:     []*LocatedNode{},
@@ -782,10 +766,10 @@ func TestFilterSelector(t *testing.T) {
 			t.Parallel()
 			if tc.rand {
 				a.ElementsMatch(tc.exp, tc.filter.Select(tc.current, tc.root))
-				a.ElementsMatch(tc.loc, tc.filter.SelectLocated(tc.current, tc.root, NormalizedPath{}))
+				a.ElementsMatch(tc.loc, tc.filter.SelectLocated(tc.current, tc.root, Normalized()))
 			} else {
 				a.Equal(tc.exp, tc.filter.Select(tc.current, tc.root))
-				a.Equal(tc.loc, tc.filter.SelectLocated(tc.current, tc.root, NormalizedPath{}))
+				a.Equal(tc.loc, tc.filter.SelectLocated(tc.current, tc.root, Normalized()))
 			}
 			a.Equal(tc.str, tc.filter.String())
 			a.Equal(tc.str, bufString(tc.filter))

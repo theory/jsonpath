@@ -17,7 +17,7 @@ func TestRegistry(t *testing.T) {
 	for _, tc := range []struct {
 		name  string
 		rType spec.FuncType
-		expr  []spec.FunctionExprArg
+		expr  []spec.FuncExprArg
 		args  []spec.JSONPathValue
 		exp   any
 	}{
@@ -25,35 +25,35 @@ func TestRegistry(t *testing.T) {
 		{
 			name:  "length",
 			rType: spec.FuncValue,
-			expr:  []spec.FunctionExprArg{spec.Literal("foo")},
+			expr:  []spec.FuncExprArg{spec.Literal("foo")},
 			args:  []spec.JSONPathValue{spec.Value("foo")},
 			exp:   spec.Value(3),
 		},
 		{
 			name:  "count",
 			rType: spec.FuncValue,
-			expr:  []spec.FunctionExprArg{&spec.SingularQueryExpr{}},
-			args:  []spec.JSONPathValue{spec.NodesType([]any{1, 2})},
+			expr:  []spec.FuncExprArg{&spec.SingularQueryExpr{}},
+			args:  []spec.JSONPathValue{spec.Nodes(1, 2)},
 			exp:   spec.Value(2),
 		},
 		{
 			name:  "value",
 			rType: spec.FuncValue,
-			expr:  []spec.FunctionExprArg{&spec.SingularQueryExpr{}},
-			args:  []spec.JSONPathValue{spec.NodesType([]any{42})},
+			expr:  []spec.FuncExprArg{&spec.SingularQueryExpr{}},
+			args:  []spec.JSONPathValue{spec.Nodes(42)},
 			exp:   spec.Value(42),
 		},
 		{
 			name:  "match",
 			rType: spec.FuncLogical,
-			expr:  []spec.FunctionExprArg{spec.Literal("foo"), spec.Literal(".*")},
+			expr:  []spec.FuncExprArg{spec.Literal("foo"), spec.Literal(".*")},
 			args:  []spec.JSONPathValue{spec.Value("foo"), spec.Value(".*")},
 			exp:   spec.LogicalTrue,
 		},
 		{
 			name:  "search",
 			rType: spec.FuncLogical,
-			expr:  []spec.FunctionExprArg{spec.Literal("foo"), spec.Literal(".")},
+			expr:  []spec.FuncExprArg{spec.Literal("foo"), spec.Literal(".")},
 			args:  []spec.JSONPathValue{spec.Value("foo"), spec.Value(".")},
 			exp:   spec.LogicalTrue,
 		},
@@ -90,13 +90,13 @@ func TestRegisterErr(t *testing.T) {
 		},
 		{
 			name:  "nil_evaluator",
-			valid: func([]spec.FunctionExprArg) error { return nil },
+			valid: func([]spec.FuncExprArg) error { return nil },
 			err:   "register: evaluator is nil",
 		},
 		{
 			name:   "existing_func",
 			fnName: "length",
-			valid:  func([]spec.FunctionExprArg) error { return nil },
+			valid:  func([]spec.FuncExprArg) error { return nil },
 			eval:   func([]spec.JSONPathValue) spec.JSONPathValue { return spec.Value(42) },
 			err:    "register: Register called twice for function length",
 		},
@@ -125,7 +125,7 @@ func TestFunction(t *testing.T) {
 			name: "valid_err_value",
 			fn: NewFunction(
 				"xyz", spec.FuncValue,
-				func([]spec.FunctionExprArg) error { return errors.New("oops") },
+				func([]spec.FuncExprArg) error { return errors.New("oops") },
 				func([]spec.JSONPathValue) spec.JSONPathValue { return spec.Value(42) },
 			),
 			args: []spec.JSONPathValue{},
@@ -135,12 +135,12 @@ func TestFunction(t *testing.T) {
 		{
 			name: "no_valid_err_nodes",
 			fn: NewFunction(
-				"abc", spec.FuncNodeList,
-				func([]spec.FunctionExprArg) error { return nil },
-				func([]spec.JSONPathValue) spec.JSONPathValue { return spec.NodesType{"hi"} },
+				"abc", spec.FuncNodes,
+				func([]spec.FuncExprArg) error { return nil },
+				func([]spec.JSONPathValue) spec.JSONPathValue { return spec.Nodes("hi") },
 			),
 			args: []spec.JSONPathValue{},
-			exp:  spec.NodesType{"hi"},
+			exp:  spec.Nodes("hi"),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

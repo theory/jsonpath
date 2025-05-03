@@ -15,7 +15,7 @@ import (
 )
 
 func book(idx int) spec.NormalizedPath {
-	return spec.NormalizedPath{spec.Name("store"), spec.Name("book"), spec.Index(idx)}
+	return spec.Normalized(spec.Name("store"), spec.Name("book"), spec.Index(idx))
 }
 
 func TestParseSpecExamples(t *testing.T) {

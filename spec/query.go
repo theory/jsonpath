@@ -2,18 +2,22 @@ package spec
 
 import "strings"
 
-// PathQuery represents a JSONPath expression.
+// PathQuery represents a JSONPath query. Interfaces implemented:
+//   - [Selector]
+//   - [fmt.Stringer]
 type PathQuery struct {
 	segments []*Segment
 	root     bool
 }
 
-// Query returns a new query consisting of segments.
-func Query(root bool, segments []*Segment) *PathQuery {
+// Query returns a new [PathQuery] consisting of segments. When root is true
+// it indicates a query from the root of a value. Set to false for filter
+// subqueries.
+func Query(root bool, segments ...*Segment) *PathQuery {
 	return &PathQuery{root: root, segments: segments}
 }
 
-// Segments returns q's Segments.
+// Segments returns q's [Segment] values.
 func (q *PathQuery) Segments() []*Segment {
 	return q.segments
 }
@@ -32,7 +36,7 @@ func (q *PathQuery) String() string {
 	return buf.String()
 }
 
-// Select selects q.segments from current or root and returns the result.
+// Select selects the values from current or root and returns the results.
 // Returns just current if q has no segments. Defined by the [Selector]
 // interface.
 func (q *PathQuery) Select(current, root any) []any {
@@ -51,9 +55,9 @@ func (q *PathQuery) Select(current, root any) []any {
 	return res
 }
 
-// SelectLocated selects q.segments from current or root and returns the
-// resulting values as [LocatedNode] structs. Returns just current if q has no
-// segments. Defined by the [Selector] interface.
+// SelectLocated values from current or root into [LocatedNode] values and
+// returns the results. Returns just current if q has no segments. Defined by
+// the [Selector] interface.
 func (q *PathQuery) SelectLocated(current, root any, parent NormalizedPath) []*LocatedNode {
 	res := []*LocatedNode{nil}
 	if q.root {
@@ -86,7 +90,8 @@ func (q *PathQuery) isSingular() bool {
 	return true
 }
 
-// Singular returns a singularQuery variant of q if q [isSingular] returns true.
+// Singular returns the [SingularQueryExpr] variant of q if q is a singular
+// query. Otherwise it returns nil.
 func (q *PathQuery) Singular() *SingularQueryExpr {
 	if q.isSingular() {
 		return singular(q)
@@ -95,14 +100,14 @@ func (q *PathQuery) Singular() *SingularQueryExpr {
 	return nil
 }
 
-// Expression returns a singularQuery variant of q if q [isSingular] returns
-// true, and otherwise returns a filterQuery.
-func (q *PathQuery) Expression() FunctionExprArg {
+// Expression returns a singularQuery variant of q if q is a singular query,
+// and otherwise returns a [NodesQueryExpr].
+func (q *PathQuery) Expression() FuncExprArg {
 	if q.isSingular() {
 		return singular(q)
 	}
 
-	return FilterQuery(q)
+	return NodesQuery(q)
 }
 
 // singular is a utility function that converts q to a singularQuery.

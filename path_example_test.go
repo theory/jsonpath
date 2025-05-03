@@ -268,15 +268,15 @@ func ExampleParser_functionExtension() {
 }
 
 // validateFirstArgs validates that a single argument is passed to the first()
-// function, and that it can be converted to [spec.PathNodes], so that first()
+// function, and that it can be converted to [spec.FuncNodes], so that first()
 // can return the first node. It's called by the parser.
-func validateFirstArgs(fea []spec.FunctionExprArg) error {
+func validateFirstArgs(fea []spec.FuncExprArg) error {
 	if len(fea) != 1 {
 		return fmt.Errorf("expected 1 argument but found %v", len(fea))
 	}
 
-	if !fea[0].ResultType().ConvertsTo(spec.PathNodes) {
-		return errors.New("cannot convert argument to PathNodes")
+	if !fea[0].ResultType().ConvertsToNodes() {
+		return errors.New("cannot convert argument to nodes")
 	}
 
 	return nil

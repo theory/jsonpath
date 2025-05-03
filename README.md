@@ -33,21 +33,6 @@ A brief overview of [RFC 9535 JSONPath] syntax:
 | `?<logical-expr>`  | filter selector: selects particular children using a logical expression |
 | `length(@.foo)`    | function extension: invokes  a function in a filter expression          |
 
-## Package Stability
-
-The root `jsonpath` package is stable and ready for use. These are the main
-interfaces to the package.
-
-The `registry` package is also stable, but exposes data types from the `spec`
-package that are still in flux. Argument data types may still change.
-
-The `parser` package interface is also stable, but in general should not be
-used directly.
-
-The `spec` package remains under active development, mainly refactoring,
-reorganizing, renaming, and documenting. Its interface therefore is not stable
-and should not be used for production purposes.
-
 ## Copyright
 
 Copyright © 2024-2025 David E. Wheeler

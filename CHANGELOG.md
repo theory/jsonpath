@@ -7,6 +7,26 @@ All notable changes to this project will be documented in this file. It uses the
   [Semantic Versioning]: https://semver.org/spec/v2.0.0.html
     "Semantic Versioning 2.0.0"
 
+## [v0.10.0] — Unreleased
+
+### ⚡ Improvements
+
+*   Made significant changes to the `spec` package toward public stability,
+    usability, and greater comprehension. The names of things are more
+    consistent, the APIs more legible and user-friendly, and the documentation
+    thorough, with examples for each significant type. See [PR #14] for
+    details.
+*   Removed the "Package Stability" statement from the README, as all packages
+    are considered stable.
+*   Added support for [json.Number] values to complement the existing support
+    for Go core numeric types. This should allow for transparent handling of
+    values marshaled with [json.Decoder.UseNumber] enabled.
+
+  [v0.4.1]: https://github.com/theory/jsonpath/compare/v0.4.1...v0.10.0
+  [json.Number]: https://pkg.go.dev/encoding/json#Number
+  [json.Decoder.UseNumber]: https://pkg.go.dev/encoding/json#Decoder.UseNumber
+  [PR #14]: https://github.com/theory/jsonpath/pull/14
+
 ## [v0.4.1] — 2025-05-02
 
 ### 🪲 Bug Fixes

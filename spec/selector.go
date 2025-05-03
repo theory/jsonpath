@@ -1,6 +1,3 @@
-// Package spec provides object definitions and execution for RFC 9535
-// JSONPath query expressions. It remains under active development therefore
-// should generally not be used directly except for experimental purposes.
 package spec
 
 import (
@@ -13,20 +10,20 @@ import (
 // stringWriter defines the interface for JSONPath objects to write string
 // representations of themselves to a string buffer.
 type stringWriter interface {
+	fmt.Stringer
 	// writeTo writes a string to buf.
 	writeTo(buf *strings.Builder)
 }
 
 // Selector represents a single Selector in an RFC 9535 JSONPath query.
 type Selector interface {
-	fmt.Stringer
 	stringWriter
 
 	// Select selects values from current and/or root and returns them.
 	Select(current, root any) []any
 
 	// SelectLocated selects values from current and/or root and returns them
-	// in [LocatedNode] structs with their located normalized paths
+	// in [LocatedNode] values with their located normalized paths
 	SelectLocated(current, root any, parent NormalizedPath) []*LocatedNode
 
 	// isSingular returns true for selectors that can only return a single
@@ -34,19 +31,26 @@ type Selector interface {
 	isSingular() bool
 }
 
-// Name is a key name selector, e.g., .name or ["name"].
+// Name is a key name selector, e.g., .name or ["name"], as defined by [RFC
+// 9535 Section 2.3.1]. Interfaces implemented:
+//   - [Selector]
+//   - [fmt.Stringer]
+//   - [NormalSelector]
+//
+// [RFC 9535 Section 2.3.1]: https://www.rfc-editor.org/rfc/rfc9535.html#name-name-selector
 type Name string
 
 // isSingular returns true because Name selects a single value from an object.
 // Defined by the [Selector] interface.
 func (Name) isSingular() bool { return true }
 
-// String returns a quoted string representation of n.
+// String returns the quoted string representation of n.
 func (n Name) String() string {
 	return strconv.Quote(string(n))
 }
 
-// writeTo writes a quoted string representation of i to buf.
+// writeTo writes a quoted string representation of i to buf. Defined by
+// [stringWriter].
 func (n Name) writeTo(buf *strings.Builder) {
 	buf.WriteString(n.String())
 }
@@ -120,15 +124,21 @@ func (n Name) writePointerTo(buf *strings.Builder) {
 	))
 }
 
-// WildcardSelector is the underlying nil value used by [Wildcard].
+// WildcardSelector is a wildcard selector, e.g., * or [*], as defined by [RFC
+// 9535 Section 2.3.2]. Interfaces
+// implemented:
+//   - [Selector]
+//   - [fmt.Stringer]
+//
+// [RFC 9535 Section 2.3.2]: https://www.rfc-editor.org/rfc/rfc9535.html#name-wildcard-selector
 type WildcardSelector struct{}
 
-// Wildcard is a wildcard selector, e.g., * or [*].
+// Wildcard is a [WildcardSelector] singleton.
 //
 //nolint:gochecknoglobals
 var Wildcard = WildcardSelector{}
 
-// writeTo  writes "*" to buf.
+// writeTo  writes "*" to buf. Defined by [stringWriter].
 func (WildcardSelector) writeTo(buf *strings.Builder) { buf.WriteByte('*') }
 
 // String returns "*".
@@ -156,7 +166,7 @@ func (WildcardSelector) Select(input, _ any) []any {
 }
 
 // SelectLocated selects the values from input and returns them with their
-// normalized paths in a slice of [LocatedNode] structs. Returns an empty
+// normalized paths in a slice of [LocatedNode] values. Returns an empty
 // slice if input is not []any map[string]any. Defined by the [Selector]
 // interface.
 func (WildcardSelector) SelectLocated(input, _ any, parent NormalizedPath) []*LocatedNode {
@@ -177,14 +187,22 @@ func (WildcardSelector) SelectLocated(input, _ any, parent NormalizedPath) []*Lo
 	return make([]*LocatedNode, 0)
 }
 
-// Index is an array index selector, e.g., [3].
+// Index is an array index selector, e.g., [3], as defined by [RFC
+// 9535 Section 2.3.3]. Interfaces
+// implemented:
+//   - [Selector]
+//   - [fmt.Stringer]
+//   - [NormalSelector]
+//
+// [RFC 9535 Section 2.3.3]: https://www.rfc-editor.org/rfc/rfc9535.html#name-index-selector
 type Index int
 
 // isSingular returns true because Index selects a single value from an array.
 // Defined by the [Selector] interface.
 func (Index) isSingular() bool { return true }
 
-// writeTo writes a string representation of i to buf.
+// writeTo writes a string representation of i to buf. Defined by
+// [stringWriter].
 func (i Index) writeTo(buf *strings.Builder) {
 	buf.WriteString(i.String())
 }
@@ -245,7 +263,12 @@ func (i Index) writePointerTo(buf *strings.Builder) {
 	buf.WriteString(strconv.FormatInt(int64(i), 10))
 }
 
-// SliceSelector is a slice selector, e.g., [0:100:5].
+// SliceSelector is a slice selector, e.g., [0:100:5], as defined by [RFC
+// 9535 Section 2.3.4]. Interfaces implemented:
+//   - [Selector]
+//   - [fmt.Stringer]
+//
+// [RFC 9535 Section 2.3.4]: https://www.rfc-editor.org/rfc/rfc9535.html#name-array-slice-selector
 type SliceSelector struct {
 	// Start of the slice; defaults to 0.
 	start int
@@ -259,7 +282,7 @@ type SliceSelector struct {
 // value from an array. Defined by the [Selector] interface.
 func (SliceSelector) isSingular() bool { return false }
 
-// Slice creates a new SliceSelector. Pass up to three integers or nils for
+// Slice creates a new [SliceSelector]. Pass up to three integers or nils for
 // the start, end, and step arguments. Subsequent arguments are ignored.
 func Slice(args ...any) SliceSelector {
 	const (
@@ -311,7 +334,8 @@ func Slice(args ...any) SliceSelector {
 	return s
 }
 
-// writeTo writes a string representation of s to buf.
+// writeTo writes a string representation of s to buf. Defined by
+// [stringWriter].
 func (s SliceSelector) writeTo(buf *strings.Builder) {
 	if s.start != 0 && (s.step >= 0 || s.start != math.MaxInt) {
 		buf.WriteString(strconv.FormatInt(int64(s.start), 10))
@@ -357,7 +381,7 @@ func (s SliceSelector) Select(input, _ any) []any {
 }
 
 // SelectLocated selects values from input for the indexes specified by s and
-// returns thm with their normalized paths as [LocatedNode] structs. Returns
+// returns thm with their normalized paths as [LocatedNode] values. Returns
 // an empty slice if input is not a slice. Indexes outside the bounds of input
 // will not be included in the return value. Defined by the [Selector]
 // interface.
@@ -419,14 +443,19 @@ func normalize(i, length int) int {
 	return length + i
 }
 
-// FilterSelector is a filter selector, e.g., ?().
+// FilterSelector is a filter selector, e.g., ?(), as defined by [RFC
+// 9535 Section 2.3.5]. Interfaces implemented:
+//   - [Selector]
+//   - [fmt.Stringer]
+//
+// [RFC 9535 Section 2.3.5]: https://www.rfc-editor.org/rfc/rfc9535.html#name-filter-selector
 type FilterSelector struct {
 	LogicalOr
 }
 
-// Filter returns a new Filter.
-func Filter(or LogicalOr) *FilterSelector {
-	return &FilterSelector{LogicalOr: or}
+// Filter returns a new Filter selector that ORs the evaluation of each expr.
+func Filter(expr ...LogicalAnd) *FilterSelector {
+	return &FilterSelector{LogicalOr: expr}
 }
 
 // String returns a string representation of f.
@@ -436,7 +465,8 @@ func (f *FilterSelector) String() string {
 	return buf.String()
 }
 
-// writeTo writes a string representation of f to buf.
+// writeTo writes a string representation of f to buf. Defined by
+// [stringWriter].
 func (f *FilterSelector) writeTo(buf *strings.Builder) {
 	buf.WriteRune('?')
 	f.LogicalOr.writeTo(buf)
@@ -465,7 +495,7 @@ func (f *FilterSelector) Select(current, root any) []any {
 	return ret
 }
 
-// SelectLocated selects and returns [LocatedNode] structs with values that f
+// SelectLocated selects and returns [LocatedNode] values with values that f
 // filters from current. Filter expressions may evaluate the current value
 // (@), the root value ($), or any path expression. Defined by the [Selector]
 // interface.
@@ -489,9 +519,9 @@ func (f *FilterSelector) SelectLocated(current, root any, parent NormalizedPath)
 	return ret
 }
 
-// Eval evaluates the f's logical expression against node and root. Used
-// [Select] as it iterates over nodes, and always passes the root value($) for
-// filter expressions that reference it.
+// Eval evaluates the f's [LogicalOr] expression against node and root. Uses
+// [FilterSelector.Select] as it iterates over nodes, and always passes the
+// root value($) for filter expressions that reference it.
 func (f *FilterSelector) Eval(node, root any) bool {
 	return f.testFilter(node, root)
 }

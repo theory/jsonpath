@@ -105,7 +105,7 @@ func (p *parser) parseQuery(root bool) (*spec.PathQuery, error) {
 			fallthrough
 		default:
 			// Done parsing.
-			return spec.Query(root, segs), nil
+			return spec.Query(root, segs...), nil
 		}
 	}
 }
@@ -288,7 +288,7 @@ func (p *parser) parseFilter() (*spec.FilterSelector, error) {
 	if err != nil {
 		return nil, err
 	}
-	return spec.Filter(lor), nil
+	return spec.Filter(lor...), nil
 }
 
 // parseLogicalOrExpr parses a [LogicalOrExpr] from lex. A [LogicalOrExpr] is
@@ -410,7 +410,7 @@ func (p *parser) parseBasicExpr() (spec.BasicExpr, error) {
 
 // parseFunctionFilterExpr parses a [BasicExpr] (basic-expr) that starts with
 // ident, which must be an identifier token that's expected to be the name of
-// a function. The return value will be either a [FunctionExpr]
+// a function. The return value will be either a [spec.FuncExpr]
 // (function-expr), if the function return value is a logical (boolean) value.
 // Otherwise it will be a [ComparisonExpr] (comparison-expr), as long as the
 // function call is compared to another expression. Any other configuration
@@ -481,7 +481,7 @@ func (p *parser) parseParenExpr() (*spec.ParenExpr, error) {
 	if err != nil {
 		return nil, err
 	}
-	return spec.Paren(expr), nil
+	return spec.Paren(expr...), nil
 }
 
 // parseParenExpr parses a [*spec.NotParenExpr] expression (logical-not-op
@@ -493,14 +493,14 @@ func (p *parser) parseNotParenExpr() (*spec.NotParenExpr, error) {
 	if err != nil {
 		return nil, err
 	}
-	return spec.NotParen(expr), nil
+	return spec.NotParen(expr...), nil
 }
 
 // parseFunction parses a function named tok.val from lex. tok should be the
 // token just before the next call to lex.scan, and must be an identifier
 // token naming the function. Returns an error if the function is not found in
 // the registry or if arguments are invalid for the function.
-func (p *parser) parseFunction(tok token) (*spec.FunctionExpr, error) {
+func (p *parser) parseFunction(tok token) (*spec.FuncExpr, error) {
 	function := p.reg.Get(tok.val)
 	if function == nil {
 		return nil, makeError(tok, fmt.Sprintf("unknown function %v()", tok.val))
@@ -516,14 +516,14 @@ func (p *parser) parseFunction(tok token) (*spec.FunctionExpr, error) {
 		return nil, makeError(paren, fmt.Sprintf("function %v() %v", tok.val, err.Error()))
 	}
 
-	return spec.Function(function, args), nil
+	return spec.Function(function, args...), nil
 }
 
 // parseFunctionArgs parses the comma-delimited arguments to a function from
 // lex. Arguments may be one of literal, filter-query (including
 // singular-query), logical-expr, or function-expr.
-func (p *parser) parseFunctionArgs() ([]spec.FunctionExprArg, error) {
-	res := []spec.FunctionExprArg{}
+func (p *parser) parseFunctionArgs() ([]spec.FuncExprArg, error) {
+	res := []spec.FuncExprArg{}
 	lex := p.lex
 	for {
 		switch tok := p.lex.scan(); tok.tok {
@@ -730,7 +730,7 @@ func parseSingularQuery(startToken token, lex *lexer) (*spec.SingularQueryExpr, 
 			selectors = append(selectors, spec.Name(tok.val))
 		default:
 			// Done parsing.
-			return spec.SingularQuery(startToken.tok == '$', selectors), nil
+			return spec.SingularQuery(startToken.tok == '$', selectors...), nil
 		}
 	}
 }

@@ -36,7 +36,7 @@ linters:
         - stdlib
         - generic
         - spec\.JSONPathValue
-        - spec\.FunctionExprArg
+        - spec\.FuncExprArg
         - spec\.Selector
         - spec\.BasicExpr
         - spec\.CompVal

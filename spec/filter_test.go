@@ -20,7 +20,7 @@ func TestExpressionInterface(t *testing.T) {
 		{"comparison", Comparison(nil, EqualTo, nil)},
 		{"exist", Existence(nil)},
 		{"not_exist", Nonexistence(nil)},
-		{"func_expr", &FunctionExpr{}},
+		{"func_expr", &FuncExpr{}},
 		{"not_func_expr", &NotFuncExpr{}},
 		{"logical_and", LogicalOr{}},
 		{"logical_or", LogicalAnd{}},
@@ -55,7 +55,7 @@ func TestLogicalAndExpr(t *testing.T) {
 		{
 			name: "one_true_expr",
 			expr: []BasicExpr{
-				Existence(Query(false, []*Segment{Child(Name("x"))})),
+				Existence(Query(false, Child(Name("x")))),
 			},
 			current: map[string]any{"x": 0},
 			exp:     true,
@@ -64,7 +64,7 @@ func TestLogicalAndExpr(t *testing.T) {
 		{
 			name: "one_false_expr",
 			expr: []BasicExpr{
-				Existence(Query(true, []*Segment{Child(Name("y"))})),
+				Existence(Query(true, Child(Name("y")))),
 			},
 			root: map[string]any{"x": 0},
 			exp:  false,
@@ -73,8 +73,8 @@ func TestLogicalAndExpr(t *testing.T) {
 		{
 			name: "two_true_expr",
 			expr: []BasicExpr{
-				Existence(Query(false, []*Segment{Child(Name("x"))})),
-				Existence(Query(false, []*Segment{Child(Name("y"))})),
+				Existence(Query(false, Child(Name("x")))),
+				Existence(Query(false, Child(Name("y")))),
 			},
 			current: map[string]any{"x": 0, "y": 1},
 			exp:     true,
@@ -83,8 +83,8 @@ func TestLogicalAndExpr(t *testing.T) {
 		{
 			name: "one_true_one_false",
 			expr: []BasicExpr{
-				Existence(Query(false, []*Segment{Child(Name("x"))})),
-				Existence(Query(false, []*Segment{Child(Name("y"))})),
+				Existence(Query(false, Child(Name("x")))),
+				Existence(Query(false, Child(Name("y")))),
 			},
 			current: map[string]any{"x": 0, "z": 1},
 			exp:     false,
@@ -122,7 +122,7 @@ func TestLogicalOrExpr(t *testing.T) {
 		{
 			name: "one_expr",
 			expr: []LogicalAnd{{Existence(
-				Query(true, []*Segment{Child(Name("x"))}),
+				Query(true, Child(Name("x"))),
 			)}},
 			root: map[string]any{"x": 0},
 			exp:  true,
@@ -131,7 +131,7 @@ func TestLogicalOrExpr(t *testing.T) {
 		{
 			name: "one_false_expr",
 			expr: []LogicalAnd{{Existence(
-				Query(false, []*Segment{Child(Name("x"))}),
+				Query(false, Child(Name("x"))),
 			)}},
 			current: map[string]any{"y": 0},
 			exp:     false,
@@ -140,8 +140,8 @@ func TestLogicalOrExpr(t *testing.T) {
 		{
 			name: "two_true_expr",
 			expr: []LogicalAnd{
-				{Existence(Query(false, []*Segment{Child(Name("x"))}))},
-				{Existence(Query(false, []*Segment{Child(Name("y"))}))},
+				{Existence(Query(false, Child(Name("x"))))},
+				{Existence(Query(false, Child(Name("y"))))},
 			},
 			current: map[string]any{"x": 0, "y": "hi"},
 			exp:     true,
@@ -150,8 +150,8 @@ func TestLogicalOrExpr(t *testing.T) {
 		{
 			name: "one_true_one_false",
 			expr: []LogicalAnd{
-				{Existence(Query(false, []*Segment{Child(Name("x"))}))},
-				{Existence(Query(false, []*Segment{Child(Name("y"))}))},
+				{Existence(Query(false, Child(Name("x"))))},
+				{Existence(Query(false, Child(Name("y"))))},
 			},
 			current: map[string]any{"x": 0, "z": "hi"},
 			exp:     true,
@@ -161,12 +161,12 @@ func TestLogicalOrExpr(t *testing.T) {
 			name: "nested_ands",
 			expr: []LogicalAnd{
 				{
-					Existence(Query(false, []*Segment{Child(Name("x"))})),
-					Existence(Query(false, []*Segment{Child(Name("y"))})),
+					Existence(Query(false, Child(Name("x")))),
+					Existence(Query(false, Child(Name("y")))),
 				},
 				{
-					Existence(Query(false, []*Segment{Child(Name("y"))})),
-					Existence(Query(false, []*Segment{Child(Name("x"))})),
+					Existence(Query(false, Child(Name("y")))),
+					Existence(Query(false, Child(Name("x")))),
 				},
 			},
 			current: map[string]any{"x": 0, "y": "hi"},
@@ -183,12 +183,12 @@ func TestLogicalOrExpr(t *testing.T) {
 			a.Equal(tc.str, bufString(orExpr))
 
 			// Test ParenExpr.
-			pExpr := Paren(orExpr)
+			pExpr := Paren(orExpr...)
 			a.Equal(tc.exp, pExpr.testFilter(tc.current, tc.root))
 			a.Equal("("+tc.str+")", bufString(pExpr))
 
 			// Test NotParenExpr.
-			npExpr := NotParen(orExpr)
+			npExpr := NotParen(orExpr...)
 			a.Equal(!tc.exp, npExpr.testFilter(tc.current, tc.root))
 			a.Equal("!("+tc.str+")", bufString(npExpr))
 		})
@@ -208,25 +208,25 @@ func TestExistExpr(t *testing.T) {
 	}{
 		{
 			name:    "current_name",
-			query:   Query(false, []*Segment{Child(Name("x"))}),
+			query:   Query(false, Child(Name("x"))),
 			current: map[string]any{"x": 0},
 			exp:     true,
 		},
 		{
 			name:  "root_name",
-			query: Query(true, []*Segment{Child(Name("x"))}),
+			query: Query(true, Child(Name("x"))),
 			root:  map[string]any{"x": 0},
 			exp:   true,
 		},
 		{
 			name:    "current_false",
-			query:   Query(false, []*Segment{Child(Name("x"))}),
+			query:   Query(false, Child(Name("x"))),
 			current: map[string]any{"y": 0},
 			exp:     false,
 		},
 		{
 			name:  "root_false",
-			query: Query(true, []*Segment{Child(Name("x"))}),
+			query: Query(true, Child(Name("x"))),
 			root:  map[string]any{"y": 0},
 			exp:   false,
 		},

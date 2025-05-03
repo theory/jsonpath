@@ -114,7 +114,7 @@ func TestSegmentSelect(t *testing.T) {
 			src:  map[string]any{"hi": 42, "go": 98.6, "x": true},
 			exp:  []any{42},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("hi")}, Node: 42},
+				{Path: Normalized(Name("hi")), Node: 42},
 			},
 			sing: true,
 		},
@@ -124,8 +124,8 @@ func TestSegmentSelect(t *testing.T) {
 			src:  map[string]any{"hi": 42, "go": 98.6, "x": true},
 			exp:  []any{42, 98.6},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("hi")}, Node: 42},
-				{Path: NormalizedPath{Name("go")}, Node: 98.6},
+				{Path: Normalized(Name("hi")), Node: 42},
+				{Path: Normalized(Name("go")), Node: 98.6},
 			},
 			rand: true,
 		},
@@ -135,8 +135,8 @@ func TestSegmentSelect(t *testing.T) {
 			src:  map[string]any{"hi": 42, "go": 98.6, "x": true},
 			exp:  []any{42, 42},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("hi")}, Node: 42},
-				{Path: NormalizedPath{Name("hi")}, Node: 42},
+				{Path: Normalized(Name("hi")), Node: 42},
+				{Path: Normalized(Name("hi")), Node: 42},
 			},
 			rand: true,
 		},
@@ -146,9 +146,9 @@ func TestSegmentSelect(t *testing.T) {
 			src:  map[string]any{"hi": 42, "go": 98.6, "x": true},
 			exp:  []any{42, 98.6, true},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("hi")}, Node: 42},
-				{Path: NormalizedPath{Name("go")}, Node: 98.6},
-				{Path: NormalizedPath{Name("x")}, Node: true},
+				{Path: Normalized(Name("hi")), Node: 42},
+				{Path: Normalized(Name("go")), Node: 98.6},
+				{Path: Normalized(Name("x")), Node: true},
 			},
 			rand: true,
 		},
@@ -158,7 +158,7 @@ func TestSegmentSelect(t *testing.T) {
 			src:  map[string]any{"hi": 42, "go": 98.6, "x": true},
 			exp:  []any{42},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("hi")}, Node: 42},
+				{Path: Normalized(Name("hi")), Node: 42},
 			},
 		},
 		{
@@ -167,7 +167,7 @@ func TestSegmentSelect(t *testing.T) {
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{42},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(1)}, Node: 42},
+				{Path: Normalized(Index(1)), Node: 42},
 			},
 			sing: true,
 		},
@@ -177,8 +177,8 @@ func TestSegmentSelect(t *testing.T) {
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{42, "x"},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(1)}, Node: 42},
-				{Path: NormalizedPath{Index(4)}, Node: "x"},
+				{Path: Normalized(Index(1)), Node: 42},
+				{Path: Normalized(Index(4)), Node: "x"},
 			},
 		},
 		{
@@ -187,8 +187,8 @@ func TestSegmentSelect(t *testing.T) {
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{42, 42},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(1)}, Node: 42},
-				{Path: NormalizedPath{Index(1)}, Node: 42},
+				{Path: Normalized(Index(1)), Node: 42},
+				{Path: Normalized(Index(1)), Node: 42},
 			},
 		},
 		{
@@ -197,9 +197,9 @@ func TestSegmentSelect(t *testing.T) {
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{42, "x", "hi"},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(1)}, Node: 42},
-				{Path: NormalizedPath{Index(4)}, Node: "x"},
-				{Path: NormalizedPath{Index(0)}, Node: "hi"},
+				{Path: Normalized(Index(1)), Node: 42},
+				{Path: Normalized(Index(4)), Node: "x"},
+				{Path: Normalized(Index(0)), Node: "hi"},
 			},
 		},
 		{
@@ -208,7 +208,7 @@ func TestSegmentSelect(t *testing.T) {
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{"go"},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(2)}, Node: "go"},
+				{Path: Normalized(Index(2)), Node: "go"},
 			},
 		},
 		{
@@ -217,8 +217,8 @@ func TestSegmentSelect(t *testing.T) {
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{42, "go"},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(1)}, Node: 42},
-				{Path: NormalizedPath{Index(2)}, Node: "go"},
+				{Path: Normalized(Index(1)), Node: 42},
+				{Path: Normalized(Index(2)), Node: "go"},
 			},
 		},
 		{
@@ -227,9 +227,9 @@ func TestSegmentSelect(t *testing.T) {
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{42, "go", "hi"},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(1)}, Node: 42},
-				{Path: NormalizedPath{Index(2)}, Node: "go"},
-				{Path: NormalizedPath{Index(0)}, Node: "hi"},
+				{Path: Normalized(Index(1)), Node: 42},
+				{Path: Normalized(Index(2)), Node: "go"},
+				{Path: Normalized(Index(0)), Node: "hi"},
 			},
 		},
 		{
@@ -238,11 +238,11 @@ func TestSegmentSelect(t *testing.T) {
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{42, "go", "hi", 42, "go"},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(1)}, Node: 42},
-				{Path: NormalizedPath{Index(2)}, Node: "go"},
-				{Path: NormalizedPath{Index(0)}, Node: "hi"},
-				{Path: NormalizedPath{Index(1)}, Node: 42},
-				{Path: NormalizedPath{Index(2)}, Node: "go"},
+				{Path: Normalized(Index(1)), Node: 42},
+				{Path: Normalized(Index(2)), Node: "go"},
+				{Path: Normalized(Index(0)), Node: "hi"},
+				{Path: Normalized(Index(1)), Node: 42},
+				{Path: Normalized(Index(2)), Node: "go"},
 			},
 		},
 		{
@@ -251,9 +251,9 @@ func TestSegmentSelect(t *testing.T) {
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{42, "go", "hi"},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(1)}, Node: 42},
-				{Path: NormalizedPath{Index(2)}, Node: "go"},
-				{Path: NormalizedPath{Index(0)}, Node: "hi"},
+				{Path: Normalized(Index(1)), Node: 42},
+				{Path: Normalized(Index(2)), Node: "go"},
+				{Path: Normalized(Index(0)), Node: "hi"},
 			},
 		},
 		{
@@ -262,10 +262,10 @@ func TestSegmentSelect(t *testing.T) {
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{42, "go", "hi", 42},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(1)}, Node: 42},
-				{Path: NormalizedPath{Index(2)}, Node: "go"},
-				{Path: NormalizedPath{Index(0)}, Node: "hi"},
-				{Path: NormalizedPath{Index(1)}, Node: 42},
+				{Path: Normalized(Index(1)), Node: 42},
+				{Path: Normalized(Index(2)), Node: "go"},
+				{Path: Normalized(Index(0)), Node: "hi"},
+				{Path: Normalized(Index(1)), Node: 42},
 			},
 		},
 		{
@@ -274,13 +274,13 @@ func TestSegmentSelect(t *testing.T) {
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{42, "hi", 42, "go", 98.6, "x", true},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(1)}, Node: 42},
-				{Path: NormalizedPath{Index(0)}, Node: "hi"},
-				{Path: NormalizedPath{Index(1)}, Node: 42},
-				{Path: NormalizedPath{Index(2)}, Node: "go"},
-				{Path: NormalizedPath{Index(3)}, Node: 98.6},
-				{Path: NormalizedPath{Index(4)}, Node: "x"},
-				{Path: NormalizedPath{Index(5)}, Node: true},
+				{Path: Normalized(Index(1)), Node: 42},
+				{Path: Normalized(Index(0)), Node: "hi"},
+				{Path: Normalized(Index(1)), Node: 42},
+				{Path: Normalized(Index(2)), Node: "go"},
+				{Path: Normalized(Index(3)), Node: 98.6},
+				{Path: Normalized(Index(4)), Node: "x"},
+				{Path: Normalized(Index(5)), Node: true},
 			},
 		},
 		{
@@ -289,12 +289,12 @@ func TestSegmentSelect(t *testing.T) {
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{"hi", 42, "go", 98.6, "x", true},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0)}, Node: "hi"},
-				{Path: NormalizedPath{Index(1)}, Node: 42},
-				{Path: NormalizedPath{Index(2)}, Node: "go"},
-				{Path: NormalizedPath{Index(3)}, Node: 98.6},
-				{Path: NormalizedPath{Index(4)}, Node: "x"},
-				{Path: NormalizedPath{Index(5)}, Node: true},
+				{Path: Normalized(Index(0)), Node: "hi"},
+				{Path: Normalized(Index(1)), Node: 42},
+				{Path: Normalized(Index(2)), Node: "go"},
+				{Path: Normalized(Index(3)), Node: 98.6},
+				{Path: Normalized(Index(4)), Node: "x"},
+				{Path: Normalized(Index(5)), Node: true},
 			},
 		},
 		{
@@ -303,9 +303,9 @@ func TestSegmentSelect(t *testing.T) {
 			src:  map[string]any{"hi": 42, "go": 98.6, "x": true},
 			exp:  []any{42, 98.6, true},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("hi")}, Node: 42},
-				{Path: NormalizedPath{Name("go")}, Node: 98.6},
-				{Path: NormalizedPath{Name("x")}, Node: true},
+				{Path: Normalized(Name("hi")), Node: 42},
+				{Path: Normalized(Name("go")), Node: 98.6},
+				{Path: Normalized(Name("x")), Node: true},
 			},
 			rand: true,
 		},
@@ -315,15 +315,15 @@ func TestSegmentSelect(t *testing.T) {
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{"hi", 42, "go", 98.6, "x", true, 42, "go", "hi"},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0)}, Node: "hi"},
-				{Path: NormalizedPath{Index(1)}, Node: 42},
-				{Path: NormalizedPath{Index(2)}, Node: "go"},
-				{Path: NormalizedPath{Index(3)}, Node: 98.6},
-				{Path: NormalizedPath{Index(4)}, Node: "x"},
-				{Path: NormalizedPath{Index(5)}, Node: true},
-				{Path: NormalizedPath{Index(1)}, Node: 42},
-				{Path: NormalizedPath{Index(2)}, Node: "go"},
-				{Path: NormalizedPath{Index(0)}, Node: "hi"},
+				{Path: Normalized(Index(0)), Node: "hi"},
+				{Path: Normalized(Index(1)), Node: 42},
+				{Path: Normalized(Index(2)), Node: "go"},
+				{Path: Normalized(Index(3)), Node: 98.6},
+				{Path: Normalized(Index(4)), Node: "x"},
+				{Path: Normalized(Index(5)), Node: true},
+				{Path: Normalized(Index(1)), Node: 42},
+				{Path: Normalized(Index(2)), Node: "go"},
+				{Path: Normalized(Index(0)), Node: "hi"},
 			},
 		},
 		{
@@ -332,10 +332,10 @@ func TestSegmentSelect(t *testing.T) {
 			src:  map[string]any{"hi": 42, "go": 98.6, "x": true},
 			exp:  []any{42, 98.6, true, 98.6},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("hi")}, Node: 42},
-				{Path: NormalizedPath{Name("go")}, Node: 98.6},
-				{Path: NormalizedPath{Name("x")}, Node: true},
-				{Path: NormalizedPath{Name("go")}, Node: 98.6},
+				{Path: Normalized(Name("hi")), Node: 42},
+				{Path: Normalized(Name("go")), Node: 98.6},
+				{Path: Normalized(Name("x")), Node: true},
+				{Path: Normalized(Name("go")), Node: 98.6},
 			},
 			rand: true,
 		},
@@ -347,10 +347,10 @@ func TestSegmentSelect(t *testing.T) {
 			a.Equal(tc.seg.descendant, tc.seg.IsDescendant())
 			if tc.rand {
 				a.ElementsMatch(tc.exp, tc.seg.Select(tc.src, nil))
-				a.ElementsMatch(tc.loc, tc.seg.SelectLocated(tc.src, nil, NormalizedPath{}))
+				a.ElementsMatch(tc.loc, tc.seg.SelectLocated(tc.src, nil, Normalized()))
 			} else {
 				a.Equal(tc.exp, tc.seg.Select(tc.src, nil))
-				a.Equal(tc.loc, tc.seg.SelectLocated(tc.src, nil, NormalizedPath{}))
+				a.Equal(tc.loc, tc.seg.SelectLocated(tc.src, nil, Normalized()))
 			}
 		})
 	}
@@ -381,7 +381,7 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			src:  map[string]any{"hi": 42, "go": map[string]any{"x": 98.6}},
 			exp:  []any{42},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("hi")}, Node: 42},
+				{Path: Normalized(Name("hi")), Node: 42},
 			},
 			rand: true,
 		},
@@ -395,9 +395,9 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			},
 			exp: []any{42, 98.6, true},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("hi")}, Node: 42},
-				{Path: NormalizedPath{Name("go"), Name("hi")}, Node: 98.6},
-				{Path: NormalizedPath{Name("go"), Name("x"), Name("hi")}, Node: true},
+				{Path: Normalized(Name("hi")), Node: 42},
+				{Path: Normalized(Name("go"), Name("hi")), Node: 98.6},
+				{Path: Normalized(Name("go"), Name("x"), Name("hi")), Node: true},
 			},
 			rand: true,
 		},
@@ -411,9 +411,9 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			},
 			exp: []any{42, map[string]any{"hi": true}, true},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("hi")}, Node: 42},
-				{Path: NormalizedPath{Name("go"), Name("hi")}, Node: map[string]any{"hi": true}},
-				{Path: NormalizedPath{Name("go"), Name("hi"), Name("hi")}, Node: true},
+				{Path: Normalized(Name("hi")), Node: 42},
+				{Path: Normalized(Name("go"), Name("hi")), Node: map[string]any{"hi": true}},
+				{Path: Normalized(Name("go"), Name("hi"), Name("hi")), Node: true},
 			},
 			rand: true,
 		},
@@ -427,8 +427,8 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			},
 			exp: []any{98.6, true},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Name("hi")}, Node: 98.6},
-				{Path: NormalizedPath{Index(0), Name("x"), Name("hi")}, Node: true},
+				{Path: Normalized(Index(0), Name("hi")), Node: 98.6},
+				{Path: Normalized(Index(0), Name("x"), Name("hi")), Node: true},
 			},
 			rand: true,
 		},
@@ -443,12 +443,12 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			},
 			exp: []any{42, 98.6, true, 12, map[string]any{"x": 99}, 99},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("hi")}, Node: 42},
-				{Path: NormalizedPath{Name("go"), Name("hi")}, Node: 98.6},
-				{Path: NormalizedPath{Name("go"), Name("go"), Name("hi")}, Node: true},
-				{Path: NormalizedPath{Name("go"), Name("go"), Name("x")}, Node: 12},
-				{Path: NormalizedPath{Name("x")}, Node: map[string]any{"x": 99}},
-				{Path: NormalizedPath{Name("x"), Name("x")}, Node: 99},
+				{Path: Normalized(Name("hi")), Node: 42},
+				{Path: Normalized(Name("go"), Name("hi")), Node: 98.6},
+				{Path: Normalized(Name("go"), Name("go"), Name("hi")), Node: true},
+				{Path: Normalized(Name("go"), Name("go"), Name("x")), Node: 12},
+				{Path: Normalized(Name("x")), Node: map[string]any{"x": 99}},
+				{Path: Normalized(Name("x"), Name("x")), Node: 99},
 			},
 			rand: true,
 		},
@@ -458,7 +458,7 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			src:  []any{1, 3, []any{3}},
 			exp:  []any{3},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(1)}, Node: 3},
+				{Path: Normalized(Index(1)), Node: 3},
 			},
 		},
 		{
@@ -467,9 +467,9 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			src:  []any{1, 3, []any{3, 5, []any{42, 98.6, true}}},
 			exp:  []any{3, 5, 98.6},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(1)}, Node: 3},
-				{Path: NormalizedPath{Index(2), Index(1)}, Node: 5},
-				{Path: NormalizedPath{Index(2), Index(2), Index(1)}, Node: 98.6},
+				{Path: Normalized(Index(1)), Node: 3},
+				{Path: Normalized(Index(2), Index(1)), Node: 5},
+				{Path: Normalized(Index(2), Index(2), Index(1)), Node: 98.6},
 			},
 		},
 		{
@@ -478,12 +478,12 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			src:  []any{1, 3, []any{3, 5, []any{42, 98.6, true}}},
 			exp:  []any{3, 1, 5, 3, 98.6, 42},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(1)}, Node: 3},
-				{Path: NormalizedPath{Index(0)}, Node: 1},
-				{Path: NormalizedPath{Index(2), Index(1)}, Node: 5},
-				{Path: NormalizedPath{Index(2), Index(0)}, Node: 3},
-				{Path: NormalizedPath{Index(2), Index(2), Index(1)}, Node: 98.6},
-				{Path: NormalizedPath{Index(2), Index(2), Index(0)}, Node: 42},
+				{Path: Normalized(Index(1)), Node: 3},
+				{Path: Normalized(Index(0)), Node: 1},
+				{Path: Normalized(Index(2), Index(1)), Node: 5},
+				{Path: Normalized(Index(2), Index(0)), Node: 3},
+				{Path: Normalized(Index(2), Index(2), Index(1)), Node: 98.6},
+				{Path: Normalized(Index(2), Index(2), Index(0)), Node: 42},
 			},
 		},
 		{
@@ -492,8 +492,8 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			src:  map[string]any{"x": 1, "y": 3, "z": []any{3, 5, []any{42, 98.6, true}}},
 			exp:  []any{5, 98.6},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("z"), Index(1)}, Node: 5},
-				{Path: NormalizedPath{Name("z"), Index(2), Index(1)}, Node: 98.6},
+				{Path: Normalized(Name("z"), Index(1)), Node: 5},
+				{Path: Normalized(Name("z"), Index(2), Index(1)), Node: 98.6},
 			},
 		},
 		{
@@ -502,8 +502,8 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			src:  []any{1, 3, 4, []any{3}},
 			exp:  []any{3, 4},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(1)}, Node: 3},
-				{Path: NormalizedPath{Index(2)}, Node: 4},
+				{Path: Normalized(Index(1)), Node: 3},
+				{Path: Normalized(Index(2)), Node: 4},
 			},
 		},
 		{
@@ -512,9 +512,9 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			src:  []any{1, 3, 4, []any{3, 5, "x", []any{42, 98.6, "y", "z", true}}},
 			exp:  []any{3, 5, 98.6},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(1)}, Node: 3},
-				{Path: NormalizedPath{Index(3), Index(1)}, Node: 5},
-				{Path: NormalizedPath{Index(3), Index(3), Index(1)}, Node: 98.6},
+				{Path: Normalized(Index(1)), Node: 3},
+				{Path: Normalized(Index(3), Index(1)), Node: 5},
+				{Path: Normalized(Index(3), Index(3), Index(1)), Node: 98.6},
 			},
 		},
 		{
@@ -530,12 +530,12 @@ func TestDescendantSegmentSelect(t *testing.T) {
 				"z",
 			},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(1)}, Node: 3},
-				{Path: NormalizedPath{Index(3)}, Node: []any{3, 5, "x", []any{42, 98.6, "y", "z", true}}},
-				{Path: NormalizedPath{Index(3), Index(1)}, Node: 5},
-				{Path: NormalizedPath{Index(3), Index(3)}, Node: []any{42, 98.6, "y", "z", true}},
-				{Path: NormalizedPath{Index(3), Index(3), Index(1)}, Node: 98.6},
-				{Path: NormalizedPath{Index(3), Index(3), Index(3)}, Node: "z"},
+				{Path: Normalized(Index(1)), Node: 3},
+				{Path: Normalized(Index(3)), Node: []any{3, 5, "x", []any{42, 98.6, "y", "z", true}}},
+				{Path: Normalized(Index(3), Index(1)), Node: 5},
+				{Path: Normalized(Index(3), Index(3)), Node: []any{42, 98.6, "y", "z", true}},
+				{Path: Normalized(Index(3), Index(3), Index(1)), Node: 98.6},
+				{Path: Normalized(Index(3), Index(3), Index(3)), Node: "z"},
 			},
 		},
 		{
@@ -551,12 +551,12 @@ func TestDescendantSegmentSelect(t *testing.T) {
 				"z",
 			},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(1)}, Node: 3},
-				{Path: NormalizedPath{Index(3)}, Node: []any{3, 5, "x", []any{42, 98.6, "y", "z", true}}},
-				{Path: NormalizedPath{Index(3), Index(1)}, Node: 5},
-				{Path: NormalizedPath{Index(3), Index(3)}, Node: []any{42, 98.6, "y", "z", true}},
-				{Path: NormalizedPath{Index(3), Index(3), Index(1)}, Node: 98.6},
-				{Path: NormalizedPath{Index(3), Index(3), Index(3)}, Node: "z"},
+				{Path: Normalized(Index(1)), Node: 3},
+				{Path: Normalized(Index(3)), Node: []any{3, 5, "x", []any{42, 98.6, "y", "z", true}}},
+				{Path: Normalized(Index(3), Index(1)), Node: 5},
+				{Path: Normalized(Index(3), Index(3)), Node: []any{42, 98.6, "y", "z", true}},
+				{Path: Normalized(Index(3), Index(3), Index(1)), Node: 98.6},
+				{Path: Normalized(Index(3), Index(3), Index(3)), Node: "z"},
 			},
 		},
 		{
@@ -565,8 +565,8 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			src:  map[string]any{"x": []any{3, 5, "x", []any{42, 98.6, "y", "z", true}}},
 			exp:  []any{5, 98.6},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("x"), Index(1)}, Node: 5},
-				{Path: NormalizedPath{Name("x"), Index(3), Index(1)}, Node: 98.6},
+				{Path: Normalized(Name("x"), Index(1)), Node: 5},
+				{Path: Normalized(Name("x"), Index(3), Index(1)), Node: 98.6},
 			},
 		},
 		{
@@ -575,9 +575,9 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			src:  []any{1, 3, 4},
 			exp:  []any{1, 3, 4},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0)}, Node: 1},
-				{Path: NormalizedPath{Index(1)}, Node: 3},
-				{Path: NormalizedPath{Index(2)}, Node: 4},
+				{Path: Normalized(Index(0)), Node: 1},
+				{Path: Normalized(Index(1)), Node: 3},
+				{Path: Normalized(Index(2)), Node: 4},
 			},
 		},
 		{
@@ -586,8 +586,8 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			src:  map[string]any{"x": 42, "y": true},
 			exp:  []any{42, true},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("x")}, Node: 42},
-				{Path: NormalizedPath{Name("y")}, Node: true},
+				{Path: Normalized(Name("x")), Node: 42},
+				{Path: Normalized(Name("y")), Node: true},
 			},
 			rand: true,
 		},
@@ -597,11 +597,11 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			src:  []any{1, 3, []any{4, 5}},
 			exp:  []any{1, 3, []any{4, 5}, 4, 5},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0)}, Node: 1},
-				{Path: NormalizedPath{Index(1)}, Node: 3},
-				{Path: NormalizedPath{Index(2)}, Node: []any{4, 5}},
-				{Path: NormalizedPath{Index(2), Index(0)}, Node: 4},
-				{Path: NormalizedPath{Index(2), Index(1)}, Node: 5},
+				{Path: Normalized(Index(0)), Node: 1},
+				{Path: Normalized(Index(1)), Node: 3},
+				{Path: Normalized(Index(2)), Node: []any{4, 5}},
+				{Path: Normalized(Index(2), Index(0)), Node: 4},
+				{Path: Normalized(Index(2), Index(1)), Node: 5},
 			},
 		},
 		{
@@ -610,9 +610,9 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			src:  map[string]any{"x": 42, "y": map[string]any{"z": "hi"}},
 			exp:  []any{42, map[string]any{"z": "hi"}, "hi"},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("x")}, Node: 42},
-				{Path: NormalizedPath{Name("y")}, Node: map[string]any{"z": "hi"}},
-				{Path: NormalizedPath{Name("y"), Name("z")}, Node: "hi"},
+				{Path: Normalized(Name("x")), Node: 42},
+				{Path: Normalized(Name("y")), Node: map[string]any{"z": "hi"}},
+				{Path: Normalized(Name("y"), Name("z")), Node: "hi"},
 			},
 			rand: true,
 		},
@@ -622,10 +622,10 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			src:  []any{1, 3, map[string]any{"z": "hi"}},
 			exp:  []any{1, 3, map[string]any{"z": "hi"}, "hi"},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0)}, Node: 1},
-				{Path: NormalizedPath{Index(1)}, Node: 3},
-				{Path: NormalizedPath{Index(2)}, Node: map[string]any{"z": "hi"}},
-				{Path: NormalizedPath{Index(2), Name("z")}, Node: "hi"},
+				{Path: Normalized(Index(0)), Node: 1},
+				{Path: Normalized(Index(1)), Node: 3},
+				{Path: Normalized(Index(2)), Node: map[string]any{"z": "hi"}},
+				{Path: Normalized(Index(2), Name("z")), Node: "hi"},
 			},
 			rand: true,
 		},
@@ -635,11 +635,11 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			src:  []any{1, 3, map[string]any{"z": "hi"}},
 			exp:  []any{1, 3, map[string]any{"z": "hi"}, 1, "hi"},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0)}, Node: 1},
-				{Path: NormalizedPath{Index(1)}, Node: 3},
-				{Path: NormalizedPath{Index(2)}, Node: map[string]any{"z": "hi"}},
-				{Path: NormalizedPath{Index(0)}, Node: 1},
-				{Path: NormalizedPath{Index(2), Name("z")}, Node: "hi"},
+				{Path: Normalized(Index(0)), Node: 1},
+				{Path: Normalized(Index(1)), Node: 3},
+				{Path: Normalized(Index(2)), Node: map[string]any{"z": "hi"}},
+				{Path: Normalized(Index(0)), Node: 1},
+				{Path: Normalized(Index(2), Name("z")), Node: "hi"},
 			},
 		},
 		{
@@ -648,12 +648,12 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			src:  []any{1, 3, map[string]any{"z": "hi", "y": "x"}},
 			exp:  []any{1, 3, map[string]any{"z": "hi", "y": "x"}, "hi", "x", "hi"},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0)}, Node: 1},
-				{Path: NormalizedPath{Index(1)}, Node: 3},
-				{Path: NormalizedPath{Index(2)}, Node: map[string]any{"z": "hi", "y": "x"}},
-				{Path: NormalizedPath{Index(2), Name("z")}, Node: "hi"},
-				{Path: NormalizedPath{Index(2), Name("y")}, Node: "x"},
-				{Path: NormalizedPath{Index(2), Name("z")}, Node: "hi"},
+				{Path: Normalized(Index(0)), Node: 1},
+				{Path: Normalized(Index(1)), Node: 3},
+				{Path: Normalized(Index(2)), Node: map[string]any{"z": "hi", "y": "x"}},
+				{Path: Normalized(Index(2), Name("z")), Node: "hi"},
+				{Path: Normalized(Index(2), Name("y")), Node: "x"},
+				{Path: Normalized(Index(2), Name("z")), Node: "hi"},
 			},
 			rand: true,
 		},
@@ -664,10 +664,10 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			a.True(tc.seg.IsDescendant())
 			if tc.rand {
 				a.ElementsMatch(tc.exp, tc.seg.Select(tc.src, nil))
-				a.ElementsMatch(tc.loc, tc.seg.SelectLocated(tc.src, nil, NormalizedPath{}))
+				a.ElementsMatch(tc.loc, tc.seg.SelectLocated(tc.src, nil, Normalized()))
 			} else {
 				a.Equal(tc.exp, tc.seg.Select(tc.src, nil))
-				a.Equal(tc.loc, tc.seg.SelectLocated(tc.src, nil, NormalizedPath{}))
+				a.Equal(tc.loc, tc.seg.SelectLocated(tc.src, nil, Normalized()))
 			}
 		})
 	}

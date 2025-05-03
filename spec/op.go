@@ -3,63 +3,83 @@ package spec
 //go:generate stringer -linecomment -output op_string.go -type CompOp
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
 )
 
-// CompOp defines the JSONPath filter comparison operators.
+// CompOp defines the JSONPath [filter comparison operators].
+//
+// [filter comparison operators]: https://www.rfc-editor.org/rfc/rfc9535.html#name-comparisons
 type CompOp uint8
 
-//revive:disable:exported
 const (
-	EqualTo            CompOp = iota + 1 // ==
-	NotEqualTo                           // !=
-	LessThan                             // <
-	GreaterThan                          // >
-	LessThanEqualTo                      // <=
-	GreaterThanEqualTo                   // >=
+	// EqualTo is the == operator.
+	EqualTo CompOp = iota + 1 // ==
+	// NotEqualTo is the != operator.
+	NotEqualTo // !=
+	// LessThan is the < operator.
+	LessThan // <
+	// GreaterThan is the > operator.
+	GreaterThan // >
+	// LessThanEqualTo is the <= operator.
+	LessThanEqualTo // <=
+	// GreaterThanEqualTo is the >= operator.
+	GreaterThanEqualTo // >=
 )
 
 // CompVal defines the interface for comparable values in filter
-// expressions.
+// expressions. Implemented by:
+//
+//   - [LiteralArg]
+//   - [SingularQueryExpr]
+//   - [FuncExpr]
 type CompVal interface {
 	stringWriter
 	// asValue returns the value to be compared.
 	asValue(current, root any) JSONPathValue
 }
 
-// ComparisonExpr represents the comparison of two values, which themselves
-// may be the output of expressions.
+// ComparisonExpr is a filter expression that compares two values, which
+// themselves may themselves be the output of expressions. Interfaces
+// implemented:
+//
+//   - [BasicExpr]
+//   - [fmt.Stringer]
 type ComparisonExpr struct {
-	// An expression that produces the JSON value for the left side of the
-	// comparison.
-	Left CompVal
-	// The comparison operator.
-	Op CompOp
-	// An expression that produces the JSON value for the right side of the
-	// comparison.
-	Right CompVal
+	left  CompVal
+	op    CompOp
+	right CompVal
 }
 
-// Comparison creates and returns a new ComparisonExpr.
+// Comparison creates and returns a new [ComparisonExpr] that uses op to
+// compare left and right.
 func Comparison(left CompVal, op CompOp, right CompVal) *ComparisonExpr {
 	return &ComparisonExpr{left, op, right}
 }
 
-// writeTo writes a string representation of ce to buf.
+// writeTo writes a string representation of ce to buf. Defined by
+// [stringWriter].
 func (ce *ComparisonExpr) writeTo(buf *strings.Builder) {
-	ce.Left.writeTo(buf)
-	fmt.Fprintf(buf, " %v ", ce.Op)
-	ce.Right.writeTo(buf)
+	ce.left.writeTo(buf)
+	fmt.Fprintf(buf, " %v ", ce.op)
+	ce.right.writeTo(buf)
+}
+
+// String returns the string representation of ce.
+func (ce *ComparisonExpr) String() string {
+	var buf strings.Builder
+	ce.writeTo(&buf)
+	return buf.String()
 }
 
 // testFilter uses ce.Op to compare the values returned by ce.Left and
-// ce.Right relative to current and root.
+// ce.Right relative to current and root. Defined by [BasicExpr].
 func (ce *ComparisonExpr) testFilter(current, root any) bool {
-	left := ce.Left.asValue(current, root)
-	right := ce.Right.asValue(current, root)
-	switch ce.Op {
+	left := ce.left.asValue(current, root)
+	right := ce.right.asValue(current, root)
+	switch ce.op {
 	case EqualTo:
 		return equalTo(left, right)
 	case NotEqualTo:
@@ -73,12 +93,12 @@ func (ce *ComparisonExpr) testFilter(current, root any) bool {
 	case GreaterThanEqualTo:
 		return sameType(left, right) && !lessThan(left, right)
 	default:
-		panic(fmt.Sprintf("Unknown operator %v", ce.Op))
+		panic(fmt.Sprintf("Unknown operator %v", ce.op))
 	}
 }
 
-// equalTo returns true if left and right are nils, or if both are
-// [ValueType]s and [valueEqualTo] returns true for their underlying values.
+// equalTo returns true if left and right are nils, or if both are [ValueType]
+// values and [valueEqualTo] returns true for their underlying values.
 // Otherwise it returns false.
 func equalTo(left, right JSONPathValue) bool {
 	switch left := left.(type) {
@@ -119,7 +139,10 @@ func toFloat(val any) (float64, bool) {
 	case float32:
 		return float64(val), true
 	case float64:
-		return float64(val), true
+		return val, true
+	case json.Number:
+		f, err := val.Float64()
+		return f, err == nil
 	default:
 		return 0, false
 	}
@@ -195,9 +218,9 @@ func sameType(left, right JSONPathValue) bool {
 // means either both are a numeric type or are otherwise the same type.
 func valCompType(left, right any) bool {
 	switch left.(type) {
-	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, json.Number:
 		switch right.(type) {
-		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
+		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64, json.Number:
 			return true
 		}
 	}

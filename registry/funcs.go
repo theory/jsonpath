@@ -11,23 +11,24 @@ import (
 )
 
 // checkLengthArgs checks the argument expressions to length() and returns an
-// error if there is not exactly one expression that results in a
-// [PathValue]-compatible value.
-func checkLengthArgs(fea []spec.FunctionExprArg) error {
+// error if there is not exactly one expression that results in a compatible
+// [spec.FuncValue] value.
+func checkLengthArgs(fea []spec.FuncExprArg) error {
 	if len(fea) != 1 {
 		return fmt.Errorf("expected 1 argument but found %v", len(fea))
 	}
 
 	kind := fea[0].ResultType()
-	if !kind.ConvertsTo(spec.PathValue) {
-		return errors.New("cannot convert argument to ValueType")
+	if !kind.ConvertsToValue() {
+		return errors.New("cannot convert argument to Value")
 	}
 
 	return nil
 }
 
 // lengthFunc extracts the single argument passed in jv and returns its
-// length. Panics if jv[0] doesn't exist or is not convertible to [ValueType].
+// length. Panics if jv[0] doesn't exist or is not convertible to
+// [spec.ValueType].
 //
 //   - if jv[0] is nil, the result is nil
 //   - If jv[0] is a string, the result is the number of Unicode scalar values
@@ -56,46 +57,46 @@ func lengthFunc(jv []spec.JSONPathValue) spec.JSONPathValue {
 
 // checkCountArgs checks the argument expressions to count() and returns an
 // error if there is not exactly one expression that results in a
-// [PathNodes]-compatible value.
-func checkCountArgs(fea []spec.FunctionExprArg) error {
+// [spec.FuncNodes]-compatible value.
+func checkCountArgs(fea []spec.FuncExprArg) error {
 	if len(fea) != 1 {
 		return fmt.Errorf("expected 1 argument but found %v", len(fea))
 	}
 
 	kind := fea[0].ResultType()
-	if !kind.ConvertsTo(spec.PathNodes) {
-		return errors.New("cannot convert argument to PathNodes")
+	if !kind.ConvertsToNodes() {
+		return errors.New("cannot convert argument to Nodes")
 	}
 
 	return nil
 }
 
 // countFunc implements the [RFC 9535]-standard count function. The result is
-// a ValueType containing an unsigned integer for the number of nodes
-// in jv[0]. Panics if jv[0] doesn't exist or is not convertible to
-// [NodesType].
+// a ValueType containing an unsigned integer for the number of nodes in
+// jv[0]. Panics if jv[0] doesn't exist or is not convertible to
+// [spec.NodesType].
 func countFunc(jv []spec.JSONPathValue) spec.JSONPathValue {
 	return spec.Value(len(spec.NodesFrom(jv[0])))
 }
 
 // checkValueArgs checks the argument expressions to value() and returns an
 // error if there is not exactly one expression that results in a
-// [PathNodes]-compatible value.
-func checkValueArgs(fea []spec.FunctionExprArg) error {
+// [spec.FuncNodes]-compatible value.
+func checkValueArgs(fea []spec.FuncExprArg) error {
 	if len(fea) != 1 {
 		return fmt.Errorf("expected 1 argument but found %v", len(fea))
 	}
 
 	kind := fea[0].ResultType()
-	if !kind.ConvertsTo(spec.PathNodes) {
-		return errors.New("cannot convert argument to PathNodes")
+	if !kind.ConvertsToNodes() {
+		return errors.New("cannot convert argument to Nodes")
 	}
 
 	return nil
 }
 
 // valueFunc implements the [RFC 9535]-standard value function. Panics if
-// jv[0] doesn't exist or is not convertible to [NodesType]. Otherwise:
+// jv[0] doesn't exist or is not convertible to [spec.NodesType]. Otherwise:
 //
 //   - If jv[0] contains a single node, the result is the value of the node.
 //   - If jv[0] is empty or contains multiple nodes, the result is nil.
@@ -108,9 +109,9 @@ func valueFunc(jv []spec.JSONPathValue) spec.JSONPathValue {
 }
 
 // checkMatchArgs checks the argument expressions to match() and returns an
-// error if there are not exactly two expressions that result in
-// [PathValue]-compatible values.
-func checkMatchArgs(fea []spec.FunctionExprArg) error {
+// error if there are not exactly two expressions that result in compatible
+// [spec.FuncValue] values.
+func checkMatchArgs(fea []spec.FuncExprArg) error {
 	const matchArgLen = 2
 	if len(fea) != matchArgLen {
 		return fmt.Errorf("expected 2 arguments but found %v", len(fea))
@@ -118,8 +119,8 @@ func checkMatchArgs(fea []spec.FunctionExprArg) error {
 
 	for i, arg := range fea {
 		kind := arg.ResultType()
-		if !kind.ConvertsTo(spec.PathValue) {
-			return fmt.Errorf("cannot convert argument %v to PathNodes", i+1)
+		if !kind.ConvertsToValue() {
+			return fmt.Errorf("cannot convert argument %v to Value", i+1)
 		}
 	}
 
@@ -143,9 +144,9 @@ func matchFunc(jv []spec.JSONPathValue) spec.JSONPathValue {
 }
 
 // checkSearchArgs checks the argument expressions to search() and returns an
-// error if there are not exactly two expressions that result in
-// [PathValue]-compatible values.
-func checkSearchArgs(fea []spec.FunctionExprArg) error {
+// error if there are not exactly two expressions that result in compatible
+// [spec.FuncValue] values.
+func checkSearchArgs(fea []spec.FuncExprArg) error {
 	const searchArgLen = 2
 	if len(fea) != searchArgLen {
 		return fmt.Errorf("expected 2 arguments but found %v", len(fea))
@@ -153,8 +154,8 @@ func checkSearchArgs(fea []spec.FunctionExprArg) error {
 
 	for i, arg := range fea {
 		kind := arg.ResultType()
-		if !kind.ConvertsTo(spec.PathValue) {
-			return fmt.Errorf("cannot convert argument %v to PathNodes", i+1)
+		if !kind.ConvertsToValue() {
+			return fmt.Errorf("cannot convert argument %v to Value", i+1)
 		}
 	}
 

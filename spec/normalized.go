@@ -22,10 +22,22 @@ type NormalSelector interface {
 }
 
 // NormalizedPath represents a normalized path identifying a single value in a
-// JSON query argument, as [defined by RFC 9535].
+// JSON query argument, as [defined by RFC 9535]. Defines a simplified string
+// format that exclusively uses single quotation marks to quote names. Useful
+// for converting to JSON Pointer (via [NormalizedPath.Pointer]) or other JSON
+// pointer-type formats.
+//
+// Interfaces implemented:
+//   - [fmt.Stringer]
+//   - [encoding.TextMarshaler]
 //
 // [defined by RFC 9535]: https://www.rfc-editor.org/rfc/rfc9535#name-normalized-paths
 type NormalizedPath []NormalSelector
+
+// Normalized creates and returns a [NormalizedPath] that contains sel.
+func Normalized(sel ...NormalSelector) NormalizedPath {
+	return NormalizedPath(sel)
+}
 
 // String returns the string representation of np.
 func (np NormalizedPath) String() string {
@@ -85,13 +97,14 @@ func (np NormalizedPath) Compare(np2 NormalizedPath) int {
 	return 0
 }
 
-// MarshalText marshals np into text. It implements [encoding.TextMarshaler].
+// MarshalText marshals np into text. Implements [encoding.TextMarshaler].
 func (np NormalizedPath) MarshalText() ([]byte, error) {
 	return []byte(np.String()), nil
 }
 
-// LocatedNode pairs a value with its location within the JSON query argument
-// from which it was selected.
+// LocatedNode pairs a value with the [NormalizedPath] for its location within
+// the JSON query argument from which it was selected. Returned by
+// implementations of [Selector]'s SelectLocated method.
 type LocatedNode struct {
 	// Node is the value selected from a JSON query argument.
 	Node any `json:"node"`
@@ -101,7 +114,7 @@ type LocatedNode struct {
 	Path NormalizedPath `json:"path"`
 }
 
-// newLocatedNode creates and returns a new [Node]. It makes a copy of path.
+// newLocatedNode creates and returns a new [LocatedNode]. It copies path.
 func newLocatedNode(path NormalizedPath, node any) *LocatedNode {
 	return &LocatedNode{
 		Path: NormalizedPath(append(make([]NormalSelector, 0, len(path)), path...)),

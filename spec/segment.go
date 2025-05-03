@@ -4,33 +4,40 @@ import (
 	"strings"
 )
 
-// Segment represents a single segment in an RFC 9535 JSONPath query,
-// consisting of a list of Selectors and child Segments.
+// Segment represents a single segment as defined in [RFC 9535 Section 1.4.2],
+// consisting of a list of [Selector] values.
+//
+// [RFC 9535 Section 1.4.2]: https://www.rfc-editor.org/rfc/rfc9535.html#name-segments
 type Segment struct {
 	selectors  []Selector
 	descendant bool
 }
 
-// Child creates and returns a Segment that uses one or more Selectors
-// to select the children of a JSON value.
+// Child creates and returns a [Segment] that uses sel to select values from a
+// JSON object or array.
 func Child(sel ...Selector) *Segment {
 	return &Segment{selectors: sel}
 }
 
-// Descendant creates and returns a Segment that uses one or more Selectors to
-// select the children of a JSON value, together with the children of its
-// children, and so forth recursively.
+// Descendant creates and returns a [Segment] that uses sel to select values
+// from a JSON object or array or any of its descendant objects and arrays.
 func Descendant(sel ...Selector) *Segment {
 	return &Segment{selectors: sel, descendant: true}
 }
 
-// Selectors returns s's Selectors.
+// Selectors returns s's [Selector] values.
 func (s *Segment) Selectors() []Selector {
 	return s.selectors
 }
 
-// String returns a string representation of seg, including all of its child
-// segments in as a tree diagram.
+// String returns a string representation of seg. A [Child] [Segment]
+// formats as:
+//
+//	[<selectors>]
+//
+// A [Descendant] [Segment] formats as:
+//
+//	..⁠[<selectors>])
 func (s *Segment) String() string {
 	buf := new(strings.Builder)
 	if s.descendant {
@@ -47,7 +54,7 @@ func (s *Segment) String() string {
 	return buf.String()
 }
 
-// Select selects and returns values from current or root for each of seg's
+// Select selects and returns values from current or root, for each of s's
 // selectors. Defined by the [Selector] interface.
 func (s *Segment) Select(current, root any) []any {
 	ret := []any{}
@@ -60,7 +67,7 @@ func (s *Segment) Select(current, root any) []any {
 	return ret
 }
 
-// SelectLocated selects and returns values as [LocatedNode] structs from
+// SelectLocated selects and returns values as [LocatedNode] values from
 // current or root for each of seg's selectors. Defined by the [Selector]
 // interface.
 func (s *Segment) SelectLocated(current, root any, parent NormalizedPath) []*LocatedNode {
@@ -74,8 +81,8 @@ func (s *Segment) SelectLocated(current, root any, parent NormalizedPath) []*Loc
 	return ret
 }
 
-// descend recursively executes seg.Select for each value in current and/or
-// root and returns the results.
+// descend recursively executes [Segment.Select] for each value in current
+// and/or root and its descendants and returns the results.
 func (s *Segment) descend(current, root any) []any {
 	ret := []any{}
 	switch val := current.(type) {
@@ -91,8 +98,8 @@ func (s *Segment) descend(current, root any) []any {
 	return ret
 }
 
-// descend recursively executes seg.Select for each value in current and/or
-// root and returns the results.
+// descend recursively executes [q] for each value in current and/or root and
+// its descendants and returns the results.
 func (s *Segment) descendLocated(current, root any, parent NormalizedPath) []*LocatedNode {
 	ret := []*LocatedNode{}
 	switch val := current.(type) {
@@ -117,6 +124,6 @@ func (s *Segment) isSingular() bool {
 	return s.selectors[0].isSingular()
 }
 
-// IsDescendant returns true if the segment is a descendant selector that
+// IsDescendant returns true if the segment is a [Descendant] selector that
 // recursively select the children of a JSON value.
 func (s *Segment) IsDescendant() bool { return s.descendant }

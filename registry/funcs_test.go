@@ -125,7 +125,7 @@ func TestCheckSingularFuncArgs(t *testing.T) {
 
 	for _, tc := range []struct {
 		name      string
-		expr      []spec.FunctionExprArg
+		expr      []spec.FuncExprArg
 		err       string
 		lengthErr string
 		countErr  string
@@ -133,50 +133,48 @@ func TestCheckSingularFuncArgs(t *testing.T) {
 	}{
 		{
 			name: "no_args",
-			expr: []spec.FunctionExprArg{},
+			expr: []spec.FuncExprArg{},
 			err:  "expected 1 argument but found 0",
 		},
 		{
 			name: "two_args",
-			expr: []spec.FunctionExprArg{spec.Literal(nil), spec.Literal(nil)},
+			expr: []spec.FuncExprArg{spec.Literal(nil), spec.Literal(nil)},
 			err:  "expected 1 argument but found 2",
 		},
 		{
 			name:     "literal_string",
-			expr:     []spec.FunctionExprArg{spec.Literal(nil)},
-			countErr: "cannot convert argument to PathNodes",
-			valueErr: "cannot convert argument to PathNodes",
+			expr:     []spec.FuncExprArg{spec.Literal(nil)},
+			countErr: "cannot convert argument to Nodes",
+			valueErr: "cannot convert argument to Nodes",
 		},
 		{
 			name: "singular_query",
-			expr: []spec.FunctionExprArg{spec.SingularQuery(false, nil)},
+			expr: []spec.FuncExprArg{spec.SingularQuery(false, nil)},
 		},
 		{
-			name: "filter_query",
-			expr: []spec.FunctionExprArg{spec.FilterQuery(
-				spec.Query(true, []*spec.Segment{spec.Child(spec.Name("x"))}),
+			name: "nodes_query",
+			expr: []spec.FuncExprArg{spec.NodesQuery(
+				spec.Query(true, spec.Child(spec.Name("x"))),
 			)},
 		},
 		{
-			name: "logical_function_expr",
-			expr: []spec.FunctionExprArg{spec.Function(reg.Get("match"),
-				[]spec.FunctionExprArg{
-					spec.FilterQuery(
-						spec.Query(true, []*spec.Segment{spec.Child(spec.Name("x"))}),
-					),
-					spec.Literal("hi"),
-				},
+			name: "logical_func_expr",
+			expr: []spec.FuncExprArg{spec.Function(reg.Get("match"),
+				spec.NodesQuery(
+					spec.Query(true, spec.Child(spec.Name("x"))),
+				),
+				spec.Literal("hi"),
 			)},
-			lengthErr: "cannot convert argument to ValueType",
-			countErr:  "cannot convert argument to PathNodes",
-			valueErr:  "cannot convert argument to PathNodes",
+			lengthErr: "cannot convert argument to Value",
+			countErr:  "cannot convert argument to Nodes",
+			valueErr:  "cannot convert argument to Nodes",
 		},
 		{
 			name:      "logical_or",
-			expr:      []spec.FunctionExprArg{spec.LogicalOr{}},
-			lengthErr: "cannot convert argument to ValueType",
-			countErr:  "cannot convert argument to PathNodes",
-			valueErr:  "cannot convert argument to PathNodes",
+			expr:      []spec.FuncExprArg{spec.LogicalOr{}},
+			lengthErr: "cannot convert argument to Value",
+			countErr:  "cannot convert argument to Nodes",
+			valueErr:  "cannot convert argument to Nodes",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -224,85 +222,79 @@ func TestCheckRegexFuncArgs(t *testing.T) {
 
 	for _, tc := range []struct {
 		name string
-		expr []spec.FunctionExprArg
+		expr []spec.FuncExprArg
 		err  string
 	}{
 		{
 			name: "no_args",
-			expr: []spec.FunctionExprArg{},
+			expr: []spec.FuncExprArg{},
 			err:  "expected 2 arguments but found 0",
 		},
 		{
 			name: "one_arg",
-			expr: []spec.FunctionExprArg{spec.Literal("hi")},
+			expr: []spec.FuncExprArg{spec.Literal("hi")},
 			err:  "expected 2 arguments but found 1",
 		},
 		{
 			name: "three_args",
-			expr: []spec.FunctionExprArg{spec.Literal("hi"), spec.Literal("hi"), spec.Literal("hi")},
+			expr: []spec.FuncExprArg{spec.Literal("hi"), spec.Literal("hi"), spec.Literal("hi")},
 			err:  "expected 2 arguments but found 3",
 		},
 		{
 			name: "logical_or_1",
-			expr: []spec.FunctionExprArg{&spec.LogicalOr{}, spec.Literal("hi")},
-			err:  "cannot convert argument 1 to PathNodes",
+			expr: []spec.FuncExprArg{&spec.LogicalOr{}, spec.Literal("hi")},
+			err:  "cannot convert argument 1 to Value",
 		},
 		{
 			name: "logical_or_2",
-			expr: []spec.FunctionExprArg{spec.Literal("hi"), spec.LogicalOr{}},
-			err:  "cannot convert argument 2 to PathNodes",
+			expr: []spec.FuncExprArg{spec.Literal("hi"), spec.LogicalOr{}},
+			err:  "cannot convert argument 2 to Value",
 		},
 		{
 			name: "singular_query_literal",
-			expr: []spec.FunctionExprArg{&spec.SingularQueryExpr{}, spec.Literal("hi")},
+			expr: []spec.FuncExprArg{&spec.SingularQueryExpr{}, spec.Literal("hi")},
 		},
 		{
 			name: "literal_singular_query",
-			expr: []spec.FunctionExprArg{spec.Literal("hi"), &spec.SingularQueryExpr{}},
+			expr: []spec.FuncExprArg{spec.Literal("hi"), &spec.SingularQueryExpr{}},
 		},
 		{
-			name: "filter_query_1",
-			expr: []spec.FunctionExprArg{
-				spec.FilterQuery(spec.Query(true, []*spec.Segment{spec.Child(spec.Name("x"))})),
+			name: "nodes_query_1",
+			expr: []spec.FuncExprArg{
+				spec.NodesQuery(spec.Query(true, spec.Child(spec.Name("x")))),
 				spec.Literal("hi"),
 			},
 		},
 		{
-			name: "filter_query_2",
-			expr: []spec.FunctionExprArg{
+			name: "nodes_query_2",
+			expr: []spec.FuncExprArg{
 				spec.Literal("hi"),
-				spec.FilterQuery(spec.Query(true, []*spec.Segment{spec.Child(spec.Name("x"))})),
+				spec.NodesQuery(spec.Query(true, spec.Child(spec.Name("x")))),
 			},
 		},
 		{
-			name: "function_expr_1",
-			expr: []spec.FunctionExprArg{
-				spec.Function(reg.Get("match"),
-					[]spec.FunctionExprArg{
-						spec.FilterQuery(
-							spec.Query(true, []*spec.Segment{spec.Child(spec.Name("x"))}),
-						),
-						spec.Literal("hi"),
-					},
+			name: "func_expr_1",
+			expr: []spec.FuncExprArg{
+				spec.Function(
+					reg.Get("match"),
+					spec.NodesQuery(spec.Query(true, spec.Child(spec.Name("x")))),
+					spec.Literal("hi"),
 				),
 				spec.Literal("hi"),
 			},
-			err: "cannot convert argument 1 to PathNodes",
+			err: "cannot convert argument 1 to Value",
 		},
 		{
-			name: "function_expr_2",
-			expr: []spec.FunctionExprArg{
+			name: "func_expr_2",
+			expr: []spec.FuncExprArg{
 				spec.Literal("hi"),
-				spec.Function(reg.Get("match"),
-					[]spec.FunctionExprArg{
-						spec.FilterQuery(
-							spec.Query(true, []*spec.Segment{spec.Child(spec.Name("x"))}),
-						),
-						spec.Literal("hi"),
-					},
+				spec.Function(
+					reg.Get("match"),
+					spec.NodesQuery(spec.Query(true, spec.Child(spec.Name("x")))),
+					spec.Literal("hi"),
 				),
 			},
-			err: "cannot convert argument 2 to PathNodes",
+			err: "cannot convert argument 2 to Value",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -336,9 +328,9 @@ func TestCountFunc(t *testing.T) {
 		exp  int
 		err  string
 	}{
-		{"empty", []spec.JSONPathValue{spec.NodesType([]any{})}, 0, ""},
-		{"one", []spec.JSONPathValue{spec.NodesType([]any{1})}, 1, ""},
-		{"three", []spec.JSONPathValue{spec.NodesType([]any{1, true, nil})}, 3, ""},
+		{"empty", []spec.JSONPathValue{spec.Nodes()}, 0, ""},
+		{"one", []spec.JSONPathValue{spec.Nodes(1)}, 1, ""},
+		{"three", []spec.JSONPathValue{spec.Nodes(1, true, nil)}, 3, ""},
 		{"not_nodes", []spec.JSONPathValue{spec.LogicalTrue}, 0, "unexpected argument of type spec.LogicalType"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -367,11 +359,11 @@ func TestValueFunc(t *testing.T) {
 		exp  spec.JSONPathValue
 		err  string
 	}{
-		{"empty", []spec.JSONPathValue{spec.NodesType([]any{})}, nil, ""},
-		{"one_int", []spec.JSONPathValue{spec.NodesType([]any{1})}, spec.Value(1), ""},
-		{"one_null", []spec.JSONPathValue{spec.NodesType([]any{nil})}, spec.Value(nil), ""},
-		{"one_string", []spec.JSONPathValue{spec.NodesType([]any{"x"})}, spec.Value("x"), ""},
-		{"three", []spec.JSONPathValue{spec.NodesType([]any{1, true, nil})}, nil, ""},
+		{"empty", []spec.JSONPathValue{spec.Nodes()}, nil, ""},
+		{"one_int", []spec.JSONPathValue{spec.Nodes(1)}, spec.Value(1), ""},
+		{"one_null", []spec.JSONPathValue{spec.Nodes(nil)}, spec.Value(nil), ""},
+		{"one_string", []spec.JSONPathValue{spec.Nodes("x")}, spec.Value("x"), ""},
+		{"three", []spec.JSONPathValue{spec.Nodes(1, true, nil)}, nil, ""},
 		{"not_nodes", []spec.JSONPathValue{spec.LogicalFalse}, nil, "unexpected argument of type spec.LogicalType"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -473,7 +465,7 @@ func TestExecRegexFuncs(t *testing.T) {
 		},
 		{
 			name: "first_not_value",
-			vals: []spec.JSONPathValue{spec.NodesType{}, spec.Value("x")},
+			vals: []spec.JSONPathValue{spec.Nodes(), spec.Value("x")},
 			err:  "unexpected argument of type spec.NodesType",
 		},
 		{

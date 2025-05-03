@@ -35,7 +35,7 @@ func TestQueryRoot(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			q := Query(false, nil)
+			q := Query(false)
 			a.Equal([]any{tc.val}, q.Select(tc.val, nil))
 		})
 	}
@@ -83,9 +83,9 @@ func TestQueryString(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			q := Query(false, tc.segs)
+			q := Query(false, tc.segs...)
 			a.Equal("@"+tc.str, q.String())
-			q = Query(true, tc.segs)
+			q = Query(true, tc.segs...)
 			a.Equal("$"+tc.str, q.String())
 		})
 	}
@@ -102,7 +102,7 @@ type queryTestCase struct {
 
 func (tc queryTestCase) run(a *assert.Assertions) {
 	// Set up Query.
-	q := Query(false, tc.segs)
+	q := Query(false, tc.segs...)
 	a.Equal(tc.segs, q.Segments())
 	a.False(q.root)
 
@@ -135,7 +135,7 @@ func TestQueryObject(t *testing.T) {
 			input: map[string]any{"x": true, "y": []any{1, 2}},
 			exp:   []any{true},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("x")}, Node: true},
+				{Path: Normalized(Name("x")), Node: true},
 			},
 		},
 		{
@@ -144,7 +144,7 @@ func TestQueryObject(t *testing.T) {
 			input: map[string]any{"x": true, "y": []any{1, 2}},
 			exp:   []any{[]any{1, 2}},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("y")}, Node: []any{1, 2}},
+				{Path: Normalized(Name("y")), Node: []any{1, 2}},
 			},
 		},
 		{
@@ -153,7 +153,7 @@ func TestQueryObject(t *testing.T) {
 			input: map[string]any{"x": true, "y": map[string]any{"a": 1}},
 			exp:   []any{map[string]any{"a": 1}},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("y")}, Node: map[string]any{"a": 1}},
+				{Path: Normalized(Name("y")), Node: map[string]any{"a": 1}},
 			},
 		},
 		{
@@ -162,8 +162,8 @@ func TestQueryObject(t *testing.T) {
 			input: map[string]any{"x": true, "y": []any{1, 2}, "z": "hi"},
 			exp:   []any{true, []any{1, 2}},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("x")}, Node: true},
-				{Path: NormalizedPath{Name("y")}, Node: []any{1, 2}},
+				{Path: Normalized(Name("x")), Node: true},
+				{Path: Normalized(Name("y")), Node: []any{1, 2}},
 			},
 			rand: true,
 		},
@@ -186,7 +186,7 @@ func TestQueryObject(t *testing.T) {
 			},
 			exp: []any{[]any{1, 2}},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("x"), Name("a"), Name("i")}, Node: []any{1, 2}},
+				{Path: Normalized(Name("x"), Name("a"), Name("i")), Node: []any{1, 2}},
 			},
 		},
 		{
@@ -201,10 +201,10 @@ func TestQueryObject(t *testing.T) {
 			},
 			exp: []any{"go", 2, 2, 3},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("x"), Name("a")}, Node: "go"},
-				{Path: NormalizedPath{Name("x"), Name("b")}, Node: 2},
-				{Path: NormalizedPath{Name("y"), Name("a")}, Node: 2},
-				{Path: NormalizedPath{Name("y"), Name("b")}, Node: 3},
+				{Path: Normalized(Name("x"), Name("a")), Node: "go"},
+				{Path: Normalized(Name("x"), Name("b")), Node: 2},
+				{Path: Normalized(Name("y"), Name("a")), Node: 2},
+				{Path: Normalized(Name("y"), Name("b")), Node: 3},
 			},
 			rand: true,
 		},
@@ -220,10 +220,10 @@ func TestQueryObject(t *testing.T) {
 			},
 			exp: []any{"a", "go", "a", 2},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("x"), Index(0)}, Node: "a"},
-				{Path: NormalizedPath{Name("x"), Index(1)}, Node: "go"},
-				{Path: NormalizedPath{Name("y"), Index(0)}, Node: "a"},
-				{Path: NormalizedPath{Name("y"), Index(1)}, Node: 2},
+				{Path: Normalized(Name("x"), Index(0)), Node: "a"},
+				{Path: Normalized(Name("x"), Index(1)), Node: "go"},
+				{Path: Normalized(Name("y"), Index(0)), Node: "a"},
+				{Path: Normalized(Name("y"), Index(1)), Node: 2},
 			},
 			rand: true,
 		},
@@ -236,7 +236,7 @@ func TestQueryObject(t *testing.T) {
 			},
 			exp: []any{"go"},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("x"), Index(1)}, Node: "go"},
+				{Path: Normalized(Name("x"), Index(1)), Node: "go"},
 			},
 		},
 		{
@@ -293,21 +293,21 @@ func TestQueryArray(t *testing.T) {
 			segs:  []*Segment{Child(Index(0))},
 			input: []any{"x", true, "y", []any{1, 2}},
 			exp:   []any{"x"},
-			loc:   []*LocatedNode{{Path: NormalizedPath{Index(0)}, Node: "x"}},
+			loc:   []*LocatedNode{{Path: Normalized(Index(0)), Node: "x"}},
 		},
 		{
 			name:  "index_one",
 			segs:  []*Segment{Child(Index(1))},
 			input: []any{"x", true, "y", []any{1, 2}},
 			exp:   []any{true},
-			loc:   []*LocatedNode{{Path: NormalizedPath{Index(1)}, Node: true}},
+			loc:   []*LocatedNode{{Path: Normalized(Index(1)), Node: true}},
 		},
 		{
 			name:  "index_three",
 			segs:  []*Segment{Child(Index(3))},
 			input: []any{"x", true, "y", []any{1, 2}},
 			exp:   []any{[]any{1, 2}},
-			loc:   []*LocatedNode{{Path: NormalizedPath{Index(3)}, Node: []any{1, 2}}},
+			loc:   []*LocatedNode{{Path: Normalized(Index(3)), Node: []any{1, 2}}},
 		},
 		{
 			name:  "multiple_indexes",
@@ -315,8 +315,8 @@ func TestQueryArray(t *testing.T) {
 			input: []any{"x", true, "y", []any{1, 2}},
 			exp:   []any{true, []any{1, 2}},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(1)}, Node: true},
-				{Path: NormalizedPath{Index(3)}, Node: []any{1, 2}},
+				{Path: Normalized(Index(1)), Node: true},
+				{Path: Normalized(Index(3)), Node: []any{1, 2}},
 			},
 		},
 		{
@@ -325,7 +325,7 @@ func TestQueryArray(t *testing.T) {
 			input: []any{[]any{1, 2}, "x", true, "y"},
 			exp:   []any{1},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Index(0)}, Node: 1},
+				{Path: Normalized(Index(0), Index(0)), Node: 1},
 			},
 		},
 		{
@@ -334,8 +334,8 @@ func TestQueryArray(t *testing.T) {
 			input: []any{[]any{1, 2, 3}, "x", true, "y"},
 			exp:   []any{1, 2},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Index(0)}, Node: 1},
-				{Path: NormalizedPath{Index(0), Index(1)}, Node: 2},
+				{Path: Normalized(Index(0), Index(0)), Node: 1},
+				{Path: Normalized(Index(0), Index(1)), Node: 2},
 			},
 		},
 		{
@@ -344,7 +344,7 @@ func TestQueryArray(t *testing.T) {
 			input: []any{"x", []any{1, 2}, true, "y"},
 			exp:   []any{2},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(1), Index(1)}, Node: 2},
+				{Path: Normalized(Index(1), Index(1)), Node: 2},
 			},
 		},
 		{
@@ -357,7 +357,7 @@ func TestQueryArray(t *testing.T) {
 			input: []any{[]any{[]any{42, 12}, 2}, "x", true, "y"},
 			exp:   []any{42},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Index(0), Index(0)}, Node: 42},
+				{Path: Normalized(Index(0), Index(0), Index(0)), Node: 42},
 			},
 		},
 		{
@@ -374,9 +374,9 @@ func TestQueryArray(t *testing.T) {
 			},
 			exp: []any{2, "hi", 1},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Index(1)}, Node: 2},
-				{Path: NormalizedPath{Index(3), Name("y")}, Node: "hi"},
-				{Path: NormalizedPath{Index(3), Name("z")}, Node: 1},
+				{Path: Normalized(Index(0), Index(1)), Node: 2},
+				{Path: Normalized(Index(3), Name("y")), Node: "hi"},
+				{Path: Normalized(Index(3), Name("z")), Node: 1},
 			},
 			rand: true,
 		},
@@ -386,12 +386,12 @@ func TestQueryArray(t *testing.T) {
 			input: []any{[]any{1, 2, 3}, []any{3, 2, 1}, []any{4, 5, 6}},
 			exp:   []any{1, 3, 3, 1, 4, 6},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Index(0)}, Node: 1},
-				{Path: NormalizedPath{Index(0), Index(2)}, Node: 3},
-				{Path: NormalizedPath{Index(1), Index(0)}, Node: 3},
-				{Path: NormalizedPath{Index(1), Index(2)}, Node: 1},
-				{Path: NormalizedPath{Index(2), Index(0)}, Node: 4},
-				{Path: NormalizedPath{Index(2), Index(2)}, Node: 6},
+				{Path: Normalized(Index(0), Index(0)), Node: 1},
+				{Path: Normalized(Index(0), Index(2)), Node: 3},
+				{Path: Normalized(Index(1), Index(0)), Node: 3},
+				{Path: Normalized(Index(1), Index(2)), Node: 1},
+				{Path: Normalized(Index(2), Index(0)), Node: 4},
+				{Path: Normalized(Index(2), Index(2)), Node: 6},
 			},
 		},
 		{
@@ -407,7 +407,7 @@ func TestQueryArray(t *testing.T) {
 			input: []any{[]any{0, 1, 2, 3}, []any{0, 1, 2}},
 			exp:   []any{3},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Index(3)}, Node: 3},
+				{Path: Normalized(Index(0), Index(3)), Node: 3},
 			},
 		},
 		{
@@ -445,15 +445,15 @@ func TestQueryArray(t *testing.T) {
 			},
 			exp: []any{"hi", "go", "bo", 42, true, 21, 53, "bo", 42},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Name("x")}, Node: "hi"},
-				{Path: NormalizedPath{Index(0), Name("y")}, Node: "go"},
-				{Path: NormalizedPath{Index(1), Name("x")}, Node: "bo"},
-				{Path: NormalizedPath{Index(1), Name("y")}, Node: 42},
-				{Path: NormalizedPath{Index(2), Name("x")}, Node: true},
-				{Path: NormalizedPath{Index(2), Name("y")}, Node: 21},
-				{Path: NormalizedPath{Index(3), Index(1)}, Node: 53},
-				{Path: NormalizedPath{Index(1), Name("x")}, Node: "bo"},
-				{Path: NormalizedPath{Index(1), Name("y")}, Node: 42},
+				{Path: Normalized(Index(0), Name("x")), Node: "hi"},
+				{Path: Normalized(Index(0), Name("y")), Node: "go"},
+				{Path: Normalized(Index(1), Name("x")), Node: "bo"},
+				{Path: Normalized(Index(1), Name("y")), Node: 42},
+				{Path: Normalized(Index(2), Name("x")), Node: true},
+				{Path: Normalized(Index(2), Name("y")), Node: 21},
+				{Path: Normalized(Index(3), Index(1)), Node: 53},
+				{Path: Normalized(Index(1), Name("x")), Node: "bo"},
+				{Path: Normalized(Index(1), Name("y")), Node: 42},
 			},
 			rand: true,
 		},
@@ -470,10 +470,10 @@ func TestQueryArray(t *testing.T) {
 			},
 			exp: []any{"hi", "bo", true, "bo"},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Name("x")}, Node: "hi"},
-				{Path: NormalizedPath{Index(1), Name("x")}, Node: "bo"},
-				{Path: NormalizedPath{Index(2), Name("x")}, Node: true},
-				{Path: NormalizedPath{Index(1), Name("x")}, Node: "bo"},
+				{Path: Normalized(Index(0), Name("x")), Node: "hi"},
+				{Path: Normalized(Index(1), Name("x")), Node: "bo"},
+				{Path: Normalized(Index(2), Name("x")), Node: true},
+				{Path: Normalized(Index(1), Name("x")), Node: "bo"},
 			},
 		},
 		{
@@ -489,14 +489,14 @@ func TestQueryArray(t *testing.T) {
 			},
 			exp: []any{"x", "hi", "x", "bo", "x", true, "x", "bo"},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Index(0)}, Node: "x"},
-				{Path: NormalizedPath{Index(0), Index(1)}, Node: "hi"},
-				{Path: NormalizedPath{Index(1), Index(0)}, Node: "x"},
-				{Path: NormalizedPath{Index(1), Index(1)}, Node: "bo"},
-				{Path: NormalizedPath{Index(2), Index(0)}, Node: "x"},
-				{Path: NormalizedPath{Index(2), Index(1)}, Node: true},
-				{Path: NormalizedPath{Index(1), Index(0)}, Node: "x"},
-				{Path: NormalizedPath{Index(1), Index(1)}, Node: "bo"},
+				{Path: Normalized(Index(0), Index(0)), Node: "x"},
+				{Path: Normalized(Index(0), Index(1)), Node: "hi"},
+				{Path: Normalized(Index(1), Index(0)), Node: "x"},
+				{Path: Normalized(Index(1), Index(1)), Node: "bo"},
+				{Path: Normalized(Index(2), Index(0)), Node: "x"},
+				{Path: Normalized(Index(2), Index(1)), Node: true},
+				{Path: Normalized(Index(1), Index(0)), Node: "x"},
+				{Path: Normalized(Index(1), Index(1)), Node: "bo"},
 			},
 		},
 		{
@@ -512,10 +512,10 @@ func TestQueryArray(t *testing.T) {
 			},
 			exp: []any{"x", "x", "x", "x"},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Index(0)}, Node: "x"},
-				{Path: NormalizedPath{Index(1), Index(0)}, Node: "x"},
-				{Path: NormalizedPath{Index(2), Index(0)}, Node: "x"},
-				{Path: NormalizedPath{Index(1), Index(0)}, Node: "x"},
+				{Path: Normalized(Index(0), Index(0)), Node: "x"},
+				{Path: Normalized(Index(1), Index(0)), Node: "x"},
+				{Path: Normalized(Index(2), Index(0)), Node: "x"},
+				{Path: Normalized(Index(1), Index(0)), Node: "x"},
 			},
 		},
 		{
@@ -527,7 +527,7 @@ func TestQueryArray(t *testing.T) {
 			},
 			exp: []any{1},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Name("a")}, Node: 1},
+				{Path: Normalized(Index(0), Name("a")), Node: 1},
 			},
 		},
 		{
@@ -541,8 +541,8 @@ func TestQueryArray(t *testing.T) {
 			},
 			exp: []any{1, 5},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Name("a")}, Node: 1},
-				{Path: NormalizedPath{Index(2), Name("a")}, Node: 5},
+				{Path: Normalized(Index(0), Name("a")), Node: 1},
+				{Path: Normalized(Index(2), Name("a")), Node: 5},
 			},
 		},
 		{
@@ -563,7 +563,7 @@ func TestQueryArray(t *testing.T) {
 			},
 			exp: []any{1},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Name("x"), Name("a")}, Node: 1},
+				{Path: Normalized(Index(0), Name("x"), Name("a")), Node: 1},
 			},
 		},
 		{
@@ -584,7 +584,7 @@ func TestQueryArray(t *testing.T) {
 			},
 			exp: []any{2},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Name("x"), Index(1)}, Node: 2},
+				{Path: Normalized(Index(0), Name("x"), Index(1)), Node: 2},
 			},
 		},
 	} {
@@ -606,8 +606,8 @@ func TestQuerySlice(t *testing.T) {
 			input: []any{"x", true, "y", []any{1, 2}},
 			exp:   []any{"x", true},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0)}, Node: "x"},
-				{Path: NormalizedPath{Index(1)}, Node: true},
+				{Path: Normalized(Index(0)), Node: "x"},
+				{Path: Normalized(Index(1)), Node: true},
 			},
 		},
 		{
@@ -615,7 +615,7 @@ func TestQuerySlice(t *testing.T) {
 			segs:  []*Segment{Child(Slice(0, 1))},
 			input: []any{"x", true, "y", []any{1, 2}},
 			exp:   []any{"x"},
-			loc:   []*LocatedNode{{Path: NormalizedPath{Index(0)}, Node: "x"}},
+			loc:   []*LocatedNode{{Path: Normalized(Index(0)), Node: "x"}},
 		},
 		{
 			name:  "slice_2_5",
@@ -623,9 +623,9 @@ func TestQuerySlice(t *testing.T) {
 			input: []any{"x", true, "y", []any{1, 2}, 42, nil, 78},
 			exp:   []any{"y", []any{1, 2}, 42},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(2)}, Node: "y"},
-				{Path: NormalizedPath{Index(3)}, Node: []any{1, 2}},
-				{Path: NormalizedPath{Index(4)}, Node: 42},
+				{Path: Normalized(Index(2)), Node: "y"},
+				{Path: Normalized(Index(3)), Node: []any{1, 2}},
+				{Path: Normalized(Index(4)), Node: 42},
 			},
 		},
 		{
@@ -634,7 +634,7 @@ func TestQuerySlice(t *testing.T) {
 			input: []any{"x", true, "y"},
 			exp:   []any{"y"},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(2)}, Node: "y"},
+				{Path: Normalized(Index(2)), Node: "y"},
 			},
 		},
 		{
@@ -643,13 +643,13 @@ func TestQuerySlice(t *testing.T) {
 			input: []any{"x", true, "y", []any{1, 2}, 42, nil, 78},
 			exp:   []any{"x", true, "y", []any{1, 2}, 42, nil, 78},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0)}, Node: "x"},
-				{Path: NormalizedPath{Index(1)}, Node: true},
-				{Path: NormalizedPath{Index(2)}, Node: "y"},
-				{Path: NormalizedPath{Index(3)}, Node: []any{1, 2}},
-				{Path: NormalizedPath{Index(4)}, Node: 42},
-				{Path: NormalizedPath{Index(5)}, Node: nil},
-				{Path: NormalizedPath{Index(6)}, Node: 78},
+				{Path: Normalized(Index(0)), Node: "x"},
+				{Path: Normalized(Index(1)), Node: true},
+				{Path: Normalized(Index(2)), Node: "y"},
+				{Path: Normalized(Index(3)), Node: []any{1, 2}},
+				{Path: Normalized(Index(4)), Node: 42},
+				{Path: Normalized(Index(5)), Node: nil},
+				{Path: Normalized(Index(6)), Node: 78},
 			},
 		},
 		{
@@ -658,8 +658,8 @@ func TestQuerySlice(t *testing.T) {
 			input: []any{"x", true, "y", []any{1, 2}, 42, nil, 78},
 			exp:   []any{"x", true},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0)}, Node: "x"},
-				{Path: NormalizedPath{Index(1)}, Node: true},
+				{Path: Normalized(Index(0)), Node: "x"},
+				{Path: Normalized(Index(1)), Node: true},
 			},
 		},
 		{
@@ -668,11 +668,11 @@ func TestQuerySlice(t *testing.T) {
 			input: []any{"x", true, "y", []any{1, 2}, 42, nil, 78},
 			exp:   []any{"y", []any{1, 2}, 42, nil, 78},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(2)}, Node: "y"},
-				{Path: NormalizedPath{Index(3)}, Node: []any{1, 2}},
-				{Path: NormalizedPath{Index(4)}, Node: 42},
-				{Path: NormalizedPath{Index(5)}, Node: nil},
-				{Path: NormalizedPath{Index(6)}, Node: 78},
+				{Path: Normalized(Index(2)), Node: "y"},
+				{Path: Normalized(Index(3)), Node: []any{1, 2}},
+				{Path: Normalized(Index(4)), Node: 42},
+				{Path: Normalized(Index(5)), Node: nil},
+				{Path: Normalized(Index(6)), Node: 78},
 			},
 		},
 		{
@@ -681,10 +681,10 @@ func TestQuerySlice(t *testing.T) {
 			input: []any{"x", true, "y", []any{1, 2}, 42, nil, 78},
 			exp:   []any{"x", "y", 42, 78},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0)}, Node: "x"},
-				{Path: NormalizedPath{Index(2)}, Node: "y"},
-				{Path: NormalizedPath{Index(4)}, Node: 42},
-				{Path: NormalizedPath{Index(6)}, Node: 78},
+				{Path: Normalized(Index(0)), Node: "x"},
+				{Path: Normalized(Index(2)), Node: "y"},
+				{Path: Normalized(Index(4)), Node: 42},
+				{Path: Normalized(Index(6)), Node: 78},
 			},
 		},
 		{
@@ -693,9 +693,9 @@ func TestQuerySlice(t *testing.T) {
 			input: []any{"x", true, "y", []any{1, 2}, 42, nil, 78},
 			exp:   []any{"x", []any{1, 2}, 78},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0)}, Node: "x"},
-				{Path: NormalizedPath{Index(3)}, Node: []any{1, 2}},
-				{Path: NormalizedPath{Index(6)}, Node: 78},
+				{Path: Normalized(Index(0)), Node: "x"},
+				{Path: Normalized(Index(3)), Node: []any{1, 2}},
+				{Path: Normalized(Index(6)), Node: 78},
 			},
 		},
 		{
@@ -704,8 +704,8 @@ func TestQuerySlice(t *testing.T) {
 			input: []any{"x", true, "y", []any{1, 2}, 42, nil, 78},
 			exp:   []any{"x", []any{1, 2}},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0)}, Node: "x"},
-				{Path: NormalizedPath{Index(3)}, Node: []any{1, 2}},
+				{Path: Normalized(Index(0)), Node: "x"},
+				{Path: Normalized(Index(3)), Node: []any{1, 2}},
 			},
 		},
 		{
@@ -714,11 +714,11 @@ func TestQuerySlice(t *testing.T) {
 			input: []any{"x", true, "y", []any{1, 2}, 42, nil, 78},
 			exp:   []any{"x", true, "y", "y", []any{1, 2}},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0)}, Node: "x"},
-				{Path: NormalizedPath{Index(1)}, Node: true},
-				{Path: NormalizedPath{Index(2)}, Node: "y"},
-				{Path: NormalizedPath{Index(2)}, Node: "y"},
-				{Path: NormalizedPath{Index(3)}, Node: []any{1, 2}},
+				{Path: Normalized(Index(0)), Node: "x"},
+				{Path: Normalized(Index(1)), Node: true},
+				{Path: Normalized(Index(2)), Node: "y"},
+				{Path: Normalized(Index(2)), Node: "y"},
+				{Path: Normalized(Index(3)), Node: []any{1, 2}},
 			},
 		},
 		{
@@ -732,8 +732,8 @@ func TestQuerySlice(t *testing.T) {
 			},
 			exp: []any{42, "on"},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Index(1)}, Node: 42},
-				{Path: NormalizedPath{Index(1), Index(1)}, Node: "on"},
+				{Path: Normalized(Index(0), Index(1)), Node: 42},
+				{Path: Normalized(Index(1), Index(1)), Node: "on"},
 			},
 		},
 		{
@@ -750,12 +750,12 @@ func TestQuerySlice(t *testing.T) {
 			},
 			exp: []any{42, 64, []any{}, "on", 88, []any{1}},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Index(1)}, Node: 42},
-				{Path: NormalizedPath{Index(0), Index(3)}, Node: 64},
-				{Path: NormalizedPath{Index(0), Index(4)}, Node: []any{}},
-				{Path: NormalizedPath{Index(1), Index(1)}, Node: "on"},
-				{Path: NormalizedPath{Index(1), Index(3)}, Node: 88},
-				{Path: NormalizedPath{Index(1), Index(4)}, Node: []any{1}},
+				{Path: Normalized(Index(0), Index(1)), Node: 42},
+				{Path: Normalized(Index(0), Index(3)), Node: 64},
+				{Path: Normalized(Index(0), Index(4)), Node: []any{}},
+				{Path: Normalized(Index(1), Index(1)), Node: "on"},
+				{Path: Normalized(Index(1), Index(3)), Node: 88},
+				{Path: Normalized(Index(1), Index(4)), Node: []any{1}},
 			},
 		},
 		{
@@ -772,8 +772,8 @@ func TestQuerySlice(t *testing.T) {
 			},
 			exp: []any{42, 16},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Index(0), Index(0)}, Node: 42},
-				{Path: NormalizedPath{Index(1), Index(0), Index(0)}, Node: 16},
+				{Path: Normalized(Index(0), Index(0), Index(0)), Node: 42},
+				{Path: Normalized(Index(1), Index(0), Index(0)), Node: 16},
 			},
 		},
 		{
@@ -792,9 +792,9 @@ func TestQuerySlice(t *testing.T) {
 			},
 			exp: []any{42, "hi", 1},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Index(0), Index(0)}, Node: 42},
-				{Path: NormalizedPath{Index(2), Index(0), Name("y")}, Node: "hi"},
-				{Path: NormalizedPath{Index(2), Index(0), Name("z")}, Node: 1},
+				{Path: Normalized(Index(0), Index(0), Index(0)), Node: 42},
+				{Path: Normalized(Index(2), Index(0), Name("y")), Node: "hi"},
+				{Path: Normalized(Index(2), Index(0), Name("z")), Node: 1},
 			},
 		},
 		{
@@ -810,15 +810,15 @@ func TestQuerySlice(t *testing.T) {
 			},
 			exp: []any{1, 2, 4, 3, 2, 0, 4, 5, 7},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Index(0)}, Node: 1},
-				{Path: NormalizedPath{Index(0), Index(1)}, Node: 2},
-				{Path: NormalizedPath{Index(0), Index(3)}, Node: 4},
-				{Path: NormalizedPath{Index(1), Index(0)}, Node: 3},
-				{Path: NormalizedPath{Index(1), Index(1)}, Node: 2},
-				{Path: NormalizedPath{Index(1), Index(3)}, Node: 0},
-				{Path: NormalizedPath{Index(2), Index(0)}, Node: 4},
-				{Path: NormalizedPath{Index(2), Index(1)}, Node: 5},
-				{Path: NormalizedPath{Index(2), Index(3)}, Node: 7},
+				{Path: Normalized(Index(0), Index(0)), Node: 1},
+				{Path: Normalized(Index(0), Index(1)), Node: 2},
+				{Path: Normalized(Index(0), Index(3)), Node: 4},
+				{Path: Normalized(Index(1), Index(0)), Node: 3},
+				{Path: Normalized(Index(1), Index(1)), Node: 2},
+				{Path: Normalized(Index(1), Index(3)), Node: 0},
+				{Path: Normalized(Index(2), Index(0)), Node: 4},
+				{Path: Normalized(Index(2), Index(1)), Node: 5},
+				{Path: Normalized(Index(2), Index(3)), Node: 7},
 			},
 		},
 		{
@@ -834,8 +834,8 @@ func TestQuerySlice(t *testing.T) {
 			input: []any{[]any{0, 1, 2, 3, 4}, []any{0, 1, 2}},
 			exp:   []any{3, 4},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Index(3)}, Node: 3},
-				{Path: NormalizedPath{Index(0), Index(4)}, Node: 4},
+				{Path: Normalized(Index(0), Index(3)), Node: 3},
+				{Path: Normalized(Index(0), Index(4)), Node: 4},
 			},
 		},
 		{
@@ -872,14 +872,14 @@ func TestQuerySlice(t *testing.T) {
 			},
 			exp: []any{"hi", "go", "bo", 42, true, 21, "bo", 42},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Name("x")}, Node: "hi"},
-				{Path: NormalizedPath{Index(0), Name("y")}, Node: "go"},
-				{Path: NormalizedPath{Index(1), Name("x")}, Node: "bo"},
-				{Path: NormalizedPath{Index(1), Name("y")}, Node: 42},
-				{Path: NormalizedPath{Index(2), Name("x")}, Node: true},
-				{Path: NormalizedPath{Index(2), Name("y")}, Node: 21},
-				{Path: NormalizedPath{Index(1), Name("x")}, Node: "bo"},
-				{Path: NormalizedPath{Index(1), Name("y")}, Node: 42},
+				{Path: Normalized(Index(0), Name("x")), Node: "hi"},
+				{Path: Normalized(Index(0), Name("y")), Node: "go"},
+				{Path: Normalized(Index(1), Name("x")), Node: "bo"},
+				{Path: Normalized(Index(1), Name("y")), Node: 42},
+				{Path: Normalized(Index(2), Name("x")), Node: true},
+				{Path: Normalized(Index(2), Name("y")), Node: 21},
+				{Path: Normalized(Index(1), Name("x")), Node: "bo"},
+				{Path: Normalized(Index(1), Name("y")), Node: 42},
 			},
 			rand: true,
 		},
@@ -896,10 +896,10 @@ func TestQuerySlice(t *testing.T) {
 			},
 			exp: []any{"hi", "bo", true, "bo"},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Name("x")}, Node: "hi"},
-				{Path: NormalizedPath{Index(1), Name("x")}, Node: "bo"},
-				{Path: NormalizedPath{Index(2), Name("x")}, Node: true},
-				{Path: NormalizedPath{Index(1), Name("x")}, Node: "bo"},
+				{Path: Normalized(Index(0), Name("x")), Node: "hi"},
+				{Path: Normalized(Index(1), Name("x")), Node: "bo"},
+				{Path: Normalized(Index(2), Name("x")), Node: true},
+				{Path: Normalized(Index(1), Name("x")), Node: "bo"},
 			},
 		},
 		{
@@ -915,14 +915,14 @@ func TestQuerySlice(t *testing.T) {
 			},
 			exp: []any{"x", "hi", "y", "bo", "z", true, "y", "bo"},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Index(0)}, Node: "x"},
-				{Path: NormalizedPath{Index(0), Index(1)}, Node: "hi"},
-				{Path: NormalizedPath{Index(1), Index(0)}, Node: "y"},
-				{Path: NormalizedPath{Index(1), Index(1)}, Node: "bo"},
-				{Path: NormalizedPath{Index(2), Index(0)}, Node: "z"},
-				{Path: NormalizedPath{Index(2), Index(1)}, Node: true},
-				{Path: NormalizedPath{Index(1), Index(0)}, Node: "y"},
-				{Path: NormalizedPath{Index(1), Index(1)}, Node: "bo"},
+				{Path: Normalized(Index(0), Index(0)), Node: "x"},
+				{Path: Normalized(Index(0), Index(1)), Node: "hi"},
+				{Path: Normalized(Index(1), Index(0)), Node: "y"},
+				{Path: Normalized(Index(1), Index(1)), Node: "bo"},
+				{Path: Normalized(Index(2), Index(0)), Node: "z"},
+				{Path: Normalized(Index(2), Index(1)), Node: true},
+				{Path: Normalized(Index(1), Index(0)), Node: "y"},
+				{Path: Normalized(Index(1), Index(1)), Node: "bo"},
 			},
 		},
 		{
@@ -938,10 +938,10 @@ func TestQuerySlice(t *testing.T) {
 			},
 			exp: []any{"x", "y", "z", "y"},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Index(0)}, Node: "x"},
-				{Path: NormalizedPath{Index(1), Index(0)}, Node: "y"},
-				{Path: NormalizedPath{Index(2), Index(0)}, Node: "z"},
-				{Path: NormalizedPath{Index(1), Index(0)}, Node: "y"},
+				{Path: Normalized(Index(0), Index(0)), Node: "x"},
+				{Path: Normalized(Index(1), Index(0)), Node: "y"},
+				{Path: Normalized(Index(2), Index(0)), Node: "z"},
+				{Path: Normalized(Index(1), Index(0)), Node: "y"},
 			},
 		},
 		{
@@ -953,7 +953,7 @@ func TestQuerySlice(t *testing.T) {
 			},
 			exp: []any{1},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Name("a")}, Node: 1},
+				{Path: Normalized(Index(0), Name("a")), Node: 1},
 			},
 		},
 		{
@@ -967,8 +967,8 @@ func TestQuerySlice(t *testing.T) {
 			},
 			exp: []any{1, 5},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Name("a")}, Node: 1},
-				{Path: NormalizedPath{Index(2), Name("a")}, Node: 5},
+				{Path: Normalized(Index(0), Name("a")), Node: 1},
+				{Path: Normalized(Index(2), Name("a")), Node: 5},
 			},
 		},
 		{
@@ -989,7 +989,7 @@ func TestQuerySlice(t *testing.T) {
 			},
 			exp: []any{1},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Name("x"), Name("a")}, Node: 1},
+				{Path: Normalized(Index(0), Name("x"), Name("a")), Node: 1},
 			},
 		},
 		{
@@ -1010,7 +1010,7 @@ func TestQuerySlice(t *testing.T) {
 			},
 			exp: []any{2},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Name("x"), Index(1)}, Node: 2},
+				{Path: Normalized(Index(0), Name("x"), Index(1)), Node: 2},
 			},
 		},
 		{
@@ -1019,10 +1019,10 @@ func TestQuerySlice(t *testing.T) {
 			input: []any{"x", true, "y", []any{1, 2}},
 			exp:   []any{[]any{1, 2}, "y", true, "x"},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(3)}, Node: []any{1, 2}},
-				{Path: NormalizedPath{Index(2)}, Node: "y"},
-				{Path: NormalizedPath{Index(1)}, Node: true},
-				{Path: NormalizedPath{Index(0)}, Node: "x"},
+				{Path: Normalized(Index(3)), Node: []any{1, 2}},
+				{Path: Normalized(Index(2)), Node: "y"},
+				{Path: Normalized(Index(1)), Node: true},
+				{Path: Normalized(Index(0)), Node: "x"},
 			},
 		},
 		{
@@ -1031,9 +1031,9 @@ func TestQuerySlice(t *testing.T) {
 			input: []any{"x", true, "y", 8, 13, 25, 23, 78, 13},
 			exp:   []any{25, 8, true},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(5)}, Node: 25},
-				{Path: NormalizedPath{Index(3)}, Node: 8},
-				{Path: NormalizedPath{Index(1)}, Node: true},
+				{Path: Normalized(Index(5)), Node: 25},
+				{Path: Normalized(Index(3)), Node: 8},
+				{Path: Normalized(Index(1)), Node: true},
 			},
 		},
 		{
@@ -1050,11 +1050,11 @@ func TestQuerySlice(t *testing.T) {
 			},
 			exp: []any{false, 98.6, "on", true, 42},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(2), Index(2)}, Node: false},
-				{Path: NormalizedPath{Index(2), Index(1)}, Node: 98.6},
-				{Path: NormalizedPath{Index(1), Index(1)}, Node: "on"},
-				{Path: NormalizedPath{Index(0), Index(2)}, Node: true},
-				{Path: NormalizedPath{Index(0), Index(1)}, Node: 42},
+				{Path: Normalized(Index(2), Index(2)), Node: false},
+				{Path: Normalized(Index(2), Index(1)), Node: 98.6},
+				{Path: Normalized(Index(1), Index(1)), Node: "on"},
+				{Path: Normalized(Index(0), Index(2)), Node: true},
+				{Path: Normalized(Index(0), Index(1)), Node: 42},
 			},
 		},
 	} {
@@ -1080,8 +1080,8 @@ func TestQueryDescendants(t *testing.T) {
 			input: json,
 			exp:   []any{1, 4},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("o"), Name("j")}, Node: 1},
-				{Path: NormalizedPath{Name("a"), Index(2), Index(0), Name("j")}, Node: 4},
+				{Path: Normalized(Name("o"), Name("j")), Node: 1},
+				{Path: Normalized(Name("a"), Index(2), Index(0), Name("j")), Node: 4},
 			},
 			rand: true,
 		},
@@ -1091,7 +1091,7 @@ func TestQueryDescendants(t *testing.T) {
 			input: json,
 			exp:   []any{map[string]any{"j": 1, "k": 2}},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("o")}, Node: map[string]any{"j": 1, "k": 2}},
+				{Path: Normalized(Name("o")), Node: map[string]any{"j": 1, "k": 2}},
 			},
 		},
 		{
@@ -1100,7 +1100,7 @@ func TestQueryDescendants(t *testing.T) {
 			input: json,
 			exp:   []any{2},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("o"), Name("k")}, Node: 2},
+				{Path: Normalized(Name("o"), Name("k")), Node: 2},
 			},
 		},
 		{
@@ -1109,8 +1109,8 @@ func TestQueryDescendants(t *testing.T) {
 			input: json,
 			exp:   []any{1, 2},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("o"), Name("j")}, Node: 1},
-				{Path: NormalizedPath{Name("o"), Name("k")}, Node: 2},
+				{Path: Normalized(Name("o"), Name("j")), Node: 1},
+				{Path: Normalized(Name("o"), Name("k")), Node: 2},
 			},
 			rand: true,
 		},
@@ -1120,8 +1120,8 @@ func TestQueryDescendants(t *testing.T) {
 			input: json,
 			exp:   []any{5, map[string]any{"j": 4}},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("a"), Index(0)}, Node: 5},
-				{Path: NormalizedPath{Name("a"), Index(2), Index(0)}, Node: map[string]any{"j": 4}},
+				{Path: Normalized(Name("a"), Index(0)), Node: 5},
+				{Path: Normalized(Name("a"), Index(2), Index(0)), Node: map[string]any{"j": 4}},
 			},
 		},
 		{
@@ -1130,8 +1130,8 @@ func TestQueryDescendants(t *testing.T) {
 			input: json,
 			exp:   []any{5, map[string]any{"j": 4}},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("a"), Index(0)}, Node: 5},
-				{Path: NormalizedPath{Name("a"), Index(2), Index(0)}, Node: map[string]any{"j": 4}},
+				{Path: Normalized(Name("a"), Index(0)), Node: 5},
+				{Path: Normalized(Name("a"), Index(2), Index(0)), Node: map[string]any{"j": 4}},
 			},
 		},
 		{
@@ -1181,25 +1181,25 @@ func TestQueryDescendants(t *testing.T) {
 				},
 			},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("profile"), Name("name"), Name("last")}, Node: "Obama"},
+				{Path: Normalized(Name("profile"), Name("name"), Name("last")), Node: "Obama"},
 				{
-					Path: NormalizedPath{Name("profile"), Name("contacts"), Name("email"), Name("primary")},
+					Path: Normalized(Name("profile"), Name("contacts"), Name("email"), Name("primary")),
 					Node: "foo@example.com",
 				},
 				{
-					Path: NormalizedPath{Name("profile"), Name("contacts"), Name("email"), Name("secondary")},
+					Path: Normalized(Name("profile"), Name("contacts"), Name("email"), Name("secondary")),
 					Node: "2nd@example.net",
 				},
 				{
-					Path: NormalizedPath{Name("profile"), Name("contacts"), Name("phones"), Name("primary")},
+					Path: Normalized(Name("profile"), Name("contacts"), Name("phones"), Name("primary")),
 					Node: "123456789",
 				},
 				{
-					Path: NormalizedPath{Name("profile"), Name("contacts"), Name("phones"), Name("secondary")},
+					Path: Normalized(Name("profile"), Name("contacts"), Name("phones"), Name("secondary")),
 					Node: "987654321",
 				},
 				{
-					Path: NormalizedPath{Name("profile"), Name("contacts"), Name("addresses"), Name("primary")},
+					Path: Normalized(Name("profile"), Name("contacts"), Name("addresses"), Name("primary")),
 					Node: []any{
 						"123 Main Street",
 						"Whatever", "OR", "98754",
@@ -1214,7 +1214,7 @@ func TestQueryDescendants(t *testing.T) {
 			input: map[string]any{"o": map[string]any{"o": "hi", "k": 2}},
 			exp:   []any{2},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Name("o"), Name("k")}, Node: 2},
+				{Path: Normalized(Name("o"), Name("k")), Node: 2},
 			},
 		},
 		{
@@ -1223,7 +1223,7 @@ func TestQueryDescendants(t *testing.T) {
 			input: []any{[]any{42, 98}},
 			exp:   []any{98},
 			loc: []*LocatedNode{
-				{Path: NormalizedPath{Index(0), Index(1)}, Node: 98},
+				{Path: Normalized(Index(0), Index(1)), Node: 98},
 			},
 		},
 	} {
@@ -1241,12 +1241,12 @@ func TestQueryInputs(t *testing.T) {
 	y := map[string]any{"y": "y"}
 
 	// Test current.
-	q := Query(false, []*Segment{Child(Name("x"))})
+	q := Query(false, Child(Name("x")))
 	a.False(q.root)
 	a.Equal([]any{"x"}, q.Select(x, y))
 	a.Equal([]any{}, q.Select(y, x))
 	a.Equal(
-		[]*LocatedNode{{Path: NormalizedPath{Name("x")}, Node: "x"}},
+		[]*LocatedNode{{Path: Normalized(Name("x")), Node: "x"}},
 		q.SelectLocated(x, y, NormalizedPath{}),
 	)
 	a.Equal([]*LocatedNode{}, q.SelectLocated(y, x, NormalizedPath{}))
@@ -1257,7 +1257,7 @@ func TestQueryInputs(t *testing.T) {
 	a.Equal([]any{"x"}, q.Select(y, x))
 	a.Equal([]*LocatedNode{}, q.SelectLocated(x, y, NormalizedPath{}))
 	a.Equal(
-		[]*LocatedNode{{Path: NormalizedPath{Name("x")}, Node: "x"}},
+		[]*LocatedNode{{Path: Normalized(Name("x")), Node: "x"}},
 		q.SelectLocated(y, x, NormalizedPath{}),
 	)
 }
@@ -1273,33 +1273,33 @@ func TestSingularExpr(t *testing.T) {
 	}{
 		{
 			name:  "relative_singular",
-			query: Query(false, []*Segment{Child(Name("j"))}),
-			sing:  SingularQuery(false, []Selector{Name("j")}),
+			query: Query(false, Child(Name("j"))),
+			sing:  SingularQuery(false, Name("j")),
 		},
 		{
 			name:  "root_singular",
 			query: &PathQuery{segments: []*Segment{Child(Name("j")), Child(Index(0))}, root: true},
-			sing:  SingularQuery(true, []Selector{Name("j"), Index(0)}),
+			sing:  SingularQuery(true, Name("j"), Index(0)),
 		},
 		{
 			name:  "descendant",
-			query: Query(false, []*Segment{Descendant(Name("j"))}),
+			query: Query(false, Descendant(Name("j"))),
 		},
 		{
 			name:  "multi_selector",
-			query: Query(false, []*Segment{Child(Name("j"), Name("x"))}),
+			query: Query(false, Child(Name("j"), Name("x"))),
 		},
 		{
 			name:  "single_slice",
-			query: Query(false, []*Segment{Child(Slice())}),
+			query: Query(false, Child(Slice())),
 		},
 		{
 			name:  "wildcard",
-			query: Query(false, []*Segment{Child(Wildcard)}),
+			query: Query(false, Child(Wildcard)),
 		},
 		{
 			name:  "filter",
-			query: Query(false, []*Segment{Child(&FilterSelector{})}),
+			query: Query(false, Child(&FilterSelector{})),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -1307,7 +1307,7 @@ func TestSingularExpr(t *testing.T) {
 			if tc.sing == nil {
 				a.False(tc.query.isSingular())
 				a.Nil(tc.query.Singular())
-				a.Equal(FilterQuery(tc.query), tc.query.Expression())
+				a.Equal(NodesQuery(tc.query), tc.query.Expression())
 			} else {
 				a.True(tc.query.isSingular())
 				a.Equal(tc.sing, tc.query.Singular())
