@@ -3,7 +3,7 @@ Go RFC 9535 JSONPath Playground
 
 The source for the [Go JSONPath Playground], a stateless single-page web site
 for experimenting with the [Go RFC 9535 JSONPath] package. Compiled via
-[TinyGo] into a ca. 690 K (260 K compressed) [Wasm] file and loaded directly
+[TinyGo] into a ca. 723 K (265 K compressed) [Wasm] file and loaded directly
 into the page. All functionality implemented in JavaScript and Go, heavily
 borrowed from the [Goldmark Playground] and [serde_json_path Sandbox].
 
