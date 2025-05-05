@@ -116,14 +116,18 @@ func (lo LogicalOr) writeTo(buf *strings.Builder) {
 // evaluate evaluates lo and returns LogicalTrue when it returns true and
 // LogicalFalse when it returns false. Defined by the [FuncExprArg]
 // interface.
-func (lo LogicalOr) evaluate(current, root any) JSONPathValue {
-	return LogicalFrom(lo.testFilter(current, root))
+func (lo LogicalOr) evaluate(current, root any) PathValue {
+	return Logical(lo.testFilter(current, root))
 }
 
 // ResultType returns [FuncLogical]. Defined by the [FuncExprArg] interface.
 func (lo LogicalOr) ResultType() FuncType {
 	return FuncLogical
 }
+
+// ConvertsTo returns true if the result of the [LogicalOr] can be converted
+// to ft.
+func (LogicalOr) ConvertsTo(ft FuncType) bool { return ft == FuncLogical }
 
 // ParenExpr represents a parenthesized expression that groups the elements of
 // a [LogicalOr]. Interfaces implemented (via the underlying [LogicalOr]):

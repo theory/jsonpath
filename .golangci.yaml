@@ -35,7 +35,7 @@ linters:
         - empty
         - stdlib
         - generic
-        - spec\.JSONPathValue
+        - spec\.PathValue
         - spec\.FuncExprArg
         - spec\.Selector
         - spec\.BasicExpr

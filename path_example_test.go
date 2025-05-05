@@ -275,7 +275,7 @@ func validateFirstArgs(args []spec.FuncExprArg) error {
 		return fmt.Errorf("expected 1 argument but found %v", len(args))
 	}
 
-	if !args[0].ResultType().ConvertsToNodes() {
+	if !args[0].ConvertsTo(spec.FuncNodes) {
 		return errors.New("cannot convert argument to nodes")
 	}
 
@@ -285,7 +285,7 @@ func validateFirstArgs(args []spec.FuncExprArg) error {
 // firstFunc defines the custom first() JSONPath function. It converts its
 // single argument to a [spec.NodesType] value and returns a [spec.ValueType]
 // that contains the first node. If there are no nodes it returns nil.
-func firstFunc(jv []spec.JSONPathValue) spec.JSONPathValue {
+func firstFunc(jv []spec.PathValue) spec.PathValue {
 	nodes := spec.NodesFrom(jv[0])
 	if len(nodes) == 0 {
 		return nil

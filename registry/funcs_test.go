@@ -15,58 +15,58 @@ func TestLengthFunc(t *testing.T) {
 
 	for _, tc := range []struct {
 		name string
-		vals []spec.JSONPathValue
+		vals []spec.PathValue
 		exp  int
 		err  string
 	}{
 		{
 			name: "empty_string",
-			vals: []spec.JSONPathValue{spec.Value("")},
+			vals: []spec.PathValue{spec.Value("")},
 			exp:  0,
 		},
 		{
 			name: "ascii_string",
-			vals: []spec.JSONPathValue{spec.Value("abc def")},
+			vals: []spec.PathValue{spec.Value("abc def")},
 			exp:  7,
 		},
 		{
 			name: "unicode_string",
-			vals: []spec.JSONPathValue{spec.Value("foö")},
+			vals: []spec.PathValue{spec.Value("foö")},
 			exp:  3,
 		},
 		{
 			name: "emoji_string",
-			vals: []spec.JSONPathValue{spec.Value("Hi 👋🏻")},
+			vals: []spec.PathValue{spec.Value("Hi 👋🏻")},
 			exp:  5,
 		},
 		{
 			name: "empty_array",
-			vals: []spec.JSONPathValue{spec.Value([]any{})},
+			vals: []spec.PathValue{spec.Value([]any{})},
 			exp:  0,
 		},
 		{
 			name: "array",
-			vals: []spec.JSONPathValue{spec.Value([]any{1, 2, 3, 4, 5})},
+			vals: []spec.PathValue{spec.Value([]any{1, 2, 3, 4, 5})},
 			exp:  5,
 		},
 		{
 			name: "nested_array",
-			vals: []spec.JSONPathValue{spec.Value([]any{1, 2, 3, "x", []any{456, 67}, true})},
+			vals: []spec.PathValue{spec.Value([]any{1, 2, 3, "x", []any{456, 67}, true})},
 			exp:  6,
 		},
 		{
 			name: "empty_object",
-			vals: []spec.JSONPathValue{spec.Value(map[string]any{})},
+			vals: []spec.PathValue{spec.Value(map[string]any{})},
 			exp:  0,
 		},
 		{
 			name: "object",
-			vals: []spec.JSONPathValue{spec.Value(map[string]any{"x": 1, "y": 0, "z": 2})},
+			vals: []spec.PathValue{spec.Value(map[string]any{"x": 1, "y": 0, "z": 2})},
 			exp:  3,
 		},
 		{
 			name: "nested_object",
-			vals: []spec.JSONPathValue{spec.Value(map[string]any{
+			vals: []spec.PathValue{spec.Value(map[string]any{
 				"x": 1,
 				"y": 0,
 				"z": []any{1, 2},
@@ -76,28 +76,28 @@ func TestLengthFunc(t *testing.T) {
 		},
 		{
 			name: "integer",
-			vals: []spec.JSONPathValue{spec.Value(42)},
+			vals: []spec.PathValue{spec.Value(42)},
 			exp:  -1,
 		},
 		{
 			name: "bool",
-			vals: []spec.JSONPathValue{spec.Value(true)},
+			vals: []spec.PathValue{spec.Value(true)},
 			exp:  -1,
 		},
 		{
 			name: "null",
-			vals: []spec.JSONPathValue{spec.Value(nil)},
+			vals: []spec.PathValue{spec.Value(nil)},
 			exp:  -1,
 		},
 		{
 			name: "nil",
-			vals: []spec.JSONPathValue{nil},
+			vals: []spec.PathValue{nil},
 			exp:  -1,
 		},
 		{
 			name: "not_value",
-			vals: []spec.JSONPathValue{spec.LogicalFalse},
-			err:  "unexpected argument of type spec.LogicalType",
+			vals: []spec.PathValue{spec.LogicalFalse},
+			err:  "cannot convert LogicalType to ValueType",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -153,16 +153,14 @@ func TestCheckSingularFuncArgs(t *testing.T) {
 		},
 		{
 			name: "nodes_query",
-			expr: []spec.FuncExprArg{spec.NodesQuery(
+			expr: []spec.FuncExprArg{
 				spec.Query(true, spec.Child(spec.Name("x"))),
-			)},
+			},
 		},
 		{
 			name: "logical_func_expr",
 			expr: []spec.FuncExprArg{spec.Function(reg.Get("match"),
-				spec.NodesQuery(
-					spec.Query(true, spec.Child(spec.Name("x"))),
-				),
+				spec.Query(true, spec.Child(spec.Name("x"))),
 				spec.Literal("hi"),
 			)},
 			lengthErr: "cannot convert argument to Value",
@@ -261,7 +259,7 @@ func TestCheckRegexFuncArgs(t *testing.T) {
 		{
 			name: "nodes_query_1",
 			expr: []spec.FuncExprArg{
-				spec.NodesQuery(spec.Query(true, spec.Child(spec.Name("x")))),
+				spec.Query(true, spec.Child(spec.Name("x"))),
 				spec.Literal("hi"),
 			},
 		},
@@ -269,7 +267,7 @@ func TestCheckRegexFuncArgs(t *testing.T) {
 			name: "nodes_query_2",
 			expr: []spec.FuncExprArg{
 				spec.Literal("hi"),
-				spec.NodesQuery(spec.Query(true, spec.Child(spec.Name("x")))),
+				spec.Query(true, spec.Child(spec.Name("x"))),
 			},
 		},
 		{
@@ -277,7 +275,7 @@ func TestCheckRegexFuncArgs(t *testing.T) {
 			expr: []spec.FuncExprArg{
 				spec.Function(
 					reg.Get("match"),
-					spec.NodesQuery(spec.Query(true, spec.Child(spec.Name("x")))),
+					spec.Query(true, spec.Child(spec.Name("x"))),
 					spec.Literal("hi"),
 				),
 				spec.Literal("hi"),
@@ -290,7 +288,7 @@ func TestCheckRegexFuncArgs(t *testing.T) {
 				spec.Literal("hi"),
 				spec.Function(
 					reg.Get("match"),
-					spec.NodesQuery(spec.Query(true, spec.Child(spec.Name("x")))),
+					spec.Query(true, spec.Child(spec.Name("x"))),
 					spec.Literal("hi"),
 				),
 			},
@@ -324,14 +322,14 @@ func TestCountFunc(t *testing.T) {
 
 	for _, tc := range []struct {
 		name string
-		vals []spec.JSONPathValue
+		vals []spec.PathValue
 		exp  int
 		err  string
 	}{
-		{"empty", []spec.JSONPathValue{spec.Nodes()}, 0, ""},
-		{"one", []spec.JSONPathValue{spec.Nodes(1)}, 1, ""},
-		{"three", []spec.JSONPathValue{spec.Nodes(1, true, nil)}, 3, ""},
-		{"not_nodes", []spec.JSONPathValue{spec.LogicalTrue}, 0, "unexpected argument of type spec.LogicalType"},
+		{"empty", []spec.PathValue{spec.Nodes()}, 0, ""},
+		{"one", []spec.PathValue{spec.Nodes(1)}, 1, ""},
+		{"three", []spec.PathValue{spec.Nodes(1, true, nil)}, 3, ""},
+		{"not_nodes", []spec.PathValue{spec.LogicalTrue}, 0, "cannot convert LogicalType to NodesType"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -355,16 +353,16 @@ func TestValueFunc(t *testing.T) {
 
 	for _, tc := range []struct {
 		name string
-		vals []spec.JSONPathValue
-		exp  spec.JSONPathValue
+		vals []spec.PathValue
+		exp  spec.PathValue
 		err  string
 	}{
-		{"empty", []spec.JSONPathValue{spec.Nodes()}, nil, ""},
-		{"one_int", []spec.JSONPathValue{spec.Nodes(1)}, spec.Value(1), ""},
-		{"one_null", []spec.JSONPathValue{spec.Nodes(nil)}, spec.Value(nil), ""},
-		{"one_string", []spec.JSONPathValue{spec.Nodes("x")}, spec.Value("x"), ""},
-		{"three", []spec.JSONPathValue{spec.Nodes(1, true, nil)}, nil, ""},
-		{"not_nodes", []spec.JSONPathValue{spec.LogicalFalse}, nil, "unexpected argument of type spec.LogicalType"},
+		{"empty", []spec.PathValue{spec.Nodes()}, nil, ""},
+		{"one_int", []spec.PathValue{spec.Nodes(1)}, spec.Value(1), ""},
+		{"one_null", []spec.PathValue{spec.Nodes(nil)}, spec.Value(nil), ""},
+		{"one_string", []spec.PathValue{spec.Nodes("x")}, spec.Value("x"), ""},
+		{"three", []spec.PathValue{spec.Nodes(1, true, nil)}, nil, ""},
+		{"not_nodes", []spec.PathValue{spec.LogicalFalse}, nil, "cannot convert LogicalType to NodesType"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -440,8 +438,8 @@ func TestRegexFuncs(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			a.Equal(spec.LogicalFrom(tc.match), matchFunc([]spec.JSONPathValue{tc.input, tc.regex}))
-			a.Equal(spec.LogicalFrom(tc.search), searchFunc([]spec.JSONPathValue{tc.input, tc.regex}))
+			a.Equal(spec.Logical(tc.match), matchFunc([]spec.PathValue{tc.input, tc.regex}))
+			a.Equal(spec.Logical(tc.search), searchFunc([]spec.PathValue{tc.input, tc.regex}))
 		})
 	}
 }
@@ -452,33 +450,33 @@ func TestExecRegexFuncs(t *testing.T) {
 
 	for _, tc := range []struct {
 		name   string
-		vals   []spec.JSONPathValue
+		vals   []spec.PathValue
 		match  bool
 		search bool
 		err    string
 	}{
 		{
 			name:   "dot",
-			vals:   []spec.JSONPathValue{spec.Value("x"), spec.Value("x")},
+			vals:   []spec.PathValue{spec.Value("x"), spec.Value("x")},
 			match:  true,
 			search: true,
 		},
 		{
 			name: "first_not_value",
-			vals: []spec.JSONPathValue{spec.Nodes(), spec.Value("x")},
-			err:  "unexpected argument of type spec.NodesType",
+			vals: []spec.PathValue{spec.Nodes(), spec.Value("x")},
+			err:  "cannot convert NodesType to ValueType",
 		},
 		{
 			name: "second_not_value",
-			vals: []spec.JSONPathValue{spec.Value("x"), spec.LogicalFalse},
-			err:  "unexpected argument of type spec.LogicalType",
+			vals: []spec.PathValue{spec.Value("x"), spec.LogicalFalse},
+			err:  "cannot convert LogicalType to ValueType",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			if tc.err == "" {
-				a.Equal(matchFunc(tc.vals), spec.LogicalFrom(tc.match))
-				a.Equal(searchFunc(tc.vals), spec.LogicalFrom(tc.search))
+				a.Equal(matchFunc(tc.vals), spec.Logical(tc.match))
+				a.Equal(searchFunc(tc.vals), spec.Logical(tc.search))
 			} else {
 				a.PanicsWithValue(tc.err, func() { matchFunc(tc.vals) })
 				a.PanicsWithValue(tc.err, func() { searchFunc(tc.vals) })

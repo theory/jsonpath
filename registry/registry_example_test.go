@@ -9,9 +9,9 @@ import (
 	"github.com/theory/jsonpath/spec"
 )
 
-// Create and registry a custom JSONPath expression, first(), that returns the
-// first node in a list of nodes passed to it. See
-// [github.com/theory/jsonpath.Parser] for a more complete example.
+// Create and register a JSONPath extension function, first(), that returns
+// the first node in a list of nodes passed to it. See
+// [github.com/theory/jsonpath.WithRegistry] for a more complete example.
 func Example() {
 	reg := registry.New()
 	err := reg.Register(
@@ -23,29 +23,29 @@ func Example() {
 	if err != nil {
 		log.Fatalf("Error %v", err)
 	}
-	fmt.Printf("%v\n", reg.Get("first").ResultType())
+	fmt.Printf("%v\n", reg.Get("first").ReturnType())
 	// Output: Value
 }
 
 // validateFirstArgs validates that a single argument is passed to the first()
-// function, and that it can be converted to [spec.FuncNodes], so that first()
-// can return the first node. It's called by the parser.
-func validateFirstArgs(fea []spec.FuncExprArg) error {
-	if len(fea) != 1 {
-		return fmt.Errorf("expected 1 argument but found %v", len(fea))
+// extension function, and that it can be converted to [spec.NodesType], so
+// that first() can return the first node. It's called by the parser.
+func validateFirstArgs(args []spec.FuncExprArg) error {
+	if len(args) != 1 {
+		return fmt.Errorf("expected 1 argument but found %v", len(args))
 	}
 
-	if !fea[0].ResultType().ConvertsToNodes() {
+	if !args[0].ConvertsTo(spec.FuncNodes) {
 		return errors.New("cannot convert argument to Nodes")
 	}
 
 	return nil
 }
 
-// firstFunc defines the custom first() JSONPath function. It converts its
-// single argument to a [spec.NodesType] value and returns a [*spec.ValueType]
+// firstFunc defines the first() JSONPath extension function. It converts its
+// single argument to a [spec.NodesType] value and returns a [spec.ValueType]
 // that contains the first node. If there are no nodes it returns nil.
-func firstFunc(jv []spec.JSONPathValue) spec.JSONPathValue {
+func firstFunc(jv []spec.PathValue) spec.PathValue {
 	nodes := spec.NodesFrom(jv[0])
 	if len(nodes) == 0 {
 		return nil

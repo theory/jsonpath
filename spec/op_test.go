@@ -186,8 +186,8 @@ func TestSameType(t *testing.T) {
 
 	for _, tc := range []struct {
 		name  string
-		left  JSONPathValue
-		right JSONPathValue
+		left  PathValue
+		right PathValue
 		exp   bool
 	}{
 		{"int_nodes", Nodes(1), Nodes(0), true},
@@ -374,11 +374,11 @@ func TestComparisonExpr(t *testing.T) {
 		{
 			name: "func_strings_gt",
 			left: &FuncExpr{
-				args: []FuncExprArg{NodesQuery(Query(false, Child(Name("y"))))},
+				args: []FuncExprArg{Query(false, Child(Name("y")))},
 				fn:   newValueFunc(42),
 			},
 			right: &FuncExpr{
-				args: []FuncExprArg{NodesQuery(Query(false, Child(Name("x"))))},
+				args: []FuncExprArg{Query(false, Child(Name("x")))},
 				fn:   newValueFunc(41),
 			},
 			current: map[string]any{"x": "x", "y": "y"},

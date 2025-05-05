@@ -4,6 +4,7 @@ import "strings"
 
 // PathQuery represents a JSONPath query. Interfaces implemented:
 //   - [Selector]
+//   - [FuncExprArg]
 //   - [fmt.Stringer]
 type PathQuery struct {
 	segments []*Segment
@@ -24,7 +25,14 @@ func (q *PathQuery) Segments() []*Segment {
 
 // String returns a string representation of q.
 func (q *PathQuery) String() string {
-	buf := new(strings.Builder)
+	var buf strings.Builder
+	q.writeTo(&buf)
+	return buf.String()
+}
+
+// writeTo writes a string representation of fq to buf. Defined by
+// [stringWriter].
+func (q *PathQuery) writeTo(buf *strings.Builder) {
 	if q.root {
 		buf.WriteRune('$')
 	} else {
@@ -33,7 +41,6 @@ func (q *PathQuery) String() string {
 	for _, s := range q.segments {
 		buf.WriteString(s.String())
 	}
-	return buf.String()
 }
 
 // Select selects the values from current or root and returns the results.
@@ -100,14 +107,39 @@ func (q *PathQuery) Singular() *SingularQueryExpr {
 	return nil
 }
 
-// Expression returns a singularQuery variant of q if q is a singular query,
-// and otherwise returns a [NodesQueryExpr].
+// Expression returns a [SingularQueryExpr] variant of q if q is a singular
+// query, and otherwise returns q.
 func (q *PathQuery) Expression() FuncExprArg {
 	if q.isSingular() {
 		return singular(q)
 	}
 
-	return NodesQuery(q)
+	return q
+}
+
+// evaluate returns a [NodesType] containing the result of executing fq.
+// Defined by the [FuncExprArg] interface.
+func (q *PathQuery) evaluate(current, root any) PathValue {
+	return NodesType(q.Select(current, root))
+}
+
+// ResultType returns [FuncValue] if fq is a singular query, and [FuncNodes]
+// if it is not. Defined by the [FuncExprArg] interface.
+func (q *PathQuery) ResultType() FuncType {
+	if q.isSingular() {
+		return FuncValue
+	}
+	return FuncNodes
+}
+
+// ConvertsTo returns true if fq's result can be converted to ft. A singular
+// query can be converted to either [FuncValue] or [FuncNodes]. All other
+// queries can only be converted to FuncNodes.
+func (q *PathQuery) ConvertsTo(ft FuncType) bool {
+	if q.isSingular() {
+		return ft == FuncValue || ft == FuncNodes
+	}
+	return ft == FuncNodes
 }
 
 // singular is a utility function that converts q to a singularQuery.

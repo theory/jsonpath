@@ -2,6 +2,7 @@ package spec
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -20,61 +21,29 @@ func TestFuncType(t *testing.T) {
 	a := assert.New(t)
 
 	for _, tc := range []struct {
-		name      string
-		fType     FuncType
-		toVal     bool
-		toNodes   bool
-		toLogical bool
+		name  string
+		fType FuncType
 	}{
 		{
-			name:      "Literal",
-			fType:     FuncLiteral,
-			toVal:     true,
-			toNodes:   false,
-			toLogical: false,
+			name:  "Value",
+			fType: FuncValue,
 		},
 		{
-			name:      "SingularQuery",
-			fType:     FuncSingularQuery,
-			toVal:     true,
-			toNodes:   true,
-			toLogical: true,
+			name:  "Nodes",
+			fType: FuncNodes,
 		},
 		{
-			name:      "Value",
-			fType:     FuncValue,
-			toVal:     true,
-			toNodes:   false,
-			toLogical: false,
+			name:  "Logical",
+			fType: FuncLogical,
 		},
 		{
-			name:      "Nodes",
-			fType:     FuncNodes,
-			toVal:     false,
-			toNodes:   true,
-			toLogical: true,
-		},
-		{
-			name:      "Logical",
-			fType:     FuncLogical,
-			toVal:     false,
-			toNodes:   false,
-			toLogical: true,
-		},
-		{
-			name:      "FuncType(16)",
-			fType:     FuncType(16),
-			toVal:     false,
-			toNodes:   false,
-			toLogical: false,
+			name:  "FuncType(16)",
+			fType: FuncType(16),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			a.Equal(tc.name, tc.fType.String())
-			a.Equal(tc.toVal, tc.fType.ConvertsToValue())
-			a.Equal(tc.toNodes, tc.fType.ConvertsToNodes())
-			a.Equal(tc.toLogical, tc.fType.ConvertsToLogical())
 		})
 	}
 }
@@ -85,7 +54,7 @@ func TestNodesType(t *testing.T) {
 
 	for _, tc := range []struct {
 		name string
-		from JSONPathValue
+		from PathValue
 		exp  NodesType
 		str  string
 		err  string
@@ -93,7 +62,8 @@ func TestNodesType(t *testing.T) {
 		{"nodes", NodesType([]any{1, 2}), Nodes(1, 2), "[1 2]", ""},
 		{"value", Value(1), Nodes(1), "[1]", ""},
 		{"nil", nil, Nodes([]any{}...), "[]", ""},
-		{"logical", LogicalTrue, nil, "", "unexpected argument of type spec.LogicalType"},
+		{"logical", LogicalTrue, nil, "", "cannot convert LogicalType to NodesType"},
+		{"unknown", newValueType{}, nil, "", "unexpected argument of type spec.newValueType"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -115,7 +85,7 @@ func TestLogicalType(t *testing.T) {
 
 	for _, tc := range []struct {
 		name    string
-		from    JSONPathValue
+		from    PathValue
 		exp     LogicalType
 		boolean bool
 		err     string
@@ -127,7 +97,8 @@ func TestLogicalType(t *testing.T) {
 		{"empty_nodes", Nodes(), LogicalFalse, false, "", "false"},
 		{"nodes", Nodes(1), LogicalTrue, true, "", "true"},
 		{"null", nil, LogicalFalse, false, "", "false"},
-		{"value", Value(1), LogicalFalse, false, "unexpected argument of type *spec.ValueType", ""},
+		{"value", Value(1), LogicalFalse, false, "cannot convert ValueType to LogicalType", ""},
+		{"unknown", newValueType{}, LogicalFalse, false, "unexpected argument of type spec.newValueType", ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -142,9 +113,9 @@ func TestLogicalType(t *testing.T) {
 			a.Equal(tc.str, bufString(lt))
 			a.Equal(tc.boolean, lt.Bool())
 			if tc.boolean {
-				a.Equal(LogicalTrue, LogicalFrom(tc.boolean))
+				a.Equal(LogicalTrue, Logical(tc.boolean))
 			} else {
-				a.Equal(LogicalFalse, LogicalFrom(tc.boolean))
+				a.Equal(LogicalFalse, Logical(tc.boolean))
 			}
 		})
 	}
@@ -207,20 +178,21 @@ func TestValueType(t *testing.T) {
 	}
 }
 
-func TestValueTypeFrom(t *testing.T) {
+func TestValueFrom(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
-		val  JSONPathValue
+		val  PathValue
 		exp  *ValueType
 		err  string
 	}{
 		{"valueType", Value(42), Value(42), ""},
 		{"nil", nil, nil, ""},
-		{"logical", LogicalFalse, nil, "unexpected argument of type spec.LogicalType"},
-		{"nodes", Nodes(1), nil, "unexpected argument of type spec.NodesType"},
+		{"logical", LogicalFalse, nil, "cannot convert LogicalType to ValueType"},
+		{"nodes", Nodes(1), nil, "cannot convert NodesType to ValueType"},
+		{"unknown", newValueType{}, nil, "unexpected argument of type spec.newValueType"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
@@ -234,7 +206,7 @@ func TestValueTypeFrom(t *testing.T) {
 	}
 }
 
-func TestJSONPathValueInterface(t *testing.T) {
+func TestPathValueInterface(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
 
@@ -250,8 +222,8 @@ func TestJSONPathValueInterface(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			a.Implements((*JSONPathValue)(nil), tc.pathVal)
-			pv, _ := tc.pathVal.(JSONPathValue)
+			a.Implements((*PathValue)(nil), tc.pathVal)
+			pv, _ := tc.pathVal.(PathValue)
 			a.Equal(tc.funcType, pv.FuncType())
 			a.Equal(tc.str, bufString(pv))
 			a.Equal(tc.str, pv.String())
@@ -268,7 +240,7 @@ func TestJsonFuncExprArgInterface(t *testing.T) {
 		expr any
 	}{
 		{"literal", &LiteralArg{}},
-		{"nodes_query", &NodesQueryExpr{}},
+		{"path_query", &PathQuery{}},
 		{"singular_query", &SingularQueryExpr{}},
 		{"logical_or", &LogicalOr{}},
 		{"func_expr", &FuncExpr{}},
@@ -320,9 +292,12 @@ func TestLiteralArg(t *testing.T) {
 			a.Equal(Value(tc.literal), lit.evaluate(nil, nil))
 			a.Equal(Value(tc.literal), lit.asValue(nil, nil))
 			a.Equal(tc.literal, lit.Value())
-			a.Equal(FuncLiteral, lit.ResultType())
+			a.Equal(FuncValue, lit.ResultType())
 			a.Equal(tc.str, bufString(lit))
 			a.Equal(tc.str, lit.String())
+			a.True(lit.ConvertsTo(FuncValue))
+			a.False(lit.ConvertsTo(FuncNodes))
+			a.False(lit.ConvertsTo(FuncLogical))
 		})
 	}
 }
@@ -335,7 +310,7 @@ func TestSingularQuery(t *testing.T) {
 		name      string
 		selectors []Selector
 		input     any
-		exp       JSONPathValue
+		exp       PathValue
 		str       string
 	}{
 		{
@@ -383,7 +358,10 @@ func TestSingularQuery(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			sq := &SingularQueryExpr{selectors: tc.selectors, relative: false}
-			a.Equal(FuncSingularQuery, sq.ResultType())
+			a.Equal(FuncValue, sq.ResultType())
+			a.True(sq.ConvertsTo(FuncValue))
+			a.True(sq.ConvertsTo(FuncNodes))
+			a.False(sq.ConvertsTo(FuncLogical))
 
 			// Start with absolute query.
 			a.False(sq.relative)
@@ -417,21 +395,21 @@ func TestFilterQuery(t *testing.T) {
 			query:    Query(true, Child(Name("x"))),
 			root:     map[string]any{"x": 42},
 			exp:      []any{42},
-			typeKind: FuncSingularQuery,
+			typeKind: FuncValue,
 		},
 		{
 			name:     "current_name",
 			query:    Query(false, Child(Name("x"))),
 			current:  map[string]any{"x": 42},
 			exp:      []any{42},
-			typeKind: FuncSingularQuery,
+			typeKind: FuncValue,
 		},
 		{
 			name:     "root_name_index",
 			query:    Query(true, Child(Name("x")), Child(Index(1))),
 			root:     map[string]any{"x": []any{19, 234}},
 			exp:      []any{234},
-			typeKind: FuncSingularQuery,
+			typeKind: FuncValue,
 		},
 		{
 			name:     "root_slice",
@@ -450,48 +428,48 @@ func TestFilterQuery(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			fq := &NodesQueryExpr{tc.query}
+			fq := tc.query
 			a.Equal(tc.typeKind, fq.ResultType())
 			a.Equal(NodesType(tc.exp), fq.evaluate(tc.current, tc.root))
 			a.Equal(tc.query.String(), bufString(fq))
+			a.Equal(tc.typeKind == FuncValue, fq.ConvertsTo(FuncValue))
+			a.True(fq.ConvertsTo(FuncNodes))
+			a.False(fq.ConvertsTo(FuncLogical))
 		})
 	}
 }
 
-// Mock up a function.
-type testFunc struct {
-	name   string
-	result FuncType
-	eval   func(args []JSONPathValue) JSONPathValue
+func newTrueFunc() *FuncExtension {
+	return Extension(
+		"__true",
+		FuncLogical,
+		func([]FuncExprArg) error { return nil },
+		func([]PathValue) PathValue { return LogicalTrue },
+	)
 }
 
-func (tf *testFunc) Name() string         { return tf.name }
-func (tf *testFunc) ResultType() FuncType { return tf.result }
-func (tf *testFunc) Evaluate(args []JSONPathValue) JSONPathValue {
-	return tf.eval(args)
+func newValueFunc(val any) *FuncExtension {
+	return Extension(
+		"__val",
+		FuncValue,
+		func([]FuncExprArg) error { return nil },
+		func([]PathValue) PathValue { return Value(val) },
+	)
 }
 
-func newTrueFunc() *testFunc {
-	return &testFunc{
-		name:   "__true",
-		result: FuncLogical,
-		eval:   func([]JSONPathValue) JSONPathValue { return LogicalTrue },
-	}
-}
-
-func newValueFunc(val any) *testFunc {
-	return &testFunc{
-		name:   "__val",
-		result: FuncValue,
-		eval:   func([]JSONPathValue) JSONPathValue { return Value(val) },
-	}
-}
-
-func newNodesFunc() *testFunc {
-	return &testFunc{
-		name:   "__mk_nodes",
-		result: FuncNodes,
-		eval: func(args []JSONPathValue) JSONPathValue {
+func newNodesFunc() *FuncExtension {
+	return Extension(
+		"__mk_nodes",
+		FuncNodes,
+		func(args []FuncExprArg) error {
+			for _, arg := range args {
+				if !arg.ConvertsTo(FuncValue) {
+					return fmt.Errorf("unexpected argument of type %v", arg.ResultType())
+				}
+			}
+			return nil
+		},
+		func(args []PathValue) PathValue {
 			ret := NodesType{}
 			for _, x := range args {
 				v, ok := x.(*ValueType)
@@ -502,21 +480,64 @@ func newNodesFunc() *testFunc {
 			}
 			return ret
 		},
-	}
+	)
 }
 
-// Mock up a valid JSONPathValue that returns a new type.
+// Mock up a valid PathValue that returns a new type.
 type newValueType struct{}
 
 func (newValueType) FuncType() FuncType         { return FuncType(16) }
 func (newValueType) writeTo(b *strings.Builder) { b.WriteString("FuncType(16)") }
 func (newValueType) String() string             { return "FuncType(16)" }
 
-func newTypeFunc() *testFunc {
-	return &testFunc{
-		name:   "__new_type",
-		result: FuncType(16),
-		eval:   func([]JSONPathValue) JSONPathValue { return newValueType{} },
+func newTypeFunc() *FuncExtension {
+	return Extension(
+		"__new_type",
+		FuncType(16),
+		func([]FuncExprArg) error { return nil },
+		func([]PathValue) PathValue { return newValueType{} },
+	)
+}
+
+func TestFunc(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+
+	for _, tc := range []struct {
+		name string
+		fn   *FuncExtension
+		args []PathValue
+		err  error
+		exp  PathValue
+	}{
+		{
+			name: "valid_err_value",
+			fn: Extension(
+				"xyz", FuncValue,
+				func([]FuncExprArg) error { return errors.New("oops") },
+				func([]PathValue) PathValue { return Value(42) },
+			),
+			args: []PathValue{},
+			exp:  Value(42),
+			err:  errors.New("oops"),
+		},
+		{
+			name: "no_valid_err_nodes",
+			fn: Extension(
+				"abc", FuncNodes,
+				func([]FuncExprArg) error { return nil },
+				func([]PathValue) PathValue { return Nodes("hi") },
+			),
+			args: []PathValue{},
+			exp:  Nodes("hi"),
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			a.Equal(tc.fn.name, tc.fn.Name())
+			a.Equal(tc.err, tc.fn.Validate(nil))
+			a.Equal(tc.exp, tc.fn.Evaluate(tc.args))
+		})
 	}
 }
 
@@ -526,11 +547,11 @@ func TestFuncExpr(t *testing.T) {
 
 	for _, tc := range []struct {
 		name    string
-		fn      *testFunc
+		fn      *FuncExtension
 		args    []FuncExprArg
 		current any
 		root    any
-		exp     JSONPathValue
+		exp     PathValue
 		logical bool
 		str     string
 	}{
@@ -579,12 +600,15 @@ func TestFuncExpr(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			fe := Function(tc.fn, tc.args...)
-			a.Equal(tc.fn.result, fe.ResultType())
+			a.Equal(tc.fn.ReturnType(), fe.ResultType())
 			a.Equal(tc.exp, fe.evaluate(tc.current, tc.root))
 			a.Equal(tc.exp, fe.asValue(tc.current, tc.root))
 			a.Equal(tc.logical, fe.testFilter(tc.current, tc.root))
 			a.Equal(!tc.logical, NotFunction(fe).testFilter(tc.current, tc.root))
 			a.Equal(tc.str, fe.String())
+			a.Equal(tc.fn.ReturnType() == FuncValue, fe.ConvertsTo(FuncValue))
+			a.Equal(tc.fn.ReturnType() == FuncNodes, fe.ConvertsTo(FuncNodes))
+			a.Equal(tc.fn.ReturnType() == FuncLogical, fe.ConvertsTo(FuncLogical))
 		})
 	}
 }

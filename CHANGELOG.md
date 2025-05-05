@@ -11,13 +11,17 @@ All notable changes to this project will be documented in this file. It uses the
 
 ### ⚡ Improvements
 
-*   Made significant changes to the `spec` package toward public stability,
-    usability, and greater comprehension. The names of things are more
-    consistent, the APIs more legible and user-friendly. See [PR #14] for
-    details.
+*   Significantly refactored the `spec` package toward greater stability,
+    usability, and increased comprehensibility. The names of things are more
+    consistent, the APIs more legible and user-friendly. Quite a few types
+    were renamed or merged.
 *   Added support for [json.Number] values to complement the existing support
     for Go core numeric types. This should allow for transparent handling of
     values marshaled with [json.Decoder.UseNumber] enabled.
+*   Moved the function extension types from the `registry` to the `spec`
+    package, simplifying `registry` and the handling of function extensions,
+    without changing the interface for using a registry or adding extensions
+    to it.
 
 ### 📚 Documentation
 
@@ -26,7 +30,8 @@ All notable changes to this project will be documented in this file. It uses the
     and complete lists of interface implementations and examples for each
     significant type. See [PR #14] for details.
 *   Removed the "Package Stability" statement from the README, as all packages
-    are considered stable.
+    are considered stable or else potentially unstable types in the `spec`
+    package have been labeled as such.
 *   Fixed links and typos in the main package documentation, and moved the
     registry example under `WithRegistry`.
 

@@ -85,19 +85,22 @@ func TestQueryString(t *testing.T) {
 			t.Parallel()
 			q := Query(false, tc.segs...)
 			a.Equal("@"+tc.str, q.String())
+			a.Equal("@"+tc.str, bufString(q))
 			q = Query(true, tc.segs...)
 			a.Equal("$"+tc.str, q.String())
+			a.Equal("$"+tc.str, bufString(q))
 		})
 	}
 }
 
 type queryTestCase struct {
-	name  string
-	segs  []*Segment
-	input any
-	exp   []any
-	loc   []*LocatedNode
-	rand  bool
+	name    string
+	resType FuncType
+	segs    []*Segment
+	input   any
+	exp     []any
+	loc     []*LocatedNode
+	rand    bool
 }
 
 func (tc queryTestCase) run(a *assert.Assertions) {
@@ -106,7 +109,7 @@ func (tc queryTestCase) run(a *assert.Assertions) {
 	a.Equal(tc.segs, q.Segments())
 	a.False(q.root)
 
-	// Test both.
+	// Test Select and SelectLocated.
 	if tc.rand {
 		a.ElementsMatch(tc.exp, q.Select(tc.input, nil))
 		a.ElementsMatch(tc.loc, q.SelectLocated(tc.input, nil, NormalizedPath{}))
@@ -114,6 +117,12 @@ func (tc queryTestCase) run(a *assert.Assertions) {
 		a.Equal(tc.exp, q.Select(tc.input, nil))
 		a.Equal(tc.loc, q.SelectLocated(tc.input, nil, NormalizedPath{}))
 	}
+
+	// Test result type and conversion.
+	a.Equal(tc.resType, q.ResultType())
+	a.Equal(tc.resType == FuncValue, q.ConvertsTo(FuncValue))
+	a.True(q.ConvertsTo(FuncNodes))
+	a.False(q.ConvertsTo(FuncLogical))
 }
 
 func TestQueryObject(t *testing.T) {
@@ -122,45 +131,50 @@ func TestQueryObject(t *testing.T) {
 
 	for _, tc := range []queryTestCase{
 		{
-			name:  "root",
-			input: map[string]any{"x": true, "y": []any{1, 2}},
-			exp:   []any{map[string]any{"x": true, "y": []any{1, 2}}},
+			name:    "root",
+			resType: FuncValue,
+			input:   map[string]any{"x": true, "y": []any{1, 2}},
+			exp:     []any{map[string]any{"x": true, "y": []any{1, 2}}},
 			loc: []*LocatedNode{
 				{Path: NormalizedPath{}, Node: map[string]any{"x": true, "y": []any{1, 2}}},
 			},
 		},
 		{
-			name:  "one_key_scalar",
-			segs:  []*Segment{Child(Name("x"))},
-			input: map[string]any{"x": true, "y": []any{1, 2}},
-			exp:   []any{true},
+			name:    "one_key_scalar",
+			resType: FuncValue,
+			segs:    []*Segment{Child(Name("x"))},
+			input:   map[string]any{"x": true, "y": []any{1, 2}},
+			exp:     []any{true},
 			loc: []*LocatedNode{
 				{Path: Normalized(Name("x")), Node: true},
 			},
 		},
 		{
-			name:  "one_key_array",
-			segs:  []*Segment{Child(Name("y"))},
-			input: map[string]any{"x": true, "y": []any{1, 2}},
-			exp:   []any{[]any{1, 2}},
+			name:    "one_key_array",
+			resType: FuncValue,
+			segs:    []*Segment{Child(Name("y"))},
+			input:   map[string]any{"x": true, "y": []any{1, 2}},
+			exp:     []any{[]any{1, 2}},
 			loc: []*LocatedNode{
 				{Path: Normalized(Name("y")), Node: []any{1, 2}},
 			},
 		},
 		{
-			name:  "one_key_object",
-			segs:  []*Segment{Child(Name("y"))},
-			input: map[string]any{"x": true, "y": map[string]any{"a": 1}},
-			exp:   []any{map[string]any{"a": 1}},
+			name:    "one_key_object",
+			resType: FuncValue,
+			segs:    []*Segment{Child(Name("y"))},
+			input:   map[string]any{"x": true, "y": map[string]any{"a": 1}},
+			exp:     []any{map[string]any{"a": 1}},
 			loc: []*LocatedNode{
 				{Path: Normalized(Name("y")), Node: map[string]any{"a": 1}},
 			},
 		},
 		{
-			name:  "multiple_keys",
-			segs:  []*Segment{Child(Name("x"), Name("y"))},
-			input: map[string]any{"x": true, "y": []any{1, 2}, "z": "hi"},
-			exp:   []any{true, []any{1, 2}},
+			name:    "multiple_keys",
+			resType: FuncNodes,
+			segs:    []*Segment{Child(Name("x"), Name("y"))},
+			input:   map[string]any{"x": true, "y": []any{1, 2}, "z": "hi"},
+			exp:     []any{true, []any{1, 2}},
 			loc: []*LocatedNode{
 				{Path: Normalized(Name("x")), Node: true},
 				{Path: Normalized(Name("y")), Node: []any{1, 2}},
@@ -168,7 +182,8 @@ func TestQueryObject(t *testing.T) {
 			rand: true,
 		},
 		{
-			name: "three_level_path",
+			name:    "three_level_path",
+			resType: FuncValue,
 			segs: []*Segment{
 				Child(Name("x")),
 				Child(Name("a")),
@@ -190,7 +205,8 @@ func TestQueryObject(t *testing.T) {
 			},
 		},
 		{
-			name: "wildcard_keys",
+			name:    "wildcard_keys",
+			resType: FuncNodes,
 			segs: []*Segment{
 				Child(Wildcard),
 				Child(Name("a"), Name("b")),
@@ -209,7 +225,8 @@ func TestQueryObject(t *testing.T) {
 			rand: true,
 		},
 		{
-			name: "any_key_indexes",
+			name:    "any_key_indexes",
+			resType: FuncNodes,
 			segs: []*Segment{
 				Child(Wildcard),
 				Child(Index(0), Index(1)),
@@ -228,8 +245,9 @@ func TestQueryObject(t *testing.T) {
 			rand: true,
 		},
 		{
-			name: "any_key_nonexistent_index",
-			segs: []*Segment{Child(Wildcard), Child(Index(1))},
+			name:    "any_key_nonexistent_index",
+			resType: FuncNodes,
+			segs:    []*Segment{Child(Wildcard), Child(Index(1))},
 			input: map[string]any{
 				"x": []any{"a", "go", "b", 2, "c", 5},
 				"y": []any{"a"},
@@ -240,32 +258,36 @@ func TestQueryObject(t *testing.T) {
 			},
 		},
 		{
-			name:  "nonexistent_key",
-			segs:  []*Segment{Child(Name("x"))},
-			input: map[string]any{"y": []any{1, 2}},
-			exp:   []any{},
-			loc:   []*LocatedNode{},
+			name:    "nonexistent_key",
+			resType: FuncValue,
+			segs:    []*Segment{Child(Name("x"))},
+			input:   map[string]any{"y": []any{1, 2}},
+			exp:     []any{},
+			loc:     []*LocatedNode{},
 		},
 		{
-			name:  "nonexistent_branch_key",
-			segs:  []*Segment{Child(Name("x")), Child(Name("z"))},
-			input: map[string]any{"y": []any{1, 2}},
-			exp:   []any{},
-			loc:   []*LocatedNode{},
+			name:    "nonexistent_branch_key",
+			resType: FuncValue,
+			segs:    []*Segment{Child(Name("x")), Child(Name("z"))},
+			input:   map[string]any{"y": []any{1, 2}},
+			exp:     []any{},
+			loc:     []*LocatedNode{},
 		},
 		{
-			name:  "wildcard_then_nonexistent_key",
-			segs:  []*Segment{Child(Wildcard), Child(Name("x"))},
-			input: map[string]any{"y": map[string]any{"a": 1}},
-			exp:   []any{},
-			loc:   []*LocatedNode{},
+			name:    "wildcard_then_nonexistent_key",
+			resType: FuncNodes,
+			segs:    []*Segment{Child(Wildcard), Child(Name("x"))},
+			input:   map[string]any{"y": map[string]any{"a": 1}},
+			exp:     []any{},
+			loc:     []*LocatedNode{},
 		},
 		{
-			name:  "not_an_object",
-			segs:  []*Segment{Child(Name("x")), Child(Name("y"))},
-			input: map[string]any{"x": true},
-			exp:   []any{},
-			loc:   []*LocatedNode{},
+			name:    "not_an_object",
+			resType: FuncValue,
+			segs:    []*Segment{Child(Name("x")), Child(Name("y"))},
+			input:   map[string]any{"x": true},
+			exp:     []any{},
+			loc:     []*LocatedNode{},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -281,74 +303,83 @@ func TestQueryArray(t *testing.T) {
 
 	for _, tc := range []queryTestCase{
 		{
-			name:  "root",
-			input: []any{"x", true, "y", []any{1, 2}},
-			exp:   []any{[]any{"x", true, "y", []any{1, 2}}},
+			name:    "root",
+			resType: FuncValue,
+			input:   []any{"x", true, "y", []any{1, 2}},
+			exp:     []any{[]any{"x", true, "y", []any{1, 2}}},
 			loc: []*LocatedNode{
 				{Path: NormalizedPath{}, Node: []any{"x", true, "y", []any{1, 2}}},
 			},
 		},
 		{
-			name:  "index_zero",
-			segs:  []*Segment{Child(Index(0))},
-			input: []any{"x", true, "y", []any{1, 2}},
-			exp:   []any{"x"},
-			loc:   []*LocatedNode{{Path: Normalized(Index(0)), Node: "x"}},
+			name:    "index_zero",
+			resType: FuncValue,
+			segs:    []*Segment{Child(Index(0))},
+			input:   []any{"x", true, "y", []any{1, 2}},
+			exp:     []any{"x"},
+			loc:     []*LocatedNode{{Path: Normalized(Index(0)), Node: "x"}},
 		},
 		{
-			name:  "index_one",
-			segs:  []*Segment{Child(Index(1))},
-			input: []any{"x", true, "y", []any{1, 2}},
-			exp:   []any{true},
-			loc:   []*LocatedNode{{Path: Normalized(Index(1)), Node: true}},
+			name:    "index_one",
+			resType: FuncValue,
+			segs:    []*Segment{Child(Index(1))},
+			input:   []any{"x", true, "y", []any{1, 2}},
+			exp:     []any{true},
+			loc:     []*LocatedNode{{Path: Normalized(Index(1)), Node: true}},
 		},
 		{
-			name:  "index_three",
-			segs:  []*Segment{Child(Index(3))},
-			input: []any{"x", true, "y", []any{1, 2}},
-			exp:   []any{[]any{1, 2}},
-			loc:   []*LocatedNode{{Path: Normalized(Index(3)), Node: []any{1, 2}}},
+			name:    "index_three",
+			resType: FuncValue,
+			segs:    []*Segment{Child(Index(3))},
+			input:   []any{"x", true, "y", []any{1, 2}},
+			exp:     []any{[]any{1, 2}},
+			loc:     []*LocatedNode{{Path: Normalized(Index(3)), Node: []any{1, 2}}},
 		},
 		{
-			name:  "multiple_indexes",
-			segs:  []*Segment{Child(Index(1), Index(3))},
-			input: []any{"x", true, "y", []any{1, 2}},
-			exp:   []any{true, []any{1, 2}},
+			name:    "multiple_indexes",
+			resType: FuncNodes,
+			segs:    []*Segment{Child(Index(1), Index(3))},
+			input:   []any{"x", true, "y", []any{1, 2}},
+			exp:     []any{true, []any{1, 2}},
 			loc: []*LocatedNode{
 				{Path: Normalized(Index(1)), Node: true},
 				{Path: Normalized(Index(3)), Node: []any{1, 2}},
 			},
 		},
 		{
-			name:  "nested_indices",
-			segs:  []*Segment{Child(Index(0)), Child(Index(0))},
-			input: []any{[]any{1, 2}, "x", true, "y"},
-			exp:   []any{1},
+			name:    "nested_indices",
+			resType: FuncValue,
+			segs:    []*Segment{Child(Index(0)), Child(Index(0))},
+			input:   []any{[]any{1, 2}, "x", true, "y"},
+			exp:     []any{1},
 			loc: []*LocatedNode{
 				{Path: Normalized(Index(0), Index(0)), Node: 1},
 			},
 		},
 		{
-			name:  "nested_multiple_indices",
-			segs:  []*Segment{Child(Index(0)), Child(Index(0), Index(1))},
-			input: []any{[]any{1, 2, 3}, "x", true, "y"},
-			exp:   []any{1, 2},
+			name:    "nested_multiple_indices",
+			resType: FuncNodes,
+			segs:    []*Segment{Child(Index(0)), Child(Index(0), Index(1))},
+			input:   []any{[]any{1, 2, 3}, "x", true, "y"},
+			exp:     []any{1, 2},
 			loc: []*LocatedNode{
 				{Path: Normalized(Index(0), Index(0)), Node: 1},
 				{Path: Normalized(Index(0), Index(1)), Node: 2},
 			},
 		},
 		{
-			name:  "nested_index_gaps",
-			segs:  []*Segment{Child(Index(1)), Child(Index(1))},
-			input: []any{"x", []any{1, 2}, true, "y"},
-			exp:   []any{2},
+			name:    "nested_index_gaps",
+			resType: FuncValue,
+			segs:    []*Segment{Child(Index(1)), Child(Index(1))},
+			input:   []any{"x", []any{1, 2}, true, "y"},
+			exp:     []any{2},
 			loc: []*LocatedNode{
 				{Path: Normalized(Index(1), Index(1)), Node: 2},
 			},
 		},
 		{
-			name: "three_level_index_path",
+			name:    "three_level_index_path",
+			resType: FuncValue,
 			segs: []*Segment{
 				Child(Index(0)),
 				Child(Index(0)),
@@ -361,7 +392,8 @@ func TestQueryArray(t *testing.T) {
 			},
 		},
 		{
-			name: "mixed_nesting",
+			name:    "mixed_nesting",
+			resType: FuncNodes,
 			segs: []*Segment{
 				Child(Index(0), Index(1), Index(3)),
 				Child(Index(1), Name("y"), Name("z")),
@@ -381,10 +413,11 @@ func TestQueryArray(t *testing.T) {
 			rand: true,
 		},
 		{
-			name:  "wildcard_indexes_index",
-			segs:  []*Segment{Child(Wildcard), Child(Index(0), Index(2))},
-			input: []any{[]any{1, 2, 3}, []any{3, 2, 1}, []any{4, 5, 6}},
-			exp:   []any{1, 3, 3, 1, 4, 6},
+			name:    "wildcard_indexes_index",
+			resType: FuncNodes,
+			segs:    []*Segment{Child(Wildcard), Child(Index(0), Index(2))},
+			input:   []any{[]any{1, 2, 3}, []any{3, 2, 1}, []any{4, 5, 6}},
+			exp:     []any{1, 3, 3, 1, 4, 6},
 			loc: []*LocatedNode{
 				{Path: Normalized(Index(0), Index(0)), Node: 1},
 				{Path: Normalized(Index(0), Index(2)), Node: 3},
@@ -395,44 +428,50 @@ func TestQueryArray(t *testing.T) {
 			},
 		},
 		{
-			name:  "nonexistent_index",
-			segs:  []*Segment{Child(Index(3))},
-			input: []any{"y", []any{1, 2}},
-			exp:   []any{},
-			loc:   []*LocatedNode{},
+			name:    "nonexistent_index",
+			resType: FuncValue,
+			segs:    []*Segment{Child(Index(3))},
+			input:   []any{"y", []any{1, 2}},
+			exp:     []any{},
+			loc:     []*LocatedNode{},
 		},
 		{
-			name:  "nonexistent_child_index",
-			segs:  []*Segment{Child(Wildcard), Child(Index(3))},
-			input: []any{[]any{0, 1, 2, 3}, []any{0, 1, 2}},
-			exp:   []any{3},
+			name:    "nonexistent_child_index",
+			resType: FuncNodes,
+			segs:    []*Segment{Child(Wildcard), Child(Index(3))},
+			input:   []any{[]any{0, 1, 2, 3}, []any{0, 1, 2}},
+			exp:     []any{3},
 			loc: []*LocatedNode{
 				{Path: Normalized(Index(0), Index(3)), Node: 3},
 			},
 		},
 		{
-			name:  "not_an_array_index_1",
-			segs:  []*Segment{Child(Index(1)), Child(Index(0))},
-			input: []any{"x", true},
-			exp:   []any{},
-			loc:   []*LocatedNode{},
+			name:    "not_an_array_index_1",
+			resType: FuncValue,
+			segs:    []*Segment{Child(Index(1)), Child(Index(0))},
+			input:   []any{"x", true},
+			exp:     []any{},
+			loc:     []*LocatedNode{},
 		},
 		{
-			name:  "not_an_array_index_0",
-			segs:  []*Segment{Child(Index(0)), Child(Index(0))},
-			input: []any{"x", true},
-			exp:   []any{},
-			loc:   []*LocatedNode{},
+			name:    "not_an_array_index_0",
+			resType: FuncValue,
+			segs:    []*Segment{Child(Index(0)), Child(Index(0))},
+			input:   []any{"x", true},
+			exp:     []any{},
+			loc:     []*LocatedNode{},
 		},
 		{
-			name:  "wildcard_not_an_array_index_1",
-			segs:  []*Segment{Child(Wildcard), Child(Index(0))},
-			input: []any{"x", true},
-			exp:   []any{},
-			loc:   []*LocatedNode{},
+			name:    "wildcard_not_an_array_index_1",
+			resType: FuncNodes,
+			segs:    []*Segment{Child(Wildcard), Child(Index(0))},
+			input:   []any{"x", true},
+			exp:     []any{},
+			loc:     []*LocatedNode{},
 		},
 		{
-			name: "mix_wildcard_keys",
+			name:    "mix_wildcard_keys",
+			resType: FuncNodes,
 			segs: []*Segment{
 				Child(Wildcard, Index(1)),
 				Child(Name("x"), Index(1), Name("y")),
@@ -458,7 +497,8 @@ func TestQueryArray(t *testing.T) {
 			rand: true,
 		},
 		{
-			name: "mix_wildcard_nonexistent_key",
+			name:    "mix_wildcard_nonexistent_key",
+			resType: FuncNodes,
 			segs: []*Segment{
 				Child(Wildcard, Index(1)),
 				Child(Name("x"), Name("y")),
@@ -477,7 +517,8 @@ func TestQueryArray(t *testing.T) {
 			},
 		},
 		{
-			name: "mix_wildcard_index",
+			name:    "mix_wildcard_index",
+			resType: FuncNodes,
 			segs: []*Segment{
 				Child(Wildcard, Index(1)),
 				Child(Index(0), Index(1)),
@@ -500,7 +541,8 @@ func TestQueryArray(t *testing.T) {
 			},
 		},
 		{
-			name: "mix_wildcard_nonexistent_index",
+			name:    "mix_wildcard_nonexistent_index",
+			resType: FuncNodes,
 			segs: []*Segment{
 				Child(Wildcard, Index(1)),
 				Child(Index(0), Index(3)),
@@ -519,8 +561,9 @@ func TestQueryArray(t *testing.T) {
 			},
 		},
 		{
-			name: "wildcard_nonexistent_key",
-			segs: []*Segment{Child(Wildcard), Child(Name("a"))},
+			name:    "wildcard_nonexistent_key",
+			resType: FuncNodes,
+			segs:    []*Segment{Child(Wildcard), Child(Name("a"))},
 			input: []any{
 				map[string]any{"a": 1, "b": 2},
 				map[string]any{"z": 3, "b": 4},
@@ -531,8 +574,9 @@ func TestQueryArray(t *testing.T) {
 			},
 		},
 		{
-			name: "wildcard_nonexistent_middle_key",
-			segs: []*Segment{Child(Wildcard), Child(Name("a"))},
+			name:    "wildcard_nonexistent_middle_key",
+			resType: FuncNodes,
+			segs:    []*Segment{Child(Wildcard), Child(Name("a"))},
 			input: []any{
 				map[string]any{"a": 1, "b": 2},
 				map[string]any{"z": 3, "b": 4},
@@ -546,7 +590,8 @@ func TestQueryArray(t *testing.T) {
 			},
 		},
 		{
-			name: "wildcard_nested_nonexistent_key",
+			name:    "wildcard_nested_nonexistent_key",
+			resType: FuncNodes,
 			segs: []*Segment{
 				Child(Wildcard),
 				Child(Wildcard),
@@ -567,7 +612,8 @@ func TestQueryArray(t *testing.T) {
 			},
 		},
 		{
-			name: "wildcard_nested_nonexistent_index",
+			name:    "wildcard_nested_nonexistent_index",
+			resType: FuncNodes,
 			segs: []*Segment{
 				Child(Wildcard),
 				Child(Wildcard),
@@ -839,11 +885,12 @@ func TestQuerySlice(t *testing.T) {
 			},
 		},
 		{
-			name:  "not_an_array_index_1",
-			segs:  []*Segment{Child(Index(1)), Child(Index(0))},
-			input: []any{"x", true},
-			exp:   []any{},
-			loc:   []*LocatedNode{},
+			name:    "not_an_array_index_1",
+			resType: FuncValue,
+			segs:    []*Segment{Child(Index(1)), Child(Index(0))},
+			input:   []any{"x", true},
+			exp:     []any{},
+			loc:     []*LocatedNode{},
 		},
 		{
 			name:  "not_an_array",
@@ -1060,6 +1107,9 @@ func TestQuerySlice(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			if tc.resType == 0 {
+				tc.resType = FuncNodes
+			}
 			tc.run(a)
 		})
 	}
@@ -1229,6 +1279,7 @@ func TestQueryDescendants(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			tc.resType = FuncNodes
 			tc.run(a)
 		})
 	}
@@ -1307,7 +1358,7 @@ func TestSingularExpr(t *testing.T) {
 			if tc.sing == nil {
 				a.False(tc.query.isSingular())
 				a.Nil(tc.query.Singular())
-				a.Equal(NodesQuery(tc.query), tc.query.Expression())
+				a.Equal(tc.query, tc.query.Expression())
 			} else {
 				a.True(tc.query.isSingular())
 				a.Equal(tc.sing, tc.query.Singular())

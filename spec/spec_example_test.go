@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"strings"
 
 	"github.com/theory/jsonpath"
 	"github.com/theory/jsonpath/registry"
@@ -188,60 +187,12 @@ func ExampleNonExistExpr() {
 	// Output: ?!@["x"]
 }
 
-// Construct a path expression as a function argument.
-func ExampleNodesQueryExpr() {
-	reg := registry.New()
-	fnExpr := spec.Function(
-		reg.Get("length"),
-		spec.NodesQuery(
-			spec.Query(false, spec.Child(spec.Index(0))),
-		),
-	)
-	fmt.Printf("%v\n", fnExpr)
-	// Output: length(@[0])
-}
-
-// Each [spec.FuncType] converted to one of the spec-standard function types,
-// [spec.ValueType], [spec.NodesType], or [spec.LogicalType].
-func ExampleFuncType() {
-	fmt.Println("FuncType       Converts To FuncTypes")
-	fmt.Println("-------------- ---------------------")
-	for _, at := range []spec.FuncType{
-		spec.FuncLiteral,
-		spec.FuncSingularQuery,
-		spec.FuncValue,
-		spec.FuncNodes,
-		spec.FuncLogical,
-	} {
-		to := []string{}
-		if at.ConvertsToValue() {
-			to = append(to, "Value")
-		}
-		if at.ConvertsToLogical() {
-			to = append(to, "Logical")
-		}
-		if at.ConvertsToNodes() {
-			to = append(to, "Nodes")
-		}
-
-		fmt.Printf("%-15v %v\n", at, strings.Join(to, ", "))
-	}
-	// Output:
-	// FuncType       Converts To FuncTypes
-	// -------------- ---------------------
-	// Literal         Value
-	// SingularQuery   Value, Logical, Nodes
-	// Value           Value
-	// Nodes           Logical, Nodes
-	// Logical         Logical
-}
-
-// Print the [spec.FuncType] for each [spec.JSONPathValue]
+// Print the [spec.FuncType] for each [spec.PathValue]
 // implementation.
-func ExampleJSONPathValue() {
+func ExamplePathValue() {
 	fmt.Printf("Implementation    FuncType\n")
 	fmt.Printf("----------------- --------\n")
-	for _, jv := range []spec.JSONPathValue{
+	for _, jv := range []spec.PathValue{
 		spec.Value(nil),
 		spec.Nodes(1, 2),
 		spec.Logical(true),
@@ -261,9 +212,7 @@ func ExampleFuncExpr() {
 	reg := registry.New()
 	fe := spec.Function(
 		reg.Get("match"),
-		spec.NodesQuery(
-			spec.Query(false, spec.Child(spec.Name("rating"))),
-		),
+		spec.Query(false, spec.Child(spec.Name("rating"))),
 		spec.Literal("good$"),
 	)
 	fmt.Printf("%v\n", fe)
@@ -275,9 +224,7 @@ func ExampleNotFuncExpr() {
 	reg := registry.New()
 	nf := spec.NotFunction(spec.Function(
 		reg.Get("length"),
-		spec.NodesQuery(
-			spec.Query(false, spec.Child(spec.Index(0))),
-		),
+		spec.Query(false, spec.Child(spec.Index(0))),
 	))
 	fmt.Printf("%v\n", nf)
 	// Output: !length(@[0])
@@ -419,44 +366,47 @@ func ExampleValueType() {
 	// [1 2 false]
 }
 
+// Of the implementations of [PathValue], only [spec.ValueType] and nil
+// can be converted to [spec.ValueType].
 func ExampleValueFrom() {
-	for _, val := range []spec.JSONPathValue{
-		spec.Value("hello"), // converts to value
-		spec.Nodes(1, 2, 3), // does not convert to value
-		spec.Logical(false), // does not convert to value
+	for _, val := range []spec.PathValue{
+		spec.Value("hello"), // no conversion
+		nil,                 // equivalent to no value
 	} {
-		if val.FuncType().ConvertsToValue() {
-			fmt.Printf("val: %v\n", spec.ValueFrom(val))
-		}
+		fmt.Printf("val: %v\n", spec.ValueFrom(val))
 	}
-	// Output: val: hello
+	// Output:
+	// val: hello
+	// val: <nil>
 }
 
+// Of the implementations of [PathValue], only [spec.NodesType] and nil
+// can be converted to [spec.NodesType].
 func ExampleNodesFrom() {
-	for _, val := range []spec.JSONPathValue{
-		spec.Value("hello"), // does not convert to nodes
-		spec.Nodes(1, 2, 3), // converts to nodes
-		spec.Logical(false), // does not convert to nodes
+	for _, val := range []spec.PathValue{
+		spec.Nodes(1, 2, 3), // no conversion
+		nil,                 // converts to empty NodesType
 	} {
-		if val.FuncType().ConvertsToNodes() {
-			fmt.Printf("nodes: %v\n", spec.NodesFrom(val))
-		}
+		fmt.Printf("nodes: %v\n", spec.NodesFrom(val))
 	}
-	// Output: nodes: [1 2 3]
+	// Output:
+	// nodes: [1 2 3]
+	// nodes: []
 }
 
+// Of the implementations of [PathValue], [spec.LogicalType],
+// [spec.NodesType], and nil can be converted to [spec.NodesType].
 func ExampleLogicalFrom() {
-	for _, val := range []spec.JSONPathValue{
-		spec.Value("hello"), // does not convert to logical
+	for _, val := range []spec.PathValue{
 		spec.Nodes(1, 2, 3), // converts to logical (existence)
 		spec.Logical(false), // converts to logical
+		nil,
 	} {
-		if val.FuncType().ConvertsToLogical() {
-			fmt.Printf("logical: %v\n", spec.LogicalFrom(val))
-		}
+		fmt.Printf("logical: %v\n", spec.LogicalFrom(val))
 	}
 	// Output:
 	// logical: true
+	// logical: false
 	// logical: false
 }
 

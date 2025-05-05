@@ -201,7 +201,7 @@ func TestParseFilter(t *testing.T) {
 		"__true",
 		spec.FuncLogical,
 		func([]spec.FuncExprArg) error { return nil },
-		func([]spec.JSONPathValue) spec.JSONPathValue {
+		func([]spec.PathValue) spec.PathValue {
 			return spec.LogicalTrue
 		},
 	)

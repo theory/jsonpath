@@ -1,7 +1,6 @@
 package registry
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,7 +17,7 @@ func TestRegistry(t *testing.T) {
 		name  string
 		rType spec.FuncType
 		expr  []spec.FuncExprArg
-		args  []spec.JSONPathValue
+		args  []spec.PathValue
 		exp   any
 	}{
 		// RFC 9535-defined functions.
@@ -26,35 +25,35 @@ func TestRegistry(t *testing.T) {
 			name:  "length",
 			rType: spec.FuncValue,
 			expr:  []spec.FuncExprArg{spec.Literal("foo")},
-			args:  []spec.JSONPathValue{spec.Value("foo")},
+			args:  []spec.PathValue{spec.Value("foo")},
 			exp:   spec.Value(3),
 		},
 		{
 			name:  "count",
 			rType: spec.FuncValue,
 			expr:  []spec.FuncExprArg{&spec.SingularQueryExpr{}},
-			args:  []spec.JSONPathValue{spec.Nodes(1, 2)},
+			args:  []spec.PathValue{spec.Nodes(1, 2)},
 			exp:   spec.Value(2),
 		},
 		{
 			name:  "value",
 			rType: spec.FuncValue,
 			expr:  []spec.FuncExprArg{&spec.SingularQueryExpr{}},
-			args:  []spec.JSONPathValue{spec.Nodes(42)},
+			args:  []spec.PathValue{spec.Nodes(42)},
 			exp:   spec.Value(42),
 		},
 		{
 			name:  "match",
 			rType: spec.FuncLogical,
 			expr:  []spec.FuncExprArg{spec.Literal("foo"), spec.Literal(".*")},
-			args:  []spec.JSONPathValue{spec.Value("foo"), spec.Value(".*")},
+			args:  []spec.PathValue{spec.Value("foo"), spec.Value(".*")},
 			exp:   spec.LogicalTrue,
 		},
 		{
 			name:  "search",
 			rType: spec.FuncLogical,
 			expr:  []spec.FuncExprArg{spec.Literal("foo"), spec.Literal(".")},
-			args:  []spec.JSONPathValue{spec.Value("foo"), spec.Value(".")},
+			args:  []spec.PathValue{spec.Value("foo"), spec.Value(".")},
 			exp:   spec.LogicalTrue,
 		},
 	} {
@@ -65,9 +64,9 @@ func TestRegistry(t *testing.T) {
 
 			ft := reg.Get(tc.name)
 			a.NotNil(ft)
-			a.Equal(tc.rType, ft.resultType)
-			r.NoError(ft.validator(tc.expr))
-			a.Equal(tc.exp, ft.evaluator(tc.args))
+			a.Equal(tc.rType, ft.ReturnType())
+			r.NoError(ft.Validate(tc.expr))
+			a.Equal(tc.exp, ft.Evaluate(tc.args))
 		})
 	}
 }
@@ -80,10 +79,17 @@ func TestRegisterErr(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
 		fnName string
-		valid  Validator
-		eval   Evaluator
+		valid  spec.Validator
+		eval   spec.Evaluator
 		err    string
 	}{
+		{
+			name:   "existing_func",
+			fnName: "length",
+			valid:  func([]spec.FuncExprArg) error { return nil },
+			eval:   func([]spec.PathValue) spec.PathValue { return spec.Value(42) },
+			err:    "register: Register called twice for function length",
+		},
 		{
 			name: "nil_validator",
 			err:  "register: validator is nil",
@@ -93,61 +99,12 @@ func TestRegisterErr(t *testing.T) {
 			valid: func([]spec.FuncExprArg) error { return nil },
 			err:   "register: evaluator is nil",
 		},
-		{
-			name:   "existing_func",
-			fnName: "length",
-			valid:  func([]spec.FuncExprArg) error { return nil },
-			eval:   func([]spec.JSONPathValue) spec.JSONPathValue { return spec.Value(42) },
-			err:    "register: Register called twice for function length",
-		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			err := reg.Register(tc.fnName, spec.FuncValue, tc.valid, tc.eval)
 			r.ErrorIs(err, ErrRegister, tc.name)
 			r.EqualError(err, tc.err, tc.name)
-		})
-	}
-}
-
-func TestFunction(t *testing.T) {
-	t.Parallel()
-	a := assert.New(t)
-
-	for _, tc := range []struct {
-		name string
-		fn   *Function
-		args []spec.JSONPathValue
-		err  error
-		exp  spec.JSONPathValue
-	}{
-		{
-			name: "valid_err_value",
-			fn: NewFunction(
-				"xyz", spec.FuncValue,
-				func([]spec.FuncExprArg) error { return errors.New("oops") },
-				func([]spec.JSONPathValue) spec.JSONPathValue { return spec.Value(42) },
-			),
-			args: []spec.JSONPathValue{},
-			exp:  spec.Value(42),
-			err:  errors.New("oops"),
-		},
-		{
-			name: "no_valid_err_nodes",
-			fn: NewFunction(
-				"abc", spec.FuncNodes,
-				func([]spec.FuncExprArg) error { return nil },
-				func([]spec.JSONPathValue) spec.JSONPathValue { return spec.Nodes("hi") },
-			),
-			args: []spec.JSONPathValue{},
-			exp:  spec.Nodes("hi"),
-		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			a.Equal(tc.fn.name, tc.fn.Name())
-			a.Equal(tc.err, tc.fn.Validate(nil))
-			a.Equal(tc.exp, tc.fn.Evaluate(tc.args))
 		})
 	}
 }

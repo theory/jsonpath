@@ -38,7 +38,7 @@ const (
 type CompVal interface {
 	stringWriter
 	// asValue returns the value to be compared.
-	asValue(current, root any) JSONPathValue
+	asValue(current, root any) PathValue
 }
 
 // ComparisonExpr is a filter expression that compares two values, which
@@ -100,7 +100,7 @@ func (ce *ComparisonExpr) testFilter(current, root any) bool {
 // equalTo returns true if left and right are nils, or if both are [ValueType]
 // values and [valueEqualTo] returns true for their underlying values.
 // Otherwise it returns false.
-func equalTo(left, right JSONPathValue) bool {
+func equalTo(left, right PathValue) bool {
 	switch left := left.(type) {
 	case *ValueType:
 		if right, ok := right.(*ValueType); ok {
@@ -163,7 +163,7 @@ func valueEqualTo(left, right any) bool {
 // lessThan returns true if left and right are both ValueTypes and
 // [valueLessThan] returns true for their underlying values. Otherwise it
 // returns false.
-func lessThan(left, right JSONPathValue) bool {
+func lessThan(left, right PathValue) bool {
 	if left, ok := left.(*ValueType); ok {
 		if right, ok := right.(*ValueType); ok {
 			return valueLessThan(left.any, right.any)
@@ -173,7 +173,7 @@ func lessThan(left, right JSONPathValue) bool {
 }
 
 // sameType returns true if left and right resolve to the same JSON data type.
-func sameType(left, right JSONPathValue) bool {
+func sameType(left, right PathValue) bool {
 	switch left := left.(type) {
 	case NodesType:
 		if len(left) == 1 {

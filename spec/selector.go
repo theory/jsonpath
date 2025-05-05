@@ -453,7 +453,7 @@ type FilterSelector struct {
 	LogicalOr
 }
 
-// Filter returns a new Filter selector that ORs the evaluation of each expr.
+// Filter returns a new [FilterSelector] that ORs the evaluation of each expr.
 func Filter(expr ...LogicalAnd) *FilterSelector {
 	return &FilterSelector{LogicalOr: expr}
 }

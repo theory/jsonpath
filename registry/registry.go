@@ -1,4 +1,4 @@
-// Package registry provides a RFC 9535 JSONPath function registry.
+// Package registry provides a RFC 9535 JSONPath function extension registry.
 package registry
 
 import (
@@ -9,16 +9,17 @@ import (
 	"github.com/theory/jsonpath/spec"
 )
 
-// Registry maintains a registry of JSONPath functions, including both
-// [RFC 9535]-required functions and function extensions.
+// Registry maintains a registry of JSONPath function extensions, including
+// both [RFC 9535]-required functions and custom functions.
 //
 // [RFC 9535]: https://www.rfc-editor.org/rfc/rfc9535.html
 type Registry struct {
 	mu    sync.RWMutex
-	funcs map[string]*Function
+	funcs map[string]*spec.FuncExtension
 }
 
-// New returns a new [Registry] loaded with the [RFC 9535]-mandated functions:
+// New returns a new [Registry] loaded with the [RFC 9535]-mandated function
+// extensions:
 //
 //   - [length]
 //   - [count]
@@ -35,59 +36,35 @@ type Registry struct {
 func New() *Registry {
 	return &Registry{
 		mu: sync.RWMutex{},
-		funcs: map[string]*Function{
-			"length": {
-				name:       "length",
-				resultType: spec.FuncValue,
-				validator:  checkLengthArgs,
-				evaluator:  lengthFunc,
-			},
-			"count": {
-				name:       "count",
-				resultType: spec.FuncValue,
-				validator:  checkCountArgs,
-				evaluator:  countFunc,
-			},
-			"value": {
-				name:       "value",
-				resultType: spec.FuncValue,
-				validator:  checkValueArgs,
-				evaluator:  valueFunc,
-			},
-			"match": {
-				name:       "match",
-				resultType: spec.FuncLogical,
-				validator:  checkMatchArgs,
-				evaluator:  matchFunc,
-			},
-			"search": {
-				name:       "search",
-				resultType: spec.FuncLogical,
-				validator:  checkSearchArgs,
-				evaluator:  searchFunc,
-			},
+		funcs: map[string]*spec.FuncExtension{
+			"length": spec.Extension("length", spec.FuncValue, checkLengthArgs, lengthFunc),
+			"count":  spec.Extension("count", spec.FuncValue, checkCountArgs, countFunc),
+			"value":  spec.Extension("value", spec.FuncValue, checkValueArgs, valueFunc),
+			"match":  spec.Extension("match", spec.FuncLogical, checkMatchArgs, matchFunc),
+			"search": spec.Extension("search", spec.FuncLogical, checkSearchArgs, searchFunc),
 		},
 	}
 }
 
-// Validator functions validate that the args expressions to a function can be
-// processed by the function.
-type Validator func(args []spec.FuncExprArg) error
-
-// Evaluator functions execute a function against the values returned by args.
-type Evaluator func(args []spec.JSONPathValue) spec.JSONPathValue
-
 // ErrRegister errors are returned by [Register].
 var ErrRegister = errors.New("register")
 
-// Register registers a function extension by its name. Returns an
-// [ErrRegister] error if validator or nil or evaluator is nil or if r
-// already contains name.
+// Register registers a function extension. The parameters are:
+//
+//   - name: the name of the function extension as used in JSONPath queries.
+//   - returnType: The data type of the function return value.
+//   - validator: A validation function that will be called at parse time
+//     to validate that all the function args are compatible with the function.
+//   - evaluator: The implementation of the function itself that executes
+//     against args and returns the result of the type defined by resultType.
+//
+// Returns [ErrRegister] if validator or evaluator is nil or if r already
+// contains name.
 func (r *Registry) Register(
 	name string,
 	resultType spec.FuncType,
-	validator Validator,
-	evaluator Evaluator,
+	validator spec.Validator,
+	evaluator spec.Evaluator,
 ) error {
 	if validator == nil {
 		return fmt.Errorf("%w: validator is nil", ErrRegister)
@@ -105,70 +82,15 @@ func (r *Registry) Register(
 		)
 	}
 
-	r.funcs[name] = &Function{name, resultType, validator, evaluator}
+	r.funcs[name] = spec.Extension(name, resultType, validator, evaluator)
 	return nil
 }
 
-// Get returns a reference to the registered function named name. Returns nil
-// if no function with that name has been registered.
-func (r *Registry) Get(name string) *Function {
+// Get returns a reference to the registered function extension named name.
+// Returns nil if no function with that name has been registered.
+func (r *Registry) Get(name string) *spec.FuncExtension {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	function := r.funcs[name]
 	return function
-}
-
-// Function defines a JSONPath function. Use [Register] to register a new
-// function.
-type Function struct {
-	// name is the name of the function. Must be unique among all functions in
-	// a registry.
-	name string
-
-	// resultType defines the type of the function return value.
-	resultType spec.FuncType
-
-	// validator executes at parse time to validate that all the args to
-	// the function are compatible with the function.
-	validator func(args []spec.FuncExprArg) error
-
-	// evaluator executes the function against args and returns the result of
-	// type ResultType.
-	evaluator func(args []spec.JSONPathValue) spec.JSONPathValue
-}
-
-// NewFunction creates a new JSONPath function extension. The parameters are:
-//
-//   - name: the name of the function as used in JSONPath queries.
-//   - resultType: The data type of the function return value.
-//   - validator: A validation function that will be called by at parse time
-//     to validate that all the function args are compatible with the function.
-//   - evaluator: The implementation of the function itself that executes the
-//     against args and returns the result defined by resultType.
-func NewFunction(
-	name string,
-	resultType spec.FuncType,
-	validator func(args []spec.FuncExprArg) error,
-	evaluator func(args []spec.JSONPathValue,
-	) spec.JSONPathValue,
-) *Function {
-	return &Function{name, resultType, validator, evaluator}
-}
-
-// Name returns the name of the function.
-func (f *Function) Name() string { return f.name }
-
-// ResultType returns the data type of the function return value.
-func (f *Function) ResultType() spec.FuncType { return f.resultType }
-
-// Evaluate executes the function against args and returns the result of type
-// [ResultType].
-func (f *Function) Evaluate(args []spec.JSONPathValue) spec.JSONPathValue {
-	return f.evaluator(args)
-}
-
-// Validate executes at parse time to validate that all the args to the
-// function are compatible with the function.
-func (f *Function) Validate(args []spec.FuncExprArg) error {
-	return f.validator((args))
 }

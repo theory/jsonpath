@@ -8,14 +8,8 @@ import (
 	"strings"
 )
 
-// FuncType describes the types of function parameters and results for the
-// purpose of validating function parameters.
-//
-// This type expands on the types defined by [RFC 9535 Section 2.4.1] to
-// provide an intermediate representation of singular query arguments, which
-// can be used as an argument to both [ValueType] and [NodesType] parameters.
-// Therefore, we require a Node variant here to indicate that an argument may
-// be converted into either type of parameter.
+// FuncType describes the types of function parameters and results as defined
+// by [RFC 9535 Section 2.4.1].
 //
 // Implements [fmt.Stringer].
 //
@@ -23,51 +17,17 @@ import (
 type FuncType uint8
 
 const (
-	// FuncLiteral represents a literal JSON value.
-	FuncLiteral FuncType = iota + 1
+	// FuncValue represents a JSON value as provided by [ValueType].
+	FuncValue FuncType = iota + 1
 
-	// FuncSingularQuery represents a singular query, which returns a single
-	// value.
-	FuncSingularQuery
-
-	// FuncValue represents a JSON value, used to represent functions that
-	// return [ValueType].
-	FuncValue
-
-	// FuncNodes represents a list of nodes, either from a filter query
-	// argument, or a function that returns [NodesType].
+	// FuncNodes represents a list of nodes as provided by [NodesType].
 	FuncNodes
 
-	// FuncLogical represents a logical, either from a logical expression, or
-	// from a function that returns [LogicalType].
+	// FuncLogical represents a logical value as provided by [LogicalType].
 	FuncLogical
 )
 
-// ConvertsToValue returns true if ft can be converted to a [ValueType]. In
-// other words, ft values can safely be passed to [ValueFrom] without it
-// panicking. Used by [github.com/theory/jsonpath/registry.NewFunction]
-// validator functions to ensure the compatibility of parameter expressions.
-func (ft FuncType) ConvertsToValue() bool {
-	return ft == FuncValue || ft == FuncLiteral || ft == FuncSingularQuery
-}
-
-// ConvertsToLogical returns true if ft can be converted to a [LogicalType].
-// In other words, ft values can safely be passed to [LogicalFrom] without it
-// panicking. Used by [github.com/theory/jsonpath/registry.NewFunction]
-// validator functions to ensure the compatibility of parameter expressions.
-func (ft FuncType) ConvertsToLogical() bool {
-	return ft == FuncLogical || ft == FuncNodes || ft == FuncSingularQuery
-}
-
-// ConvertsToNodes returns true if ft can be converted to a [NodesType]. In
-// other words, ft values can safely be passed to [NodesFrom] without it
-// panicking. Used by [github.com/theory/jsonpath/registry.NewFunction]
-// validator functions to ensure the compatibility of parameter expressions.
-func (ft FuncType) ConvertsToNodes() bool {
-	return ft == FuncNodes || ft == FuncSingularQuery
-}
-
-// JSONPathValue defines the interface for JSONPath values used as comparison
+// PathValue defines the interface for JSONPath values used as comparison
 // operands, filter expression results, and function parameters & return
 // values.
 //
@@ -77,9 +37,9 @@ func (ft FuncType) ConvertsToNodes() bool {
 //   - [NodesType]
 //
 // [RFC 9535 Section 2.4.1]: https://www.rfc-editor.org/rfc/rfc9535.html#section-2.4.1
-type JSONPathValue interface {
+type PathValue interface {
 	stringWriter
-	// FuncType returns the JSONPathValue's [FuncType].
+	// FuncType returns the PathValue's [FuncType].
 	FuncType() FuncType
 }
 
@@ -89,7 +49,7 @@ type JSONPathValue interface {
 // string, integer, float, [json.Number], nil, true, false, []any, or
 // map[string]any. Interfaces implemented:
 //
-// - [JSONPathValue]
+// - [PathValue]
 // - [fmt.Stringer]
 //
 // [RFC 9535 Section 2.4.1]: https://www.rfc-editor.org/rfc/rfc9535.html#section-2.4.1
@@ -102,15 +62,21 @@ func Nodes(val ...any) NodesType {
 	return NodesType(val)
 }
 
-// FuncType returns [FuncNodes]. Defined by the [JSONPathValue] interface.
+// FuncType returns [FuncNodes]. Defined by the [PathValue] interface.
 func (NodesType) FuncType() FuncType { return FuncNodes }
 
-// NodesFrom attempts to convert value to a [NodesType] and panics if it
-// cannot. Should only be used for a value whose [FuncType.ConvertsToNodes]
-// returns true. Use in [github.com/theory/jsonpath/registry.NewFunction]
-// evaluator functions to convert types, which should have already been
-// validated by [FuncType.ConvertsToNodes] in the validator function.
-func NodesFrom(value JSONPathValue) NodesType {
+// NodesFrom converts value to a [NodesType] and panics if it cannot. Use in
+// [github.com/theory/jsonpath/registry.Registry.Register] [Evaluator]. Avoid
+// the panic by returning an error from the accompanying [Validator] function
+// when [FuncExprArg.ConvertsToNodes] returns false for the [FuncExprArg] that
+// returns value.
+//
+// Converts each implementation of [PathValue] as follows:
+//   - [NodesType]: returns value
+//   - [ValueType]: Returns a [NodesType] containing that single value
+//   - [LogicalType]: Panics
+//   - nil: Returns an empty [NodesType]
+func NodesFrom(value PathValue) NodesType {
 	switch v := value.(type) {
 	case NodesType:
 		return v
@@ -118,6 +84,8 @@ func NodesFrom(value JSONPathValue) NodesType {
 		return NodesType([]any{v.any})
 	case nil:
 		return NodesType([]any{})
+	case LogicalType:
+		panic("cannot convert LogicalType to NodesType")
 	default:
 		panic(fmt.Sprintf("unexpected argument of type %T", v))
 	}
@@ -138,7 +106,7 @@ func (nt NodesType) String() string {
 // parameters or results, as defined by [RFC 9535 Section 2.4.1]. Interfaces
 // implemented:
 //
-//   - [JSONPathValue]
+//   - [PathValue]
 //   - [fmt.Stringer]
 //
 // [RFC 9535 Section 2.4.1]: https://www.rfc-editor.org/rfc/rfc9535.html#section-2.4.1
@@ -163,27 +131,31 @@ func Logical(boolean bool) LogicalType {
 // Bool returns the boolean equivalent to lt.
 func (lt LogicalType) Bool() bool { return lt == LogicalTrue }
 
-// FuncType returns [FuncLogical]. Defined by the [JSONPathValue] interface.
+// FuncType returns [FuncLogical]. Defined by the [PathValue] interface.
 func (LogicalType) FuncType() FuncType { return FuncLogical }
 
-// LogicalFrom attempts to convert value to a [LogicalType] and panics if it
-// cannot. Should only be used for a value whose [FuncType.ConvertsToLogical]
-// returns true. Use in [github.com/theory/jsonpath/registry.NewFunction]
-// evaluator functions to convert types, which should have already been
-// validated by [FuncType.ConvertsToLogical] in the validator function.
+// LogicalFrom converts value to a [LogicalType] and panics if it cannot. Use
+// in [github.com/theory/jsonpath/registry.Registry.Register] [Evaluator]
+// functions. Avoid the panic by returning an error from the accompanying
+// [Validator] function when [FuncExprArg.ConvertsToLogical] returns false for
+// the [FuncExprArg] that returns value.
+//
+// Converts each implementation of [PathValue] as follows:
+//   - [LogicalType]: returns value
+//   - [NodesType]: Returns [LogicalFalse] if value is empty and [LogicalTrue]
+//     if it is not
+//   - [ValueType]: Panics
+//   - nil: Returns [LogicalFalse]
 func LogicalFrom(value any) LogicalType {
 	switch v := value.(type) {
 	case LogicalType:
 		return v
 	case NodesType:
-		return LogicalFrom(len(v) > 0)
-	case bool:
-		if v {
-			return LogicalTrue
-		}
-		return LogicalFalse
+		return Logical(len(v) > 0)
 	case nil:
 		return LogicalFalse
+	case *ValueType:
+		panic("cannot convert ValueType to LogicalType")
 	default:
 		panic(fmt.Sprintf("unexpected argument of type %T", v))
 	}
@@ -201,7 +173,7 @@ func (lt LogicalType) writeTo(buf *strings.Builder) {
 // [json.Number], float, nil, true, false, []any, or map[string]any. A nil
 // ValueType pointer indicates no value. Interfaces implemented:
 //
-//   - [JSONPathValue]
+//   - [PathValue]
 //   - [BasicExpr]
 //   - [fmt.Stringer]
 //
@@ -223,20 +195,30 @@ func (vt *ValueType) Value() any { return vt.any }
 // String returns the string representation of vt.
 func (vt *ValueType) String() string { return fmt.Sprintf("%v", vt.any) }
 
-// FuncType returns [FuncValue]. Defined by the [JSONPathValue] interface.
+// FuncType returns [FuncValue]. Defined by the [PathValue] interface.
 func (*ValueType) FuncType() FuncType { return FuncValue }
 
-// ValueFrom attempts to convert value to a [ValueType] and panics if it
-// cannot. Should only be used for a value whose [FuncType.ConvertsToValue]
-// returns true. Use in [github.com/theory/jsonpath/registry.NewFunction]
-// evaluator functions to convert types, which should have already been
-// validated by [FuncType.ConvertsToValue] in the validator function.
-func ValueFrom(value JSONPathValue) *ValueType {
+// ValueFrom converts value to a [ValueType] and panics if it cannot. Use in
+// [github.com/theory/jsonpath/registry.Registry.Register] [Evaluator]
+// functions. Avoid the panic by returning an error from the accompanying
+// [Validator] function when [FuncExprArg.ConvertsToValue] returns false for
+// the [FuncExprArg] that returns value.
+//
+// Converts each implementation of [PathValue] as follows:
+//   - [ValueType]: returns value
+//   - [NodesType]: Panics
+//   - [ValueType]: Panics
+//   - nil: Returns nil
+func ValueFrom(value PathValue) *ValueType {
 	switch v := value.(type) {
 	case *ValueType:
 		return v
 	case nil:
 		return nil
+	case LogicalType:
+		panic("cannot convert LogicalType to ValueType")
+	case NodesType:
+		panic("cannot convert NodesType to ValueType")
 	}
 	panic(fmt.Sprintf("unexpected argument of type %T", value))
 }
@@ -295,16 +277,20 @@ func (vt *ValueType) writeTo(buf *strings.Builder) {
 //   - [LogicalOr]
 //   - [LiteralArg]
 //   - [SingularQueryExpr]
-//   - [NodesQueryExpr]
+//   - [PathQuery]
 //   - [FuncExpr]
 type FuncExprArg interface {
 	stringWriter
 	// evaluate evaluates the function expression against current and root and
-	// returns the resulting JSONPathValue.
-	evaluate(current, root any) JSONPathValue
+	// returns the resulting PathValue.
+	evaluate(current, root any) PathValue
 	// ResultType returns the [FuncType] that defines the type of the return
 	// value of the [FuncExprArg].
 	ResultType() FuncType
+
+	// ConvertsTo returns true if the function expression's result can be
+	// converted to ft.
+	ConvertsTo(ft FuncType) bool
 }
 
 // LiteralArg represents a literal JSON value, excluding objects and arrays.
@@ -339,14 +325,18 @@ func (la *LiteralArg) String() string {
 
 // evaluate returns a [ValueType] containing the literal value. Defined by the
 // [FuncExprArg] interface.
-func (la *LiteralArg) evaluate(_, _ any) JSONPathValue {
+func (la *LiteralArg) evaluate(_, _ any) PathValue {
 	return &ValueType{la.literal}
 }
 
-// ResultType returns [FuncLiteral]. Defined by the [FuncExprArg] interface.
+// ResultType returns [FuncValue]. Defined by the [FuncExprArg] interface.
 func (la *LiteralArg) ResultType() FuncType {
-	return FuncLiteral
+	return FuncValue
 }
+
+// ConvertsTo returns true if the result of the [LiteralArg] can be converted
+// to ft.
+func (*LiteralArg) ConvertsTo(ft FuncType) bool { return ft == FuncValue }
 
 // writeTo writes a JSON string representation of la to buf. Defined by
 // [stringWriter].
@@ -360,7 +350,7 @@ func (la *LiteralArg) writeTo(buf *strings.Builder) {
 
 // asValue returns la.literal as a [ValueType]. Defined by the [CompVal]
 // interface.
-func (la *LiteralArg) asValue(_, _ any) JSONPathValue {
+func (la *LiteralArg) asValue(_, _ any) PathValue {
 	return &ValueType{la.literal}
 }
 
@@ -388,7 +378,7 @@ func SingularQuery(root bool, selectors ...Selector) *SingularQueryExpr {
 
 // evaluate returns a [ValueType] containing the return value of executing sq.
 // Defined by the [FuncExprArg] interface.
-func (sq *SingularQueryExpr) evaluate(current, root any) JSONPathValue {
+func (sq *SingularQueryExpr) evaluate(current, root any) PathValue {
 	target := root
 	if sq.relative {
 		target = current
@@ -405,15 +395,20 @@ func (sq *SingularQueryExpr) evaluate(current, root any) JSONPathValue {
 	return &ValueType{target}
 }
 
-// ResultType returns [FuncSingularQuery]. Defined by the [FuncExprArg]
-// interface.
-func (*SingularQueryExpr) ResultType() FuncType {
-	return FuncSingularQuery
+// ResultType returns [FuncValue]. Defined by the [FuncExprArg] interface.
+func (sq *SingularQueryExpr) ResultType() FuncType {
+	return FuncValue
+}
+
+// ConvertsTo returns true if the result of the [SingularQueryExpr] can be
+// converted to ft.
+func (*SingularQueryExpr) ConvertsTo(ft FuncType) bool {
+	return ft == FuncValue || ft == FuncNodes
 }
 
 // asValue returns the result of executing sq.execute against current and
 // root. Defined by the [CompVal] interface.
-func (sq *SingularQueryExpr) asValue(current, root any) JSONPathValue {
+func (sq *SingularQueryExpr) asValue(current, root any) PathValue {
 	return sq.evaluate(current, root)
 }
 
@@ -440,65 +435,84 @@ func (sq *SingularQueryExpr) String() string {
 	return buf.String()
 }
 
-// NodesQueryExpr represents a JSONPath query that selects any number of nodes
-// (JSON values) into a [NodesType] to be used as a function argument.
-// Interfaces implemented:
+// Validator functions validate that the args expressions to a [FuncExtension]
+// can be processed by the function.
+type Validator func(args []FuncExprArg) error
+
+// Evaluator functions execute a [FuncExtension] against the values returned
+// by args and returns a result.
+type Evaluator func(args []PathValue) PathValue
+
+// FuncExtension defines a JSONPath function extension as defined in [RFC 9535
+// Section 2.4]. Use [github.com/theory/jsonpath/registry.Registry.Register]
+// to construct and register a new [FuncExtension].
 //
-//   - [FuncExprArg]
-//   - [fmt.Stringer]
-type NodesQueryExpr struct {
-	*PathQuery
+// [RFC 9535 Section 2.4]: https://www.rfc-editor.org/rfc/rfc9535#name-function-extensions
+type FuncExtension struct {
+	// name is the name of the function. Must be unique among all functions in
+	// a registry.
+	name string
+
+	// returnType defines the type of the function return value.
+	returnType FuncType
+
+	// validator executes at parse time to validate that all the args to
+	// the function are compatible with the function.
+	validator Validator
+
+	// evaluator executes the function and returns the result of type
+	// resultType.
+	evaluator Evaluator
 }
 
-// NodesQuery creates and returns a new [NodesQueryExpr].
-func NodesQuery(q *PathQuery) *NodesQueryExpr {
-	return &NodesQueryExpr{q}
+// Extension creates a new JSONPath function extension. Created by
+// [github.com/theory/jsonpath/registry.Registry.Register]. The parameters
+// are:
+//
+//   - name: the name of the function extension as used in JSONPath queries.
+//   - returnType: The data type of the function return value.
+//   - validator: A validation function that will be called at parse time
+//     to validate that all the function args are compatible with the function.
+//   - evaluator: The implementation of the function itself that executes
+//     against args and returns the result of the type defined by resultType.
+func Extension(name string, returnType FuncType, validator Validator, evaluator Evaluator) *FuncExtension {
+	return &FuncExtension{name, returnType, validator, evaluator}
 }
 
-// evaluate returns a [NodesType] containing the result of executing fq.
-// Defined by the [FuncExprArg] interface.
-func (fq *NodesQueryExpr) evaluate(current, root any) JSONPathValue {
-	return NodesType(fq.Select(current, root))
+// Name returns the name of the [FuncExtension].
+func (f *FuncExtension) Name() string { return f.name }
+
+// ReturnType returns the data type of the [FuncExtension] return value.
+func (f *FuncExtension) ReturnType() FuncType { return f.returnType }
+
+// Evaluate executes the [FuncExtension] against args and returns a result of
+// type [ResultType].
+func (f *FuncExtension) Evaluate(args []PathValue) PathValue {
+	return f.evaluator(args)
 }
 
-// ResultType returns [FuncSingularQuery] if fq is a singular query, and
-// [FuncNodes] if it is not. Defined by the [FuncExprArg] interface.
-func (fq *NodesQueryExpr) ResultType() FuncType {
-	if fq.isSingular() {
-		return FuncSingularQuery
-	}
-	return FuncNodes
+// Validate executes at parse time to validate that all the args to the are
+// compatible with the [FuncExtension].
+func (f *FuncExtension) Validate(args []FuncExprArg) error {
+	return f.validator(args)
 }
 
-// writeTo writes a string representation of fq to buf. Defined by
-// [stringWriter].
-func (fq *NodesQueryExpr) writeTo(buf *strings.Builder) {
-	buf.WriteString(fq.String())
-}
-
-// PathFunction represents a JSONPath function. See
-// [github.com/theory/jsonpath/registry.Function] for the implementation.
-type PathFunction interface {
-	Name() string
-	ResultType() FuncType
-	Evaluate(args []JSONPathValue) JSONPathValue
-}
-
-// FuncExpr represents a function expression, consisting of a named function
-// and its arguments. See [github.com/theory/jsonpath/registry] for an example
-// defining a custom function. Interfaces Implemented:
+// FuncExpr represents a function expression, consisting of a named
+// [FuncExtension] and its arguments. See
+// [github.com/theory/jsonpath/registry] for an example defining a custom
+// function. Interfaces Implemented:
 //   - [FuncExprArg]
 //   - [BasicExpr]
 //   - [fmt.Stringer]
 //   - [CompVal]
 type FuncExpr struct {
 	args []FuncExprArg
-	fn   PathFunction
+	fn   *FuncExtension
 }
 
-// Function creates an returns a new function expression that will execute fn
-// against the return values of args.
-func Function(fn PathFunction, args ...FuncExprArg) *FuncExpr {
+// Function creates an returns a new [FuncExpr] that will execute fn against
+// the return values of args.
+func Function(fn *FuncExtension, args ...FuncExprArg) *FuncExpr {
 	return &FuncExpr{args: args, fn: fn}
 }
 
@@ -522,11 +536,11 @@ func (fe *FuncExpr) String() string {
 	return buf.String()
 }
 
-// evaluate returns a [JSONPathValue] containing the result of executing each
+// evaluate returns a [PathValue] containing the result of executing each
 // [FuncExprArg] in fe (as passed to [Function]) and passing them to fe's
-// [PathFunction].
-func (fe *FuncExpr) evaluate(current, root any) JSONPathValue {
-	res := []JSONPathValue{}
+// [FuncExtension].
+func (fe *FuncExpr) evaluate(current, root any) PathValue {
+	res := []PathValue{}
 	for _, a := range fe.args {
 		res = append(res, a.evaluate(current, root))
 	}
@@ -534,15 +548,20 @@ func (fe *FuncExpr) evaluate(current, root any) JSONPathValue {
 	return fe.fn.Evaluate(res)
 }
 
-// ResultType returns the result type of fe's [PathFunction]. Defined by the
+// ResultType returns the result type of fe's [FuncExtension]. Defined by the
 // [FuncExprArg] interface.
 func (fe *FuncExpr) ResultType() FuncType {
-	return fe.fn.ResultType()
+	return fe.fn.ReturnType()
+}
+
+// ConvertsTo returns true if fe's result can be converted to ft.
+func (fe *FuncExpr) ConvertsTo(ft FuncType) bool {
+	return ft == fe.fn.ReturnType()
 }
 
 // asValue returns the result of executing fe.evaluate against current and
 // root. Defined by the [CompVal] interface.
-func (fe *FuncExpr) asValue(current, root any) JSONPathValue {
+func (fe *FuncExpr) asValue(current, root any) PathValue {
 	return fe.evaluate(current, root)
 }
 
@@ -577,7 +596,7 @@ type NotFuncExpr struct {
 	*FuncExpr
 }
 
-// NotFunction creates and returns a new NotFuncExpr that will execute fn
+// NotFunction creates and returns a new [NotFuncExpr] that will execute fn
 // against the return values of args and return the inverse of its return
 // value.
 func NotFunction(fn *FuncExpr) NotFuncExpr {
