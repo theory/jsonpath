@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file. It uses the
   [Semantic Versioning]: https://semver.org/spec/v2.0.0.html
     "Semantic Versioning 2.0.0"
 
-## [v0.10.0] — Unreleased
+## [v0.9.0] — Unreleased
 
 ### ⚡ Improvements
 
@@ -28,7 +28,7 @@ All notable changes to this project will be documented in this file. It uses the
 *   Vastly expanded the `spec` package documentation to make it much more
     thorough and accurate, with copious links to relevant parts of [RFC 9535]
     and complete lists of interface implementations and examples for each
-    significant type. See [PR #14] for details.
+    significant type.
 *   Removed the "Package Stability" statement from the README, as all packages
     are considered stable or else potentially unstable types in the `spec`
     package have been labeled as such.
@@ -42,10 +42,9 @@ All notable changes to this project will be documented in this file. It uses the
 *   Upgraded the [compliance test suite] and integrated its located path test
     expectations. All tests passed, no changes required.
 
-  [v0.4.1]: https://github.com/theory/jsonpath/compare/v0.4.1...v0.10.0
+  [v0.9.0]: https://github.com/theory/jsonpath/compare/v0.4.1...v0.9.0
   [json.Number]: https://pkg.go.dev/encoding/json#Number
   [json.Decoder.UseNumber]: https://pkg.go.dev/encoding/json#Decoder.UseNumber
-  [PR #14]: https://github.com/theory/jsonpath/pull/14
   [compliance test suite]: https://github.com/jsonpath-standard/jsonpath-compliance-test-suite
   [RFC 9535]: https://www.rfc-editor.org/rfc/rfc9535.html
     "RFC 9535 JSONPath: Query Expressions for JSON"
