@@ -41,34 +41,33 @@ type CompVal interface {
 	asValue(current, root any) PathValue
 }
 
-// ComparisonExpr is a filter expression that compares two values, which
-// themselves may themselves be the output of expressions. Interfaces
-// implemented:
+// CompExpr is a filter expression that compares two values, which themselves
+// may themselves be the output of expressions. Interfaces implemented:
 //
 //   - [BasicExpr]
 //   - [fmt.Stringer]
-type ComparisonExpr struct {
+type CompExpr struct {
 	left  CompVal
 	op    CompOp
 	right CompVal
 }
 
-// Comparison creates and returns a new [ComparisonExpr] that uses op to
-// compare left and right.
-func Comparison(left CompVal, op CompOp, right CompVal) *ComparisonExpr {
-	return &ComparisonExpr{left, op, right}
+// Comparison creates and returns a new [CompExpr] that uses op to compare
+// left and right.
+func Comparison(left CompVal, op CompOp, right CompVal) *CompExpr {
+	return &CompExpr{left, op, right}
 }
 
 // writeTo writes a string representation of ce to buf. Defined by
 // [stringWriter].
-func (ce *ComparisonExpr) writeTo(buf *strings.Builder) {
+func (ce *CompExpr) writeTo(buf *strings.Builder) {
 	ce.left.writeTo(buf)
 	fmt.Fprintf(buf, " %v ", ce.op)
 	ce.right.writeTo(buf)
 }
 
 // String returns the string representation of ce.
-func (ce *ComparisonExpr) String() string {
+func (ce *CompExpr) String() string {
 	var buf strings.Builder
 	ce.writeTo(&buf)
 	return buf.String()
@@ -76,7 +75,7 @@ func (ce *ComparisonExpr) String() string {
 
 // testFilter uses ce.Op to compare the values returned by ce.Left and
 // ce.Right relative to current and root. Defined by [BasicExpr].
-func (ce *ComparisonExpr) testFilter(current, root any) bool {
+func (ce *CompExpr) testFilter(current, root any) bool {
 	left := ce.left.asValue(current, root)
 	right := ce.right.asValue(current, root)
 	switch ce.op {

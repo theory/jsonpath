@@ -20,7 +20,7 @@ func TestSelectorInterface(t *testing.T) {
 		{"name", Name("hi")},
 		{"index", Index(42)},
 		{"slice", Slice()},
-		{"wildcard", Wildcard},
+		{"wildcard", Wildcard()},
 		{"filter", Filter(nil)},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -175,7 +175,7 @@ func TestSelectorString(t *testing.T) {
 		},
 		{
 			name: "wildcard",
-			tok:  Wildcard,
+			tok:  Wildcard(),
 			str:  "*",
 		},
 	} {
@@ -505,11 +505,11 @@ func TestWildcardSelect(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			if _, ok := tc.src.(map[string]any); ok {
-				a.ElementsMatch(tc.exp, Wildcard.Select(tc.src, nil))
-				a.ElementsMatch(tc.loc, Wildcard.SelectLocated(tc.src, nil, Normalized()))
+				a.ElementsMatch(tc.exp, Wildcard().Select(tc.src, nil))
+				a.ElementsMatch(tc.loc, Wildcard().SelectLocated(tc.src, nil, Normalized()))
 			} else {
-				a.Equal(tc.exp, Wildcard.Select(tc.src, nil))
-				a.Equal(tc.loc, Wildcard.SelectLocated(tc.src, nil, Normalized()))
+				a.Equal(tc.exp, Wildcard().Select(tc.src, nil))
+				a.Equal(tc.loc, Wildcard().SelectLocated(tc.src, nil, Normalized()))
 			}
 		})
 	}

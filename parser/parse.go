@@ -117,7 +117,7 @@ func parseNameOrWildcard(lex *lexer) (spec.Selector, error) {
 	case identifier:
 		return spec.Name(tok.val), nil
 	case '*':
-		return spec.Wildcard, nil
+		return spec.Wildcard(), nil
 	default:
 		return nil, unexpected(tok)
 	}
@@ -137,7 +137,7 @@ func (p *parser) parseDescendant() (*spec.Segment, error) {
 	case identifier:
 		return spec.Descendant(spec.Name(tok.val)), nil
 	case '*':
-		return spec.Descendant(spec.Wildcard), nil
+		return spec.Descendant(spec.Wildcard()), nil
 	default:
 		return nil, unexpected(tok)
 	}
@@ -169,7 +169,7 @@ func (p *parser) parseSelectors() ([]spec.Selector, error) {
 			}
 			selectors = append(selectors, filter)
 		case '*':
-			selectors = append(selectors, spec.Wildcard)
+			selectors = append(selectors, spec.Wildcard())
 		case goString:
 			selectors = append(selectors, spec.Name(tok.val))
 		case integer:
@@ -613,7 +613,7 @@ func parseLiteral(tok token) (*spec.LiteralArg, error) {
 }
 
 // parseComparableExpr parses a [ComparisonExpr] (comparison-expr) from lex.
-func (p *parser) parseComparableExpr(left spec.CompVal) (*spec.ComparisonExpr, error) {
+func (p *parser) parseComparableExpr(left spec.CompVal) (*spec.CompExpr, error) {
 	// Skip blank space.
 	lex := p.lex
 	lex.skipBlankSpace()

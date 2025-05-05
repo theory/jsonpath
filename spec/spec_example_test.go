@@ -17,7 +17,7 @@ func Example() {
 		true,
 		spec.Child(spec.Name("store")),
 		spec.Child(spec.Name("book")),
-		spec.Child(spec.Wildcard),
+		spec.Child(spec.Wildcard()),
 		spec.Child(spec.Name("author")),
 	))
 
@@ -42,7 +42,7 @@ func ExamplePathQuery() {
 		true,
 		spec.Child(spec.Name("store")),
 		spec.Child(spec.Name("book")),
-		spec.Child(spec.Wildcard),
+		spec.Child(spec.Wildcard()),
 		spec.Child(spec.Name("author")),
 	)
 	fmt.Printf("%v\n", q)
@@ -137,7 +137,7 @@ func ExampleIndex() {
 }
 
 func ExampleWildcard() {
-	fmt.Printf("%v\n", spec.Wildcard)
+	fmt.Printf("%v\n", spec.Wildcard())
 	// Output: *
 }
 
@@ -155,7 +155,7 @@ func ExampleFilterSelector() {
 
 // Create a comparison expression that compares a literal value to a path
 // expression.
-func ExampleComparisonExpr() {
+func ExampleCompExpr() {
 	cmp := spec.Comparison(
 		spec.Literal(42),
 		spec.EqualTo,

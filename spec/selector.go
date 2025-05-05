@@ -125,20 +125,20 @@ func (n Name) writePointerTo(buf *strings.Builder) {
 }
 
 // WildcardSelector is a wildcard selector, e.g., * or [*], as defined by [RFC
-// 9535 Section 2.3.2]. Interfaces
-// implemented:
+// 9535 Section 2.3.2]. Interfaces implemented:
 //   - [Selector]
 //   - [fmt.Stringer]
 //
 // [RFC 9535 Section 2.3.2]: https://www.rfc-editor.org/rfc/rfc9535.html#name-wildcard-selector
 type WildcardSelector struct{}
 
-// Wildcard is a [WildcardSelector] singleton.
-//
 //nolint:gochecknoglobals
-var Wildcard = WildcardSelector{}
+var wc = WildcardSelector{}
 
-// writeTo  writes "*" to buf. Defined by [stringWriter].
+// Wildcard returns a [WildcardSelector] singleton.
+func Wildcard() WildcardSelector { return wc }
+
+// writeTo writes "*" to buf. Defined by [stringWriter].
 func (WildcardSelector) writeTo(buf *strings.Builder) { buf.WriteByte('*') }
 
 // String returns "*".

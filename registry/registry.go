@@ -87,7 +87,8 @@ func (r *Registry) Register(
 }
 
 // Get returns a reference to the registered function extension named name.
-// Returns nil if no function with that name has been registered.
+// Returns nil if no function with that name has been registered. Used by the
+// parser to match a function name to its implementation.
 func (r *Registry) Get(name string) *spec.FuncExtension {
 	r.mu.RLock()
 	defer r.mu.RUnlock()

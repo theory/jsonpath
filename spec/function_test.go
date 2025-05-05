@@ -420,7 +420,7 @@ func TestFilterQuery(t *testing.T) {
 		},
 		{
 			name:     "current_wildcard",
-			query:    Query(false, Child(Wildcard)),
+			query:    Query(false, Child(Wildcard())),
 			current:  []any{13, 2, []any{4}},
 			exp:      []any{13, 2, []any{4}},
 			typeKind: FuncNodes,

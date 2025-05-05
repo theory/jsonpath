@@ -7,7 +7,7 @@ import (
 // BasicExpr defines the basic interface for filter expressions.
 // Implementations:
 //
-//   - [ComparisonExpr]
+//   - [CompExpr]
 //   - [ExistExpr]
 //   - [FuncExpr]
 //   - [LogicalAnd]

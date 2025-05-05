@@ -34,6 +34,8 @@ All notable changes to this project will be documented in this file. It uses the
     package have been labeled as such.
 *   Fixed links and typos in the main package documentation, and moved the
     registry example under `WithRegistry`.
+*   Replaced the `spec.Wildcard` variable with a the function
+    `spec.Wildcard()`.
 
 ### 📔 Notes
 

@@ -85,15 +85,15 @@ func TestParseSimple(t *testing.T) {
 		{
 			name: "wildcard",
 			path: "$.*",
-			exp:  spec.Query(true, spec.Child(spec.Wildcard)),
+			exp:  spec.Query(true, spec.Child(spec.Wildcard())),
 		},
 		{
 			name: "wildcard_wildcard",
 			path: "$.*.*",
 			exp: spec.Query(
 				true,
-				spec.Child(spec.Wildcard),
-				spec.Child(spec.Wildcard),
+				spec.Child(spec.Wildcard()),
+				spec.Child(spec.Wildcard()),
 			),
 		},
 		{
@@ -102,7 +102,7 @@ func TestParseSimple(t *testing.T) {
 			exp: spec.Query(
 				true,
 				spec.Child(spec.Name("x")),
-				spec.Child(spec.Wildcard),
+				spec.Child(spec.Wildcard()),
 			),
 		},
 		{
@@ -122,15 +122,15 @@ func TestParseSimple(t *testing.T) {
 		{
 			name: "desc_wildcard",
 			path: "$..*",
-			exp:  spec.Query(true, spec.Descendant(spec.Wildcard)),
+			exp:  spec.Query(true, spec.Descendant(spec.Wildcard())),
 		},
 		{
 			name: "desc_wildcard_2x",
 			path: "$..*..*",
 			exp: spec.Query(
 				true,
-				spec.Descendant(spec.Wildcard),
-				spec.Descendant(spec.Wildcard),
+				spec.Descendant(spec.Wildcard()),
+				spec.Descendant(spec.Wildcard()),
 			),
 		},
 		{
@@ -138,7 +138,7 @@ func TestParseSimple(t *testing.T) {
 			path: "$..*.xyz",
 			exp: spec.Query(
 				true,
-				spec.Descendant(spec.Wildcard),
+				spec.Descendant(spec.Wildcard()),
 				spec.Child(spec.Name("xyz")),
 			),
 		},
@@ -147,7 +147,7 @@ func TestParseSimple(t *testing.T) {
 			path: "$.*..xyz",
 			exp: spec.Query(
 				true,
-				spec.Child(spec.Wildcard),
+				spec.Child(spec.Wildcard()),
 				spec.Descendant(spec.Name("xyz")),
 			),
 		},
@@ -967,12 +967,12 @@ func TestParseSelectors(t *testing.T) {
 		{
 			name: "slice_wildcard",
 			path: `$[:,   *]`,
-			exp:  spec.Query(true, spec.Child(spec.Slice(), spec.Wildcard)),
+			exp:  spec.Query(true, spec.Child(spec.Slice(), spec.Wildcard())),
 		},
 		{
 			name: "wildcard_slice",
 			path: `$[  *,  :   ]`,
-			exp:  spec.Query(true, spec.Child(spec.Wildcard, spec.Slice())),
+			exp:  spec.Query(true, spec.Child(spec.Wildcard(), spec.Slice())),
 		},
 		{
 			name: "slice_neg_start",
@@ -990,13 +990,13 @@ func TestParseSelectors(t *testing.T) {
 			exp:  spec.Query(true, spec.Child(spec.Slice(nil, nil, -2))),
 		},
 		{
-			name: "index_name_slice, wildcard",
+			name: "index_name_slice_wildcard",
 			path: `$[3, "🦀", :3,*]`,
 			exp: spec.Query(true, spec.Child(
 				spec.Index(3),
 				spec.Name("🦀"),
 				spec.Slice(nil, 3),
-				spec.Wildcard,
+				spec.Wildcard(),
 			)),
 		},
 		{
@@ -1118,7 +1118,7 @@ func TestParseSelectors(t *testing.T) {
 		{
 			name: "wildcard_tab",
 			path: "$[*\t]",
-			exp:  spec.Query(true, spec.Child(spec.Wildcard)),
+			exp:  spec.Query(true, spec.Child(spec.Wildcard())),
 		},
 		{
 			name: "slice_newline",
@@ -1146,7 +1146,7 @@ func TestParseSelectors(t *testing.T) {
 			exp: spec.Query(true, spec.Descendant(
 				spec.Name("hi"),
 				spec.Index(2),
-				spec.Wildcard,
+				spec.Wildcard(),
 				spec.Slice(4, 5),
 			)),
 		},
@@ -1177,7 +1177,7 @@ func TestParseSelectors(t *testing.T) {
 				true,
 				spec.Child(spec.Name("names")),
 				spec.Child(spec.Name("first_name")),
-				spec.Descendant(spec.Wildcard),
+				spec.Descendant(spec.Wildcard()),
 			),
 		},
 		{
@@ -1214,7 +1214,7 @@ func TestParseSelectors(t *testing.T) {
 		{
 			name: "default_slice_wildcard_segment",
 			path: `$[::,*]`,
-			exp:  spec.Query(true, spec.Child(spec.Slice(), spec.Wildcard)),
+			exp:  spec.Query(true, spec.Child(spec.Slice(), spec.Wildcard())),
 		},
 		{
 			name: "leading_zero_index",
