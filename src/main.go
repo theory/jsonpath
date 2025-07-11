@@ -54,9 +54,11 @@ func execute(query, target string, opts int) string {
 
 	// Serialize the result
 	var buf bytes.Buffer
+
 	enc := json.NewEncoder(&buf)
 	enc.SetEscapeHTML(false)
 	enc.SetIndent("", "  ")
+
 	if err := enc.Encode(res); err != nil {
 		return fmt.Sprintf("Error parsing results: %v", err)
 	}
