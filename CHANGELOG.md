@@ -7,7 +7,30 @@ All notable changes to this project will be documented in this file. It uses the
   [Semantic Versioning]: https://semver.org/spec/v2.0.0.html
     "Semantic Versioning 2.0.0"
 
-## [v0.9.0] — Unreleased
+## [v0.10.0] — Unreleased
+
+### ⚡ Improvements
+
+*   Added text and binary encoding interface methods to `Path`:
+    *   [encoding.TextMarshaler]
+    *   [encoding.TextUnmarshaler]
+    *   [encoding.BinaryMarshaler]
+    *   [encoding.BinaryUnmarshaler]
+    Thanks to @rkosegi for the suggestion ([#20])
+
+### 📔 Notes
+
+*   Upgraded to `golangci-lint` v2.2.2.
+
+  [v0.10.0]: https://github.com/theory/jsonpath/compare/v0.9.0...v0.10.0
+  [encoding.TextMarshaler]: https://pkg.go.dev/encoding#TextMarshaler
+  [encoding.TextUnmarshaler]: https://pkg.go.dev/encoding#TextUnmarshaler
+  [encoding.BinaryMarshaler]: https://pkg.go.dev/encoding#BinaryMarshaler
+  [encoding.BinaryUnmarshaler]: https://pkg.go.dev/encoding#BinaryUnmarshaler
+  [#20]: https://github.com/theory/jsonpath/issues/20
+    "theory/jsonpath#20: Implement encoding.TextUnmarshaler in Path"
+
+## [v0.9.0] — 2025-05-05
 
 ### ⚡ Improvements
 

@@ -1,6 +1,7 @@
 package jsonpath
 
 import (
+	"encoding"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -21,6 +22,7 @@ func book(idx int) spec.NormalizedPath {
 func TestParseSpecExamples(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
+	r := require.New(t)
 	val := specExampleJSON(t)
 	store, _ := val["store"].(map[string]any)
 	books, _ := store["book"].([]any)
@@ -126,9 +128,35 @@ func TestParseSpecExamples(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+
+			// Test parsing.
 			p := MustParse(tc.path)
 			a.Equal(p.q, p.Query())
 			a.Equal(p.q.String(), p.String())
+
+			// Test text encoding.
+			a.Implements((*encoding.TextMarshaler)(nil), p)
+			a.Implements((*encoding.TextUnmarshaler)(nil), p)
+			text, err := p.MarshalText()
+			r.NoError(err)
+			a.Equal(p.q.String(), string(text))
+			p.q = nil
+			r.NoError(p.UnmarshalText(text))
+			a.Equal(p.q, p.Query())
+			a.Equal(p.q.String(), p.String())
+
+			// Test binary encoding.
+			a.Implements((*encoding.BinaryMarshaler)(nil), p)
+			a.Implements((*encoding.BinaryUnmarshaler)(nil), p)
+			data, err := p.MarshalBinary()
+			r.NoError(err)
+			a.Equal(p.q.String(), string(data))
+			p.q = nil
+			r.NoError(p.UnmarshalBinary(text))
+			a.Equal(p.q, p.Query())
+			a.Equal(p.q.String(), p.String())
+
+			// Test execution.
 			res := p.Select(val)
 			loc := p.SelectLocated(val)
 
@@ -332,6 +360,20 @@ func TestParser(t *testing.T) {
 					r.ErrorIs(err, ErrPathParse)
 					a.PanicsWithError(tc.err, func() { parser.MustParse(tc.path) })
 				}
+			}
+
+			// Test text and binary decoding.
+			if tc.err == "" {
+				p = &Path{}
+				r.NoError(p.UnmarshalText([]byte(tc.path)))
+				a.Equal(tc.exp, p)
+				p = &Path{}
+				r.NoError(p.UnmarshalBinary([]byte(tc.path)))
+				a.Equal(tc.exp, p)
+			} else {
+				p = &Path{}
+				r.EqualError(p.UnmarshalText([]byte(tc.path)), tc.err)
+				r.EqualError(p.UnmarshalBinary([]byte(tc.path)), tc.err)
 			}
 		})
 	}

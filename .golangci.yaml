@@ -12,6 +12,8 @@ linters:
     - testpackage
     - varnamelen
     - wsl
+    - wsl_v5
+    - noinlineerr
   settings:
     dupword:
       ignore:

@@ -37,6 +37,35 @@ func MustParse(path string) *Path {
 	return NewParser().MustParse(path)
 }
 
+// MarshalText encodes p into UTF-8-encoded text and returns the result.
+// Implements [encoding.TextMarshaler].
+func (p *Path) MarshalText() ([]byte, error) {
+	return []byte(p.q.String()), nil
+}
+
+// UnmarshalText decodes UTF-8-encoded text into p. Implements
+// [encoding.TextUnmarshaler].
+func (p *Path) UnmarshalText(data []byte) error {
+	parsed, err := NewParser().Parse(string(data))
+	if err != nil {
+		return err
+	}
+	p.q = parsed.q
+	return nil
+}
+
+// MarshalBinary encodes p into UTF-8-encoded bytes and returns the result.
+// Implements [encoding.BinaryMarshaler].
+func (p *Path) MarshalBinary() ([]byte, error) {
+	return p.MarshalText()
+}
+
+// UnmarshalBinary decodes UTF-8-encoded bytes into p. Implements
+// [encoding.BinaryUnmarshaler].
+func (p *Path) UnmarshalBinary(data []byte) error {
+	return p.UnmarshalText(data)
+}
+
 // String returns a string representation of p.
 func (p *Path) String() string {
 	return p.q.String()
