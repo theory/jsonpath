@@ -13,6 +13,7 @@ jobs:
         with: { go-version-file: go.mod, check-latest: true }
       - name: Setup TinyGo
         uses: acifani/setup-tinygo@v2
+        # https://github.com/tinygo-org/tinygo/issues/4873
         with: { tinygo-version: 0.36.0 }
       - name: Generate App
         run: make playground
