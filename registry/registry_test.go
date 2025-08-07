@@ -12,7 +12,7 @@ func TestRegistry(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name  string
+		test  string
 		rType spec.FuncType
 		expr  []spec.FuncExprArg
 		args  []spec.PathValue
@@ -20,42 +20,42 @@ func TestRegistry(t *testing.T) {
 	}{
 		// RFC 9535-defined functions.
 		{
-			name:  "length",
+			test:  "length",
 			rType: spec.FuncValue,
 			expr:  []spec.FuncExprArg{spec.Literal("foo")},
 			args:  []spec.PathValue{spec.Value("foo")},
 			exp:   spec.Value(3),
 		},
 		{
-			name:  "count",
+			test:  "count",
 			rType: spec.FuncValue,
 			expr:  []spec.FuncExprArg{&spec.SingularQueryExpr{}},
 			args:  []spec.PathValue{spec.Nodes(1, 2)},
 			exp:   spec.Value(2),
 		},
 		{
-			name:  "value",
+			test:  "value",
 			rType: spec.FuncValue,
 			expr:  []spec.FuncExprArg{&spec.SingularQueryExpr{}},
 			args:  []spec.PathValue{spec.Nodes(42)},
 			exp:   spec.Value(42),
 		},
 		{
-			name:  "match",
+			test:  "match",
 			rType: spec.FuncLogical,
 			expr:  []spec.FuncExprArg{spec.Literal("foo"), spec.Literal(".*")},
 			args:  []spec.PathValue{spec.Value("foo"), spec.Value(".*")},
 			exp:   spec.LogicalTrue,
 		},
 		{
-			name:  "search",
+			test:  "search",
 			rType: spec.FuncLogical,
 			expr:  []spec.FuncExprArg{spec.Literal("foo"), spec.Literal(".")},
 			args:  []spec.PathValue{spec.Value("foo"), spec.Value(".")},
 			exp:   spec.LogicalTrue,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 			r := require.New(t)
@@ -63,7 +63,7 @@ func TestRegistry(t *testing.T) {
 			reg := New()
 			a.Len(reg.funcs, 5)
 
-			ft := reg.Get(tc.name)
+			ft := reg.Get(tc.test)
 			a.NotNil(ft)
 			a.Equal(tc.rType, ft.ReturnType())
 			r.NoError(ft.Validate(tc.expr))
@@ -77,36 +77,36 @@ func TestRegisterErr(t *testing.T) {
 	reg := New()
 
 	for _, tc := range []struct {
-		name   string
+		test   string
 		fnName string
 		valid  spec.Validator
 		eval   spec.Evaluator
 		err    string
 	}{
 		{
-			name:   "existing_func",
+			test:   "existing_func",
 			fnName: "length",
 			valid:  func([]spec.FuncExprArg) error { return nil },
 			eval:   func([]spec.PathValue) spec.PathValue { return spec.Value(42) },
 			err:    "register: Register called twice for function length",
 		},
 		{
-			name: "nil_validator",
+			test: "nil_validator",
 			err:  "register: validator is nil",
 		},
 		{
-			name:  "nil_evaluator",
+			test:  "nil_evaluator",
 			valid: func([]spec.FuncExprArg) error { return nil },
 			err:   "register: evaluator is nil",
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			r := require.New(t)
 
 			err := reg.Register(tc.fnName, spec.FuncValue, tc.valid, tc.eval)
-			r.ErrorIs(err, ErrRegister, tc.name)
-			r.EqualError(err, tc.err, tc.name)
+			r.ErrorIs(err, ErrRegister, tc.test)
+			r.EqualError(err, tc.err, tc.test)
 		})
 	}
 }

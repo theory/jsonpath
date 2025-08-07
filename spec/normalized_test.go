@@ -13,61 +13,61 @@ func TestNormalSelector(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name string
+		test string
 		elem NormalSelector
 		str  string
 		ptr  string
 	}{
 		{
-			name: "object_value",
+			test: "object_value",
 			elem: Name("a"),
 			str:  `['a']`,
 			ptr:  `a`,
 		},
 		{
-			name: "array_index",
+			test: "array_index",
 			elem: Index(1),
 			str:  `[1]`,
 			ptr:  `1`,
 		},
 		{
-			name: "escape_apostrophes",
+			test: "escape_apostrophes",
 			elem: Name("'hi'"),
 			str:  `['\'hi\'']`,
 			ptr:  "'hi'",
 		},
 		{
-			name: "escapes",
+			test: "escapes",
 			elem: Name("'\b\f\n\r\t\\'"),
 			str:  `['\'\b\f\n\r\t\\\'']`,
 			ptr:  "'\b\f\n\r\t\\'",
 		},
 		{
-			name: "escape_vertical_unicode",
+			test: "escape_vertical_unicode",
 			elem: Name("\u000B"),
 			str:  `['\u000b']`,
 			ptr:  "\u000B",
 		},
 		{
-			name: "escape_unicode_null",
+			test: "escape_unicode_null",
 			elem: Name("\u0000"),
 			str:  `['\u0000']`,
 			ptr:  "\u0000",
 		},
 		{
-			name: "escape_unicode_runes",
+			test: "escape_unicode_runes",
 			elem: Name("\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u000e\u000F"),
 			str:  `['\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u000e\u000f']`,
 			ptr:  "\u0001\u0002\u0003\u0004\u0005\u0006\u0007\u000e\u000F",
 		},
 		{
-			name: "escape_pointer",
+			test: "escape_pointer",
 			elem: Name("this / ~that"),
 			str:  `['this / ~that']`,
 			ptr:  "this ~1 ~0that",
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 
@@ -85,61 +85,61 @@ func TestNormalizedPath(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name string
+		test string
 		path NormalizedPath
 		str  string
 		ptr  string
 	}{
 		{
-			name: "empty_path",
+			test: "empty_path",
 			path: Normalized(),
 			str:  "$",
 			ptr:  "",
 		},
 		{
-			name: "object_value",
+			test: "object_value",
 			path: Normalized(Name("a")),
 			str:  "$['a']",
 			ptr:  "/a",
 		},
 		{
-			name: "array_index",
+			test: "array_index",
 			path: Normalized(Index(1)),
 			str:  "$[1]",
 			ptr:  "/1",
 		},
 		{
-			name: "neg_for_len_5",
+			test: "neg_for_len_5",
 			path: Normalized(Index(2)),
 			str:  "$[2]",
 			ptr:  "/2",
 		},
 		{
-			name: "nested_structure",
+			test: "nested_structure",
 			path: Normalized(Name("a"), Name("b"), Index(1)),
 			str:  "$['a']['b'][1]",
 			ptr:  "/a/b/1",
 		},
 		{
-			name: "unicode_escape",
+			test: "unicode_escape",
 			path: Normalized(Name("\u000B")),
 			str:  `$['\u000b']`,
 			ptr:  "/\u000b",
 		},
 		{
-			name: "unicode_character",
+			test: "unicode_character",
 			path: Normalized(Name("\u0061")),
 			str:  "$['a']",
 			ptr:  "/a",
 		},
 		{
-			name: "nested_structure_pointer_stuff",
+			test: "nested_structure_pointer_stuff",
 			path: Normalized(Name("a~x"), Name("b/2"), Index(1)),
 			str:  "$['a~x']['b/2'][1]",
 			ptr:  "/a~0x/b~12/1",
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 
@@ -153,107 +153,107 @@ func TestNormalizedPathCompare(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name string
+		test string
 		p1   NormalizedPath
 		p2   NormalizedPath
 		exp  int
 	}{
 		{
-			name: "empty_paths",
+			test: "empty_paths",
 			exp:  0,
 		},
 		{
-			name: "same_name",
+			test: "same_name",
 			p1:   Normalized(Name("a")),
 			p2:   Normalized(Name("a")),
 			exp:  0,
 		},
 		{
-			name: "diff_names",
+			test: "diff_names",
 			p1:   Normalized(Name("a")),
 			p2:   Normalized(Name("b")),
 			exp:  -1,
 		},
 		{
-			name: "diff_names_rev",
+			test: "diff_names_rev",
 			p1:   Normalized(Name("b")),
 			p2:   Normalized(Name("a")),
 			exp:  1,
 		},
 		{
-			name: "same_name_diff_lengths",
+			test: "same_name_diff_lengths",
 			p1:   Normalized(Name("a"), Name("b")),
 			p2:   Normalized(Name("a")),
 			exp:  1,
 		},
 		{
-			name: "same_name_diff_lengths_rev",
+			test: "same_name_diff_lengths_rev",
 			p1:   Normalized(Name("a")),
 			p2:   Normalized(Name("a"), Name("b")),
 			exp:  -1,
 		},
 		{
-			name: "same_multi_names",
+			test: "same_multi_names",
 			p1:   Normalized(Name("a"), Name("b")),
 			p2:   Normalized(Name("a"), Name("b")),
 			exp:  0,
 		},
 		{
-			name: "diff_nested_names",
+			test: "diff_nested_names",
 			p1:   Normalized(Name("a"), Name("a")),
 			p2:   Normalized(Name("a"), Name("b")),
 			exp:  -1,
 		},
 		{
-			name: "diff_nested_names_rev",
+			test: "diff_nested_names_rev",
 			p1:   Normalized(Name("a"), Name("b")),
 			p2:   Normalized(Name("a"), Name("a")),
 			exp:  1,
 		},
 		{
-			name: "name_vs_index",
+			test: "name_vs_index",
 			p1:   Normalized(Name("a")),
 			p2:   Normalized(Index(0)),
 			exp:  1,
 		},
 		{
-			name: "name_vs_index_rev",
+			test: "name_vs_index_rev",
 			p1:   Normalized(Index(0)),
 			p2:   Normalized(Name("a")),
 			exp:  -1,
 		},
 		{
-			name: "diff_nested_types",
+			test: "diff_nested_types",
 			p1:   Normalized(Name("a"), Index(1024)),
 			p2:   Normalized(Name("a"), Name("b")),
 			exp:  -1,
 		},
 		{
-			name: "diff_nested_types_rev",
+			test: "diff_nested_types_rev",
 			p1:   Normalized(Name("a"), Name("b")),
 			p2:   Normalized(Name("a"), Index(1024)),
 			exp:  1,
 		},
 		{
-			name: "same_index",
+			test: "same_index",
 			p1:   Normalized(Index(42)),
 			p2:   Normalized(Index(42)),
 			exp:  0,
 		},
 		{
-			name: "diff_indexes",
+			test: "diff_indexes",
 			p1:   Normalized(Index(42)),
 			p2:   Normalized(Index(99)),
 			exp:  -1,
 		},
 		{
-			name: "diff_indexes_rev",
+			test: "diff_indexes_rev",
 			p1:   Normalized(Index(99)),
 			p2:   Normalized(Index(42)),
 			exp:  1,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			assert.Equal(t, tc.exp, tc.p1.Compare(tc.p2))
 		})
@@ -264,27 +264,27 @@ func TestLocatedNode(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name string
+		test string
 		node LocatedNode
 		exp  string
 	}{
 		{
-			name: "simple",
+			test: "simple",
 			node: LocatedNode{Path: Normalized(Name("a")), Node: "foo"},
 			exp:  `{"path": "$['a']", "node": "foo"}`,
 		},
 		{
-			name: "double_quoted_path",
+			test: "double_quoted_path",
 			node: LocatedNode{Path: Normalized(Name(`"a"`)), Node: 42},
 			exp:  `{"path": "$['\"a\"']", "node": 42}`,
 		},
 		{
-			name: "single_quoted_path",
+			test: "single_quoted_path",
 			node: LocatedNode{Path: Normalized(Name(`'a'`)), Node: true},
 			exp:  `{"path": "$['\\'a\\'']", "node": true}`,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 
 			json, err := json.Marshal(tc.node)

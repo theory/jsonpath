@@ -27,33 +27,33 @@ func TestParseSimple(t *testing.T) {
 	reg := registry.New()
 
 	for _, tc := range []struct {
-		name string
+		test string
 		path string
 		exp  *spec.PathQuery
 		err  string
 	}{
 		{
-			name: "root",
+			test: "root",
 			path: "$",
 			exp:  spec.Query(true, []*spec.Segment{}...),
 		},
 		{
-			name: "name",
+			test: "name",
 			path: "$.x",
 			exp:  spec.Query(true, spec.Child(spec.Name("x"))),
 		},
 		{
-			name: "trim_leading_space",
+			test: "trim_leading_space",
 			path: "   $.x",
 			err:  `jsonpath: unexpected blank space at position 1`,
 		},
 		{
-			name: "trim_trailing_space",
+			test: "trim_trailing_space",
 			path: "$.x    ",
 			err:  `jsonpath: unexpected blank space at position 4`,
 		},
 		{
-			name: "no_interim_space",
+			test: "no_interim_space",
 			path: "$.x   .y",
 			exp: spec.Query(
 				true,
@@ -62,17 +62,17 @@ func TestParseSimple(t *testing.T) {
 			),
 		},
 		{
-			name: "unexpected_integer",
+			test: "unexpected_integer",
 			path: "$.62",
 			err:  `jsonpath: unexpected integer at position 3`,
 		},
 		{
-			name: "unexpected_token",
+			test: "unexpected_token",
 			path: "$.==12",
 			err:  `jsonpath: unexpected '=' at position 3`,
 		},
 		{
-			name: "name_name",
+			test: "name_name",
 			path: "$.x.y",
 			exp: spec.Query(
 				true,
@@ -81,12 +81,12 @@ func TestParseSimple(t *testing.T) {
 			),
 		},
 		{
-			name: "wildcard",
+			test: "wildcard",
 			path: "$.*",
 			exp:  spec.Query(true, spec.Child(spec.Wildcard())),
 		},
 		{
-			name: "wildcard_wildcard",
+			test: "wildcard_wildcard",
 			path: "$.*.*",
 			exp: spec.Query(
 				true,
@@ -95,7 +95,7 @@ func TestParseSimple(t *testing.T) {
 			),
 		},
 		{
-			name: "name_wildcard",
+			test: "name_wildcard",
 			path: "$.x.*",
 			exp: spec.Query(
 				true,
@@ -104,12 +104,12 @@ func TestParseSimple(t *testing.T) {
 			),
 		},
 		{
-			name: "desc_name",
+			test: "desc_name",
 			path: "$..x",
 			exp:  spec.Query(true, spec.Descendant(spec.Name("x"))),
 		},
 		{
-			name: "desc_name_2x",
+			test: "desc_name_2x",
 			path: "$..x..y",
 			exp: spec.Query(
 				true,
@@ -118,12 +118,12 @@ func TestParseSimple(t *testing.T) {
 			),
 		},
 		{
-			name: "desc_wildcard",
+			test: "desc_wildcard",
 			path: "$..*",
 			exp:  spec.Query(true, spec.Descendant(spec.Wildcard())),
 		},
 		{
-			name: "desc_wildcard_2x",
+			test: "desc_wildcard_2x",
 			path: "$..*..*",
 			exp: spec.Query(
 				true,
@@ -132,7 +132,7 @@ func TestParseSimple(t *testing.T) {
 			),
 		},
 		{
-			name: "desc_wildcard_name",
+			test: "desc_wildcard_name",
 			path: "$..*.xyz",
 			exp: spec.Query(
 				true,
@@ -141,7 +141,7 @@ func TestParseSimple(t *testing.T) {
 			),
 		},
 		{
-			name: "wildcard_desc_name",
+			test: "wildcard_desc_name",
 			path: "$.*..xyz",
 			exp: spec.Query(
 				true,
@@ -150,32 +150,32 @@ func TestParseSimple(t *testing.T) {
 			),
 		},
 		{
-			name: "empty_string",
+			test: "empty_string",
 			path: "",
 			err:  "jsonpath: unexpected end of input",
 		},
 		{
-			name: "bad_start",
+			test: "bad_start",
 			path: ".x",
 			err:  `jsonpath: unexpected '.' at position 1`,
 		},
 		{
-			name: "not_a_segment",
+			test: "not_a_segment",
 			path: "$foo",
 			err:  "jsonpath: unexpected identifier at position 1",
 		},
 		{
-			name: "not_a_dot_segment",
+			test: "not_a_dot_segment",
 			path: "$.{x}",
 			err:  `jsonpath: unexpected '{' at position 3`,
 		},
 		{
-			name: "not_a_descendant",
+			test: "not_a_descendant",
 			path: "$..{x}",
 			err:  `jsonpath: unexpected '{' at position 4`,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 			r := require.New(t)
@@ -207,42 +207,42 @@ func TestParseFilter(t *testing.T) {
 	trueFunc := reg.Get("__true")
 
 	for _, tc := range []struct {
-		name   string
+		test   string
 		query  string
 		filter *spec.FilterSelector
 		err    string
 	}{
 		// ExistExpr
 		{
-			name:  "current_exists",
+			test:  "current_exists",
 			query: "@",
 			filter: spec.Filter(spec.And(
 				spec.Existence(spec.Query(false, []*spec.Segment{}...)),
 			)),
 		},
 		{
-			name:  "root_exists",
+			test:  "root_exists",
 			query: "$",
 			filter: spec.Filter(spec.And(
 				spec.Existence(spec.Query(true, []*spec.Segment{}...)),
 			)),
 		},
 		{
-			name:  "current_name_exists",
+			test:  "current_name_exists",
 			query: "@.x",
 			filter: spec.Filter(spec.And(
 				spec.Existence(spec.Query(false, spec.Child(spec.Name("x")))),
 			)),
 		},
 		{
-			name:  "root_name_exists",
+			test:  "root_name_exists",
 			query: "$.x",
 			filter: spec.Filter(spec.And(
 				spec.Existence(spec.Query(true, spec.Child(spec.Name("x")))),
 			)),
 		},
 		{
-			name:  "current_two_segment_exists",
+			test:  "current_two_segment_exists",
 			query: "@.x[1]",
 			filter: spec.Filter(spec.And(
 				spec.Existence(spec.Query(
@@ -253,7 +253,7 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
-			name:  "root_two_selector_exists",
+			test:  "root_two_selector_exists",
 			query: `$["x", 1]`,
 			filter: spec.Filter(spec.And(
 				spec.Existence(spec.Query(
@@ -264,35 +264,35 @@ func TestParseFilter(t *testing.T) {
 		},
 		// NonExistExpr
 		{
-			name:  "current_not_exists",
+			test:  "current_not_exists",
 			query: "!@",
 			filter: spec.Filter(spec.And(
 				spec.Nonexistence(spec.Query(false, []*spec.Segment{}...)),
 			)),
 		},
 		{
-			name:  "root_not_exists",
+			test:  "root_not_exists",
 			query: "!$",
 			filter: spec.Filter(spec.And(spec.Nonexistence(
 				spec.Query(true, []*spec.Segment{}...),
 			))),
 		},
 		{
-			name:  "current_name_not_exists",
+			test:  "current_name_not_exists",
 			query: "!@.x",
 			filter: spec.Filter(spec.And(
 				spec.Nonexistence(spec.Query(false, spec.Child(spec.Name("x")))),
 			)),
 		},
 		{
-			name:  "root_name_not_exists",
+			test:  "root_name_not_exists",
 			query: "!$.x",
 			filter: spec.Filter(spec.And(
 				spec.Nonexistence(spec.Query(true, spec.Child(spec.Name("x")))),
 			)),
 		},
 		{
-			name:  "current_two_segment_not_exists",
+			test:  "current_two_segment_not_exists",
 			query: "!@.x[1]",
 			filter: spec.Filter(spec.And(
 				spec.Nonexistence(spec.Query(
@@ -303,7 +303,7 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
-			name:  "root_two_selector_not_exists",
+			test:  "root_two_selector_not_exists",
 			query: `!$["x", 1]`,
 			filter: spec.Filter(spec.And(
 				spec.Nonexistence(spec.Query(
@@ -314,7 +314,7 @@ func TestParseFilter(t *testing.T) {
 		},
 		// ParenExistExpr
 		{
-			name:  "paren_current_exists",
+			test:  "paren_current_exists",
 			query: "(@)",
 			filter: spec.Filter(spec.And(
 				spec.Paren(spec.And(
@@ -323,7 +323,7 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
-			name:  "paren_root_exists",
+			test:  "paren_root_exists",
 			query: "($)",
 			filter: spec.Filter(spec.And(
 				spec.Paren(spec.And(
@@ -332,7 +332,7 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
-			name:  "paren_current_exists_name_index",
+			test:  "paren_current_exists_name_index",
 			query: `(@["x", 1])`,
 			filter: spec.Filter(spec.And(
 				spec.Paren(spec.And(
@@ -344,7 +344,7 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
-			name:  "paren_logical_and",
+			test:  "paren_logical_and",
 			query: `(  @["x", 1] && $["y"]  )`,
 			filter: spec.Filter(spec.And(
 				spec.Paren(spec.And(
@@ -360,7 +360,7 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
-			name:  "paren_logical_or",
+			test:  "paren_logical_or",
 			query: `(@["x", 1] || $["y"])`,
 			filter: spec.Filter(spec.And(
 				spec.Paren(
@@ -377,7 +377,7 @@ func TestParseFilter(t *testing.T) {
 		},
 		// NotParenExistExpr
 		{
-			name:  "not_paren_current_exists",
+			test:  "not_paren_current_exists",
 			query: "!(@)",
 			filter: spec.Filter(spec.And(
 				spec.NotParen(spec.And(
@@ -386,7 +386,7 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
-			name:  "not_paren_root_exists",
+			test:  "not_paren_root_exists",
 			query: "!($)",
 			filter: spec.Filter(spec.And(
 				spec.NotParen(spec.And(
@@ -395,7 +395,7 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
-			name:  "not_paren_current_exists_name_index",
+			test:  "not_paren_current_exists_name_index",
 			query: `!(@["x", 1])`,
 			filter: spec.Filter(spec.And(
 				spec.NotParen(spec.And(
@@ -407,7 +407,7 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
-			name:  "not_paren_logical_and",
+			test:  "not_paren_logical_and",
 			query: `!(  @["x", 1] && $["y"]  )`,
 			filter: spec.Filter(spec.And(
 				spec.NotParen(spec.And(
@@ -423,7 +423,7 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
-			name:  "not_paren_logical_or",
+			test:  "not_paren_logical_or",
 			query: `!(@["x", 1] || $["y"])`,
 			filter: spec.Filter(spec.And(
 				spec.NotParen(
@@ -440,7 +440,7 @@ func TestParseFilter(t *testing.T) {
 		},
 		// FunExpr
 		{
-			name:  "function_current",
+			test:  "function_current",
 			query: "__true(@)",
 			filter: spec.Filter(spec.And(
 				spec.Function(
@@ -450,7 +450,7 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
-			name:  "function_match_current_integer",
+			test:  "function_match_current_integer",
 			query: "match( @,  42  )",
 			filter: spec.Filter(spec.And(
 				spec.Function(
@@ -461,7 +461,7 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
-			name:  "function_search_two_queries",
+			test:  "function_search_two_queries",
 			query: "search( $.x,  @[0]  )",
 			filter: spec.Filter(spec.And(
 				spec.Function(
@@ -472,7 +472,7 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
-			name:  "function_length_string",
+			test:  "function_length_string",
 			query: `length("hi") == 2`,
 			filter: spec.Filter(spec.And(
 				spec.Comparison(
@@ -483,7 +483,7 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
-			name:  "function_length_true",
+			test:  "function_length_true",
 			query: `length(true) == 1`,
 			filter: spec.Filter(spec.And(
 				spec.Comparison(
@@ -494,7 +494,7 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
-			name:  "function_length_false",
+			test:  "function_length_false",
 			query: `length(false)==1`,
 			filter: spec.Filter(spec.And(
 				spec.Comparison(
@@ -505,14 +505,14 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
-			name:  "function_value_null",
+			test:  "function_value_null",
 			query: `__true(null)`, // defined in function_test.go
 			filter: spec.Filter(spec.And(
 				spec.Function(trueFunc, spec.Literal(nil)),
 			)),
 		},
 		{
-			name:  "nested_function",
+			test:  "nested_function",
 			query: `__true(count(@))`, // defined in function_test.go
 			filter: spec.Filter(spec.And(
 				spec.Function(
@@ -525,7 +525,7 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
-			name:  "function_paren_logical_expr",
+			test:  "function_paren_logical_expr",
 			query: `__true((@.x))`, // defined in function_test.go
 			filter: spec.Filter(spec.And(
 				spec.Function(trueFunc, spec.Or(spec.And(
@@ -534,7 +534,7 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
-			name:  "function_paren_logical_not_expr",
+			test:  "function_paren_logical_not_expr",
 			query: `__true((!@.x))`, // defined in function_test.go
 			filter: spec.Filter(spec.And(
 				spec.Function(trueFunc, spec.Or(spec.And(
@@ -543,7 +543,7 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
-			name:  "function_lots_of_literals",
+			test:  "function_lots_of_literals",
 			query: `__true("hi", 42, true, false, null, 98.6)`,
 			filter: spec.Filter(spec.And(
 				spec.Function(
@@ -558,7 +558,7 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
-			name:  "function_no_args",
+			test:  "function_no_args",
 			query: `__true()`,
 			filter: spec.Filter(spec.And(
 				spec.Function(trueFunc, []spec.FuncExprArg{}...),
@@ -566,14 +566,14 @@ func TestParseFilter(t *testing.T) {
 		},
 		// ComparisonExpr
 		{
-			name:  "literal_comparison",
+			test:  "literal_comparison",
 			query: `42 == 42`,
 			filter: spec.Filter(spec.And(
 				spec.Comparison(spec.Literal(int64(42)), spec.EqualTo, spec.Literal(int64(42))),
 			)),
 		},
 		{
-			name:  "literal_singular_comparison",
+			test:  "literal_singular_comparison",
 			query: `42 != $.a.b`,
 			filter: spec.Filter(spec.And(
 				spec.Comparison(
@@ -584,7 +584,7 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
-			name:  "literal_comparison_function",
+			test:  "literal_comparison_function",
 			query: `42 > length("hi")`,
 			filter: spec.Filter(spec.And(
 				spec.Comparison(
@@ -595,7 +595,7 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
-			name:  "function_cmp_singular",
+			test:  "function_cmp_singular",
 			query: `length("hi") <=   @[0]["a"]`,
 			filter: spec.Filter(spec.And(
 				spec.Comparison(
@@ -606,7 +606,7 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
-			name:  "singular_cmp_literal",
+			test:  "singular_cmp_literal",
 			query: `$.a.b >= 98.6`,
 			filter: spec.Filter(spec.And(
 				spec.Comparison(
@@ -617,7 +617,7 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
-			name:  "function_cmp_literal",
+			test:  "function_cmp_literal",
 			query: `length("hi") <   42 `,
 			filter: spec.Filter(spec.And(
 				spec.Comparison(
@@ -628,14 +628,14 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
-			name:  "not_function",
+			test:  "not_function",
 			query: `!__true()`,
 			filter: spec.Filter(spec.And(
 				spec.NotFunction(spec.Function(trueFunc, []spec.FuncExprArg{}...)),
 			)),
 		},
 		{
-			name:  "singular_cmp_literal_no_space",
+			test:  "singular_cmp_literal_no_space",
 			query: `@.x<42`,
 			filter: spec.Filter(spec.And(
 				spec.Comparison(
@@ -646,167 +646,167 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
-			name:  "invalid_logical_or",
+			test:  "invalid_logical_or",
 			query: `(@["x", 1] || hi)`,
 			err:   `jsonpath: unexpected identifier at position 15`,
 		},
 		{
-			name:  "invalid_logical_or",
+			test:  "invalid_logical_or",
 			query: `(@["x", 1] || hi)`,
 			err:   `jsonpath: unexpected identifier at position 15`,
 		},
 		{
-			name:  "incomplete_logical_or",
+			test:  "incomplete_logical_or",
 			query: `(@["x", 1] | $["y"])`,
 			err:   `jsonpath: expected '|' but found blank space at position 13`,
 		},
 		{
-			name:  "incomplete_logical_and",
+			test:  "incomplete_logical_and",
 			query: `(@["x", 1] &? $["y"])`,
 			err:   `jsonpath: expected '&' but found '?' at position 13`,
 		},
 		{
-			name:  "invalid_and_expression",
+			test:  "invalid_and_expression",
 			query: `(@["x", 1] && nope(@))`,
 			err:   `jsonpath: unknown function nope() at position 15`,
 		},
 		{
-			name:  "nonexistent_function",
+			test:  "nonexistent_function",
 			query: `nonesuch(@)`,
 			err:   `jsonpath: unknown function nonesuch() at position 1`,
 		},
 		{
-			name:  "not_nonexistent_function",
+			test:  "not_nonexistent_function",
 			query: `!nonesuch(@)`,
 			err:   `jsonpath: unknown function nonesuch() at position 2`,
 		},
 		{
-			name:  "invalid_literal",
+			test:  "invalid_literal",
 			query: `99e+1234`,
 			err:   `jsonpath: cannot parse "99e+1234", value out of range at position 1`,
 		},
 		{
-			name:  "invalid_query",
+			test:  "invalid_query",
 			query: `@["x", hi]`,
 			err:   `jsonpath: unexpected identifier at position 8`,
 		},
 		{
-			name:  "invalid_function_comparison",
+			test:  "invalid_function_comparison",
 			query: `length(@.x) == hi`,
 			err:   `jsonpath: unexpected identifier at position 16`,
 		},
 		{
-			name:  "function_without_comparison",
+			test:  "function_without_comparison",
 			query: `length(@.x)`,
 			err:   `jsonpath: missing comparison to function result at position 12`,
 		},
 		{
-			name:  "invalid_not_exists_query",
+			test:  "invalid_not_exists_query",
 			query: `!@.0`,
 			err:   `jsonpath: unexpected integer at position 4`,
 		},
 		{
-			name:  "unclosed_paren_expr",
+			test:  "unclosed_paren_expr",
 			query: `(@["x", 1]`,
 			err:   `jsonpath: expected ')' but found eof at position 11`,
 		},
 		{
-			name:  "unclosed_not_paren_expr",
+			test:  "unclosed_not_paren_expr",
 			query: `!(@["x", 1]`,
 			err:   `jsonpath: expected ')' but found eof at position 12`,
 		},
 		{
-			name:  "bad_function_arg",
+			test:  "bad_function_arg",
 			query: `length(xyz)`,
 			err:   `jsonpath: unexpected identifier at position 8`,
 		},
 		{
-			name:  "invalid_function_arg",
+			test:  "invalid_function_arg",
 			query: `length(@[1, 2])`,
 			err:   `jsonpath: function length() cannot convert argument to Value at position 7`,
 		},
 		{
-			name:  "too_many_function_args",
+			test:  "too_many_function_args",
 			query: `length(@, $)`,
 			err:   `jsonpath: function length() expected 1 argument but found 2 at position 7`,
 		},
 		{
-			name:  "function_literal_parse_error",
+			test:  "function_literal_parse_error",
 			query: `length(99e+1234)`,
 			err:   `jsonpath: cannot parse "99e+1234", value out of range at position 8`,
 		},
 		{
-			name:  "function_query_parse_error",
+			test:  "function_query_parse_error",
 			query: `length(@[foo])`,
 			err:   `jsonpath: unexpected identifier at position 10`,
 		},
 		{
-			name:  "unknown_function_in_function_arg",
+			test:  "unknown_function_in_function_arg",
 			query: `length(nonesuch())`,
 			err:   `jsonpath: unknown function nonesuch() at position 8`,
 		},
 		{
-			name:  "invalid_not_function_arg",
+			test:  "invalid_not_function_arg",
 			query: `length(!@[foo])`,
 			err:   `jsonpath: unexpected identifier at position 11`,
 		},
 		{
-			name:  "invalid_second_arg",
+			test:  "invalid_second_arg",
 			query: `length("foo" == "bar")`,
 			err:   `jsonpath: unexpected '=' at position 14`,
 		},
 		{
-			name:  "invalid_comparable_expression",
+			test:  "invalid_comparable_expression",
 			query: `"foo" => "bar"`,
 			err:   `jsonpath: invalid comparison operator at position 7`,
 		},
 		{
-			name:  "invalid_comparable_function",
+			test:  "invalid_comparable_function",
 			query: `42 == nonesuch()`,
 			err:   `jsonpath: unknown function nonesuch() at position 7`,
 		},
 		{
-			name:  "cannot_compare_logical_func",
+			test:  "cannot_compare_logical_func",
 			query: `42 == __true()`,
 			err:   `jsonpath: cannot compare result of logical function at position 7`,
 		},
 		{
-			name:  "function_wrong_arg_count",
+			test:  "function_wrong_arg_count",
 			query: `match("foo")`,
 			err:   `jsonpath: function match() expected 2 arguments but found 1 at position 6`,
 		},
 		{
-			name:  "function_second_arg_parse_error",
+			test:  "function_second_arg_parse_error",
 			query: `search("foo", @[foo])`,
 			err:   `jsonpath: unexpected identifier at position 17`,
 		},
 		{
-			name:  "cmp_query_invalid_index",
+			test:  "cmp_query_invalid_index",
 			query: `42 == $[-0]`,
 			err:   `jsonpath: invalid integer path value "-0" at position 9`,
 		},
 		{
-			name:  "cmp_val_not_valid",
+			test:  "cmp_val_not_valid",
 			query: `42 == {}`,
 			err:   `jsonpath: unexpected '{' at position 7`,
 		},
 		{
-			name:  "cmp_query_unclosed_bracket",
+			test:  "cmp_query_unclosed_bracket",
 			query: `42 == $[0`,
 			err:   `jsonpath: unexpected eof at position 10`,
 		},
 		{
-			name:  "cmp_query_invalid_selector",
+			test:  "cmp_query_invalid_selector",
 			query: `42 == $[foo]`,
 			err:   `jsonpath: unexpected identifier at position 9`,
 		},
 		{
-			name:  "cmp_query_invalid_ident",
+			test:  "cmp_query_invalid_ident",
 			query: `42 == $.42`,
 			err:   `jsonpath: unexpected integer at position 9`,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 			r := require.New(t)
@@ -814,12 +814,12 @@ func TestParseFilter(t *testing.T) {
 			parser := &parser{lex: newLexer(tc.query), reg: reg}
 			filter, err := parser.parseFilter()
 			if tc.err == "" {
-				r.NoError(err, tc.name)
-				a.Equal(tc.filter, filter, tc.name)
+				r.NoError(err, tc.test)
+				a.Equal(tc.filter, filter, tc.test)
 			} else {
-				a.Nil(filter, tc.name)
-				r.EqualError(err, tc.err, tc.name)
-				r.ErrorIs(err, ErrPathParse, tc.name)
+				a.Nil(filter, tc.test)
+				r.EqualError(err, tc.err, tc.test)
+				r.ErrorIs(err, ErrPathParse, tc.test)
 			}
 		})
 	}
@@ -830,38 +830,38 @@ func TestParseSelectors(t *testing.T) {
 	reg := registry.New()
 
 	for _, tc := range []struct {
-		name string
+		test string
 		path string
 		exp  *spec.PathQuery
 		err  string
 	}{
 		{
-			name: "index",
+			test: "index",
 			path: "$[0]",
 			exp:  spec.Query(true, spec.Child(spec.Index(0))),
 		},
 		{
-			name: "two_indexes",
+			test: "two_indexes",
 			path: "$[0, 1]",
 			exp:  spec.Query(true, spec.Child(spec.Index(0), spec.Index(1))),
 		},
 		{
-			name: "name",
+			test: "name",
 			path: `$["foo"]`,
 			exp:  spec.Query(true, spec.Child(spec.Name("foo"))),
 		},
 		{
-			name: "sq_name",
+			test: "sq_name",
 			path: `$['foo']`,
 			exp:  spec.Query(true, spec.Child(spec.Name("foo"))),
 		},
 		{
-			name: "two_names",
+			test: "two_names",
 			path: `$["foo", "🐦‍🔥"]`,
 			exp:  spec.Query(true, spec.Child(spec.Name("foo"), spec.Name("🐦‍🔥"))),
 		},
 		{
-			name: "json_escapes",
+			test: "json_escapes",
 			path: `$["abx_xyx\ryup", "\b\f\n\r\t\/\\"]`,
 			exp: spec.Query(true, spec.Child(
 				spec.Name("abx_xyx\ryup"),
@@ -869,62 +869,62 @@ func TestParseSelectors(t *testing.T) {
 			)),
 		},
 		{
-			name: "unicode_escapes",
+			test: "unicode_escapes",
 			path: `$["fo\u00f8", "tune \uD834\uDD1E"]`,
 			exp:  spec.Query(true, spec.Child(spec.Name("foø"), spec.Name("tune 𝄞"))),
 		},
 		{
-			name: "slice_start",
+			test: "slice_start",
 			path: `$[1:]`,
 			exp:  spec.Query(true, spec.Child(spec.Slice(1))),
 		},
 		{
-			name: "slice_start_2",
+			test: "slice_start_2",
 			path: `$[2:]`,
 			exp:  spec.Query(true, spec.Child(spec.Slice(2))),
 		},
 		{
-			name: "slice_start_end",
+			test: "slice_start_end",
 			path: `$[2:6]`,
 			exp:  spec.Query(true, spec.Child(spec.Slice(2, 6))),
 		},
 		{
-			name: "slice_end",
+			test: "slice_end",
 			path: `$[:6]`,
 			exp:  spec.Query(true, spec.Child(spec.Slice(nil, 6))),
 		},
 		{
-			name: "slice_start_end_step",
+			test: "slice_start_end_step",
 			path: `$[2:6:2]`,
 			exp:  spec.Query(true, spec.Child(spec.Slice(2, 6, 2))),
 		},
 		{
-			name: "slice_start_step",
+			test: "slice_start_step",
 			path: `$[2::2]`,
 			exp:  spec.Query(true, spec.Child(spec.Slice(2, nil, 2))),
 		},
 		{
-			name: "slice_step",
+			test: "slice_step",
 			path: `$[::2]`,
 			exp:  spec.Query(true, spec.Child(spec.Slice(nil, nil, 2))),
 		},
 		{
-			name: "slice_defaults",
+			test: "slice_defaults",
 			path: `$[:]`,
 			exp:  spec.Query(true, spec.Child(spec.Slice())),
 		},
 		{
-			name: "slice_spacing",
+			test: "slice_spacing",
 			path: `$[   1:  2  : 2   ]`,
 			exp:  spec.Query(true, spec.Child(spec.Slice(1, 2, 2))),
 		},
 		{
-			name: "slice_slice",
+			test: "slice_slice",
 			path: `$[:,:]`,
 			exp:  spec.Query(true, spec.Child(spec.Slice(), spec.Slice())),
 		},
 		{
-			name: "slice_slice_slice",
+			test: "slice_slice_slice",
 			path: `$[2:,:4,7:9]`,
 			exp: spec.Query(true, spec.Child(
 				spec.Slice(2),
@@ -933,7 +933,7 @@ func TestParseSelectors(t *testing.T) {
 			)),
 		},
 		{
-			name: "slice_name",
+			test: "slice_name",
 			path: `$[:,"hi"]`,
 			exp: spec.Query(
 				true,
@@ -941,7 +941,7 @@ func TestParseSelectors(t *testing.T) {
 			),
 		},
 		{
-			name: "name_slice",
+			test: "name_slice",
 			path: `$["hi",2:]`,
 			exp: spec.Query(
 				true,
@@ -949,7 +949,7 @@ func TestParseSelectors(t *testing.T) {
 			),
 		},
 		{
-			name: "slice_index",
+			test: "slice_index",
 			path: `$[:,42]`,
 			exp: spec.Query(
 				true,
@@ -957,7 +957,7 @@ func TestParseSelectors(t *testing.T) {
 			),
 		},
 		{
-			name: "index_slice",
+			test: "index_slice",
 			path: `$[42,:3]`,
 			exp: spec.Query(
 				true,
@@ -965,32 +965,32 @@ func TestParseSelectors(t *testing.T) {
 			),
 		},
 		{
-			name: "slice_wildcard",
+			test: "slice_wildcard",
 			path: `$[:,   *]`,
 			exp:  spec.Query(true, spec.Child(spec.Slice(), spec.Wildcard())),
 		},
 		{
-			name: "wildcard_slice",
+			test: "wildcard_slice",
 			path: `$[  *,  :   ]`,
 			exp:  spec.Query(true, spec.Child(spec.Wildcard(), spec.Slice())),
 		},
 		{
-			name: "slice_neg_start",
+			test: "slice_neg_start",
 			path: `$[-3:]`,
 			exp:  spec.Query(true, spec.Child(spec.Slice(-3))),
 		},
 		{
-			name: "slice_neg_end",
+			test: "slice_neg_end",
 			path: `$[:-3:]`,
 			exp:  spec.Query(true, spec.Child(spec.Slice(nil, -3))),
 		},
 		{
-			name: "slice_neg_step",
+			test: "slice_neg_step",
 			path: `$[::-2]`,
 			exp:  spec.Query(true, spec.Child(spec.Slice(nil, nil, -2))),
 		},
 		{
-			name: "index_name_slice_wildcard",
+			test: "index_name_slice_wildcard",
 			path: `$[3, "🦀", :3,*]`,
 			exp: spec.Query(true, spec.Child(
 				spec.Index(3),
@@ -1000,7 +1000,7 @@ func TestParseSelectors(t *testing.T) {
 			)),
 		},
 		{
-			name: "filter_eq",
+			test: "filter_eq",
 			path: `$[?@.x == 'y']`,
 			exp: spec.Query(true, spec.Child(
 				spec.Filter(spec.And(
@@ -1013,7 +1013,7 @@ func TestParseSelectors(t *testing.T) {
 			),
 		},
 		{
-			name: "filter_exists",
+			test: "filter_exists",
 			path: `$[?@.x]`,
 			exp: spec.Query(true, spec.Child(
 				spec.Filter(spec.And(
@@ -1024,7 +1024,7 @@ func TestParseSelectors(t *testing.T) {
 			)),
 		},
 		{
-			name: "filter_not_exists",
+			test: "filter_not_exists",
 			path: `$[?!@[0]]`,
 			exp: spec.Query(true, spec.Child(
 				spec.Filter(spec.And(
@@ -1035,7 +1035,7 @@ func TestParseSelectors(t *testing.T) {
 			)),
 		},
 		{
-			name: "filter_current_and_root",
+			test: "filter_current_and_root",
 			path: `$[? @ && $[0]]`,
 			exp: spec.Query(true, spec.Child(
 				spec.Filter(spec.And(
@@ -1045,42 +1045,42 @@ func TestParseSelectors(t *testing.T) {
 			)),
 		},
 		{
-			name: "filter_err",
+			test: "filter_err",
 			path: `$[?`,
 			err:  `jsonpath: unexpected eof at position 4`,
 		},
 		{
-			name: "slice_bad_start",
+			test: "slice_bad_start",
 			path: `$[:d]`,
 			err:  `jsonpath: unexpected identifier at position 4`,
 		},
 		{
-			name: "slice_four_parts",
+			test: "slice_four_parts",
 			path: `$[0:0:0:0]`,
 			err:  `jsonpath: unexpected integer at position 9`,
 		},
 		{
-			name: "invalid_selector",
+			test: "invalid_selector",
 			path: `$[{}]`,
 			err:  `jsonpath: unexpected '{' at position 3`,
 		},
 		{
-			name: "invalid_second_selector",
+			test: "invalid_second_selector",
 			path: `$[1, hi]`,
 			err:  `jsonpath: unexpected identifier at position 6`,
 		},
 		{
-			name: "missing_segment_comma",
+			test: "missing_segment_comma",
 			path: `$[1 "hi"]`,
 			err:  `jsonpath: unexpected string at position 5`,
 		},
 		{
-			name: "space_index",
+			test: "space_index",
 			path: "$[   0]",
 			exp:  spec.Query(true, spec.Child(spec.Index(0))),
 		},
 		{
-			name: "index_space_comma_index",
+			test: "index_space_comma_index",
 			path: "$[0    , 12]",
 			exp: spec.Query(
 				true,
@@ -1088,7 +1088,7 @@ func TestParseSelectors(t *testing.T) {
 			),
 		},
 		{
-			name: "index_comma_space_name",
+			test: "index_comma_space_name",
 			path: `$[0, "xyz"]`,
 			exp: spec.Query(
 				true,
@@ -1096,52 +1096,52 @@ func TestParseSelectors(t *testing.T) {
 			),
 		},
 		{
-			name: "tab_index",
+			test: "tab_index",
 			path: "$[\t0]",
 			exp:  spec.Query(true, spec.Child(spec.Index(0))),
 		},
 		{
-			name: "newline_index",
+			test: "newline_index",
 			path: "$[\n0]",
 			exp:  spec.Query(true, spec.Child(spec.Index(0))),
 		},
 		{
-			name: "return_index",
+			test: "return_index",
 			path: "$[\r0]",
 			exp:  spec.Query(true, spec.Child(spec.Index(0))),
 		},
 		{
-			name: "name_space",
+			test: "name_space",
 			path: `$["hi"   ]`,
 			exp:  spec.Query(true, spec.Child(spec.Name("hi"))),
 		},
 		{
-			name: "wildcard_tab",
+			test: "wildcard_tab",
 			path: "$[*\t]",
 			exp:  spec.Query(true, spec.Child(spec.Wildcard())),
 		},
 		{
-			name: "slice_newline",
+			test: "slice_newline",
 			path: "$[2:\t]",
 			exp:  spec.Query(true, spec.Child(spec.Slice(2))),
 		},
 		{
-			name: "index_return",
+			test: "index_return",
 			path: "$[0\r]",
 			exp:  spec.Query(true, spec.Child(spec.Index(0))),
 		},
 		{
-			name: "descendant_index",
+			test: "descendant_index",
 			path: "$..[0]",
 			exp:  spec.Query(true, spec.Descendant(spec.Index(0))),
 		},
 		{
-			name: "descendant_name",
+			test: "descendant_name",
 			path: `$..["hi"]`,
 			exp:  spec.Query(true, spec.Descendant(spec.Name("hi"))),
 		},
 		{
-			name: "descendant_multi",
+			test: "descendant_multi",
 			path: `$..[  "hi", 2, *, 4:5  ]`,
 			exp: spec.Query(true, spec.Descendant(
 				spec.Name("hi"),
@@ -1151,27 +1151,27 @@ func TestParseSelectors(t *testing.T) {
 			)),
 		},
 		{
-			name: "invalid_descendant",
+			test: "invalid_descendant",
 			path: "$..[oops]",
 			err:  `jsonpath: unexpected identifier at position 5`,
 		},
 		{
-			name: "invalid_unicode_escape",
+			test: "invalid_unicode_escape",
 			path: `$["fo\uu0f8"]`,
 			err:  `jsonpath: invalid escape after backslash at position 8`,
 		},
 		{
-			name: "invalid_integer",
+			test: "invalid_integer",
 			path: `$[170141183460469231731687303715884105727]`, // too large
 			err:  `jsonpath: cannot parse "170141183460469231731687303715884105727", value out of range at position 3`,
 		},
 		{
-			name: "invalid_slice_float",
+			test: "invalid_slice_float",
 			path: `$[:170141183460469231731687303715884105727]`, // too large
 			err:  `jsonpath: cannot parse "170141183460469231731687303715884105727", value out of range at position 4`,
 		},
 		{
-			name: `name_sq_name_desc_wild`,
+			test: `name_sq_name_desc_wild`,
 			path: `$.names['first_name']..*`,
 			exp: spec.Query(
 				true,
@@ -1181,22 +1181,22 @@ func TestParseSelectors(t *testing.T) {
 			),
 		},
 		{
-			name: "no_tail",
+			test: "no_tail",
 			path: `$.a['b']tail`,
 			err:  `jsonpath: unexpected identifier at position 9`,
 		},
 		{
-			name: "dq_name",
+			test: "dq_name",
 			path: `$["name"]`,
 			exp:  spec.Query(true, spec.Child(spec.Name("name"))),
 		},
 		{
-			name: "sq_name",
+			test: "sq_name",
 			path: `$['name']`,
 			exp:  spec.Query(true, spec.Child(spec.Name("name"))),
 		},
 		{
-			name: "two_name_segment",
+			test: "two_name_segment",
 			path: `$["name","test"]`,
 			exp: spec.Query(
 				true,
@@ -1204,7 +1204,7 @@ func TestParseSelectors(t *testing.T) {
 			),
 		},
 		{
-			name: "name_index_slice_segment",
+			test: "name_index_slice_segment",
 			path: `$['name',10,0:3]`,
 			exp: spec.Query(
 				true,
@@ -1212,17 +1212,17 @@ func TestParseSelectors(t *testing.T) {
 			),
 		},
 		{
-			name: "default_slice_wildcard_segment",
+			test: "default_slice_wildcard_segment",
 			path: `$[::,*]`,
 			exp:  spec.Query(true, spec.Child(spec.Slice(), spec.Wildcard())),
 		},
 		{
-			name: "leading_zero_index",
+			test: "leading_zero_index",
 			path: `$[010]`,
 			err:  `jsonpath: invalid number literal at position 3`,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 			r := require.New(t)
@@ -1289,7 +1289,7 @@ func TestParsePathInt(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name  string
+		test  string
 		input string
 		exp   int64
 		err   string
@@ -1298,22 +1298,22 @@ func TestParsePathInt(t *testing.T) {
 		{"1000", "1000", 1000, ""},
 		{"neg_1000", "-1000", -1000, ""},
 		{
-			name:  "neg_zero",
+			test:  "neg_zero",
 			input: "-0",
 			err:   `jsonpath: invalid integer path value "-0" at position 4`,
 		},
 		{
-			name:  "too_big",
+			test:  "too_big",
 			input: "9007199254740992",
 			err:   `jsonpath: cannot parse "9007199254740992", value out of range at position 4`,
 		},
 		{
-			name:  "too_small",
+			test:  "too_small",
 			input: "-9007199254740992",
 			err:   `jsonpath: cannot parse "-9007199254740992", value out of range at position 4`,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 			r := require.New(t)
@@ -1335,58 +1335,58 @@ func TestParseLiteral(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name string
+		test string
 		tok  token
 		exp  any
 		err  string
 	}{
 		{
-			name: "string",
+			test: "string",
 			tok:  token{goString, "hello", 0},
 			exp:  "hello",
 		},
 		{
-			name: "integer",
+			test: "integer",
 			tok:  token{integer, "42", 0},
 			exp:  int64(42),
 		},
 		{
-			name: "float",
+			test: "float",
 			tok:  token{number, "98.6", 0},
 			exp:  float64(98.6),
 		},
 		{
-			name: "true",
+			test: "true",
 			tok:  token{boolTrue, "", 0},
 			exp:  true,
 		},
 		{
-			name: "false",
+			test: "false",
 			tok:  token{boolFalse, "", 0},
 			exp:  false,
 		},
 		{
-			name: "null",
+			test: "null",
 			tok:  token{jsonNull, "", 0},
 			exp:  nil,
 		},
 		{
-			name: "invalid_int",
+			test: "invalid_int",
 			tok:  token{integer, "170141183460469231731687303715884105727", 5},
 			err:  `jsonpath: cannot parse "170141183460469231731687303715884105727", value out of range at position 6`,
 		},
 		{
-			name: "invalid_float",
+			test: "invalid_float",
 			tok:  token{number, "99e+1234", 3},
 			err:  `jsonpath: cannot parse "99e+1234", value out of range at position 4`,
 		},
 		{
-			name: "non_literal_token",
+			test: "non_literal_token",
 			tok:  token{eof, "", 3},
 			err:  `jsonpath: unexpected eof at position 4`,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 			r := require.New(t)

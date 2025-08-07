@@ -13,58 +13,58 @@ func TestLengthFunc(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name string
+		test string
 		vals []spec.PathValue
 		exp  int
 		err  string
 	}{
 		{
-			name: "empty_string",
+			test: "empty_string",
 			vals: []spec.PathValue{spec.Value("")},
 			exp:  0,
 		},
 		{
-			name: "ascii_string",
+			test: "ascii_string",
 			vals: []spec.PathValue{spec.Value("abc def")},
 			exp:  7,
 		},
 		{
-			name: "unicode_string",
+			test: "unicode_string",
 			vals: []spec.PathValue{spec.Value("foö")},
 			exp:  3,
 		},
 		{
-			name: "emoji_string",
+			test: "emoji_string",
 			vals: []spec.PathValue{spec.Value("Hi 👋🏻")},
 			exp:  5,
 		},
 		{
-			name: "empty_array",
+			test: "empty_array",
 			vals: []spec.PathValue{spec.Value([]any{})},
 			exp:  0,
 		},
 		{
-			name: "array",
+			test: "array",
 			vals: []spec.PathValue{spec.Value([]any{1, 2, 3, 4, 5})},
 			exp:  5,
 		},
 		{
-			name: "nested_array",
+			test: "nested_array",
 			vals: []spec.PathValue{spec.Value([]any{1, 2, 3, "x", []any{456, 67}, true})},
 			exp:  6,
 		},
 		{
-			name: "empty_object",
+			test: "empty_object",
 			vals: []spec.PathValue{spec.Value(map[string]any{})},
 			exp:  0,
 		},
 		{
-			name: "object",
+			test: "object",
 			vals: []spec.PathValue{spec.Value(map[string]any{"x": 1, "y": 0, "z": 2})},
 			exp:  3,
 		},
 		{
-			name: "nested_object",
+			test: "nested_object",
 			vals: []spec.PathValue{spec.Value(map[string]any{
 				"x": 1,
 				"y": 0,
@@ -74,32 +74,32 @@ func TestLengthFunc(t *testing.T) {
 			exp: 4,
 		},
 		{
-			name: "integer",
+			test: "integer",
 			vals: []spec.PathValue{spec.Value(42)},
 			exp:  -1,
 		},
 		{
-			name: "bool",
+			test: "bool",
 			vals: []spec.PathValue{spec.Value(true)},
 			exp:  -1,
 		},
 		{
-			name: "null",
+			test: "null",
 			vals: []spec.PathValue{spec.Value(nil)},
 			exp:  -1,
 		},
 		{
-			name: "nil",
+			test: "nil",
 			vals: []spec.PathValue{nil},
 			exp:  -1,
 		},
 		{
-			name: "not_value",
+			test: "not_value",
 			vals: []spec.PathValue{spec.LogicalFalse},
 			err:  "cannot convert LogicalType to ValueType",
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 
@@ -124,7 +124,7 @@ func TestCheckSingularFuncArgs(t *testing.T) {
 	reg := New()
 
 	for _, tc := range []struct {
-		name      string
+		test      string
 		expr      []spec.FuncExprArg
 		err       string
 		lengthErr string
@@ -132,33 +132,33 @@ func TestCheckSingularFuncArgs(t *testing.T) {
 		valueErr  string
 	}{
 		{
-			name: "no_args",
+			test: "no_args",
 			expr: []spec.FuncExprArg{},
 			err:  "expected 1 argument but found 0",
 		},
 		{
-			name: "two_args",
+			test: "two_args",
 			expr: []spec.FuncExprArg{spec.Literal(nil), spec.Literal(nil)},
 			err:  "expected 1 argument but found 2",
 		},
 		{
-			name:     "literal_string",
+			test:     "literal_string",
 			expr:     []spec.FuncExprArg{spec.Literal(nil)},
 			countErr: "cannot convert argument to Nodes",
 			valueErr: "cannot convert argument to Nodes",
 		},
 		{
-			name: "singular_query",
+			test: "singular_query",
 			expr: []spec.FuncExprArg{spec.SingularQuery(false, nil)},
 		},
 		{
-			name: "nodes_query",
+			test: "nodes_query",
 			expr: []spec.FuncExprArg{
 				spec.Query(true, spec.Child(spec.Name("x"))),
 			},
 		},
 		{
-			name: "logical_func_expr",
+			test: "logical_func_expr",
 			expr: []spec.FuncExprArg{spec.Function(reg.Get("match"),
 				spec.Query(true, spec.Child(spec.Name("x"))),
 				spec.Literal("hi"),
@@ -168,14 +168,14 @@ func TestCheckSingularFuncArgs(t *testing.T) {
 			valueErr:  "cannot convert argument to Nodes",
 		},
 		{
-			name:      "logical_or",
+			test:      "logical_or",
 			expr:      []spec.FuncExprArg{spec.LogicalOr{}},
 			lengthErr: "cannot convert argument to Value",
 			countErr:  "cannot convert argument to Nodes",
 			valueErr:  "cannot convert argument to Nodes",
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			r := require.New(t)
 
@@ -220,59 +220,59 @@ func TestCheckRegexFuncArgs(t *testing.T) {
 	reg := New()
 
 	for _, tc := range []struct {
-		name string
+		test string
 		expr []spec.FuncExprArg
 		err  string
 	}{
 		{
-			name: "no_args",
+			test: "no_args",
 			expr: []spec.FuncExprArg{},
 			err:  "expected 2 arguments but found 0",
 		},
 		{
-			name: "one_arg",
+			test: "one_arg",
 			expr: []spec.FuncExprArg{spec.Literal("hi")},
 			err:  "expected 2 arguments but found 1",
 		},
 		{
-			name: "three_args",
+			test: "three_args",
 			expr: []spec.FuncExprArg{spec.Literal("hi"), spec.Literal("hi"), spec.Literal("hi")},
 			err:  "expected 2 arguments but found 3",
 		},
 		{
-			name: "logical_or_1",
+			test: "logical_or_1",
 			expr: []spec.FuncExprArg{&spec.LogicalOr{}, spec.Literal("hi")},
 			err:  "cannot convert argument 1 to Value",
 		},
 		{
-			name: "logical_or_2",
+			test: "logical_or_2",
 			expr: []spec.FuncExprArg{spec.Literal("hi"), spec.LogicalOr{}},
 			err:  "cannot convert argument 2 to Value",
 		},
 		{
-			name: "singular_query_literal",
+			test: "singular_query_literal",
 			expr: []spec.FuncExprArg{&spec.SingularQueryExpr{}, spec.Literal("hi")},
 		},
 		{
-			name: "literal_singular_query",
+			test: "literal_singular_query",
 			expr: []spec.FuncExprArg{spec.Literal("hi"), &spec.SingularQueryExpr{}},
 		},
 		{
-			name: "nodes_query_1",
+			test: "nodes_query_1",
 			expr: []spec.FuncExprArg{
 				spec.Query(true, spec.Child(spec.Name("x"))),
 				spec.Literal("hi"),
 			},
 		},
 		{
-			name: "nodes_query_2",
+			test: "nodes_query_2",
 			expr: []spec.FuncExprArg{
 				spec.Literal("hi"),
 				spec.Query(true, spec.Child(spec.Name("x"))),
 			},
 		},
 		{
-			name: "func_expr_1",
+			test: "func_expr_1",
 			expr: []spec.FuncExprArg{
 				spec.Function(
 					reg.Get("match"),
@@ -284,7 +284,7 @@ func TestCheckRegexFuncArgs(t *testing.T) {
 			err: "cannot convert argument 1 to Value",
 		},
 		{
-			name: "func_expr_2",
+			test: "func_expr_2",
 			expr: []spec.FuncExprArg{
 				spec.Literal("hi"),
 				spec.Function(
@@ -296,7 +296,7 @@ func TestCheckRegexFuncArgs(t *testing.T) {
 			err: "cannot convert argument 2 to Value",
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			r := require.New(t)
 
@@ -323,7 +323,7 @@ func TestCountFunc(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name string
+		test string
 		vals []spec.PathValue
 		exp  int
 		err  string
@@ -333,7 +333,7 @@ func TestCountFunc(t *testing.T) {
 		{"three", []spec.PathValue{spec.Nodes(1, true, nil)}, 3, ""},
 		{"not_nodes", []spec.PathValue{spec.LogicalTrue}, 0, "cannot convert LogicalType to NodesType"},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 
@@ -355,7 +355,7 @@ func TestValueFunc(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name string
+		test string
 		vals []spec.PathValue
 		exp  spec.PathValue
 		err  string
@@ -367,7 +367,7 @@ func TestValueFunc(t *testing.T) {
 		{"three", []spec.PathValue{spec.Nodes(1, true, nil)}, nil, ""},
 		{"not_nodes", []spec.PathValue{spec.LogicalFalse}, nil, "cannot convert LogicalType to NodesType"},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 
@@ -384,63 +384,63 @@ func TestRegexFuncs(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name   string
+		test   string
 		input  *spec.ValueType
 		regex  *spec.ValueType
 		match  bool
 		search bool
 	}{
 		{
-			name:   "dot",
+			test:   "dot",
 			input:  spec.Value("x"),
 			regex:  spec.Value("."),
 			match:  true,
 			search: true,
 		},
 		{
-			name:   "two_chars",
+			test:   "two_chars",
 			input:  spec.Value("xx"),
 			regex:  spec.Value("."),
 			match:  false,
 			search: true,
 		},
 		{
-			name:   "multi_line_newline",
+			test:   "multi_line_newline",
 			input:  spec.Value("xx\nyz"),
 			regex:  spec.Value(".*"),
 			match:  false,
 			search: true,
 		},
 		{
-			name:   "multi_line_crlf",
+			test:   "multi_line_crlf",
 			input:  spec.Value("xx\r\nyz"),
 			regex:  spec.Value(".*"),
 			match:  false,
 			search: true,
 		},
 		{
-			name:   "not_string_input",
+			test:   "not_string_input",
 			input:  spec.Value(1),
 			regex:  spec.Value("."),
 			match:  false,
 			search: false,
 		},
 		{
-			name:   "not_string_regex",
+			test:   "not_string_regex",
 			input:  spec.Value("x"),
 			regex:  spec.Value(1),
 			match:  false,
 			search: false,
 		},
 		{
-			name:   "invalid_regex",
+			test:   "invalid_regex",
 			input:  spec.Value("x"),
 			regex:  spec.Value(".["),
 			match:  false,
 			search: false,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 
@@ -454,30 +454,30 @@ func TestExecRegexFuncs(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name   string
+		test   string
 		vals   []spec.PathValue
 		match  bool
 		search bool
 		err    string
 	}{
 		{
-			name:   "dot",
+			test:   "dot",
 			vals:   []spec.PathValue{spec.Value("x"), spec.Value("x")},
 			match:  true,
 			search: true,
 		},
 		{
-			name: "first_not_value",
+			test: "first_not_value",
 			vals: []spec.PathValue{spec.Nodes(), spec.Value("x")},
 			err:  "cannot convert NodesType to ValueType",
 		},
 		{
-			name: "second_not_value",
+			test: "second_not_value",
 			vals: []spec.PathValue{spec.Value("x"), spec.LogicalFalse},
 			err:  "cannot convert LogicalType to ValueType",
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 

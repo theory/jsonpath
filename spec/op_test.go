@@ -30,7 +30,7 @@ func TestEqualTo(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name  string
+		test  string
 		left  any
 		right any
 		exp   bool
@@ -91,7 +91,7 @@ func TestEqualTo(t *testing.T) {
 		{"object_keys_ne", map[string]any{"x": 1, "y": 2}, map[string]any{"x": 1, "z": 2}, false},
 		{"object_vals_ne", map[string]any{"x": 1, "y": 2}, map[string]any{"x": 1, "y": 3}, false},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 
@@ -115,7 +115,7 @@ func TestLessThan(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name  string
+		test  string
 		left  any
 		right any
 		exp   bool
@@ -165,7 +165,7 @@ func TestLessThan(t *testing.T) {
 		{"string_a_b", "a", "b", true},
 		{"string_c_b", "c", "b", false},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 
@@ -189,7 +189,7 @@ func TestSameType(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name  string
+		test  string
 		left  PathValue
 		right PathValue
 		exp   bool
@@ -261,7 +261,7 @@ func TestSameType(t *testing.T) {
 		{"logical_val_string", LogicalFalse, Value("true"), false},
 		{"logical_nodes_string", LogicalFalse, Nodes("true"), false},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			assert.Equal(t, tc.exp, sameType(tc.left, tc.right))
 		})
@@ -272,7 +272,7 @@ func TestComparisonExpr(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name    string
+		test    string
 		left    CompVal
 		right   CompVal
 		root    any
@@ -281,49 +281,49 @@ func TestComparisonExpr(t *testing.T) {
 		str     string
 	}{
 		{
-			name:   "literal_numbers_eq",
+			test:   "literal_numbers_eq",
 			left:   Literal(42),
 			right:  Literal(42),
 			expect: []bool{true, false, false, false, true, true},
 			str:    "42 %v 42",
 		},
 		{
-			name:   "literal_numbers_lt",
+			test:   "literal_numbers_lt",
 			left:   Literal(42),
 			right:  Literal(43),
 			expect: []bool{false, true, true, false, true, false},
 			str:    "42 %v 43",
 		},
 		{
-			name:   "literal_numbers_gt",
+			test:   "literal_numbers_gt",
 			left:   Literal(43),
 			right:  Literal(42),
 			expect: []bool{false, true, false, true, false, true},
 			str:    "43 %v 42",
 		},
 		{
-			name:   "literal_strings_eq",
+			test:   "literal_strings_eq",
 			left:   Literal("x"),
 			right:  Literal("x"),
 			expect: []bool{true, false, false, false, true, true},
 			str:    `"x" %v "x"`,
 		},
 		{
-			name:   "literal_strings_lt",
+			test:   "literal_strings_lt",
 			left:   Literal("x"),
 			right:  Literal("y"),
 			expect: []bool{false, true, true, false, true, false},
 			str:    `"x" %v "y"`,
 		},
 		{
-			name:   "literal_strings_gt",
+			test:   "literal_strings_gt",
 			left:   Literal("y"),
 			right:  Literal("x"),
 			expect: []bool{false, true, false, true, false, true},
 			str:    `"y" %v "x"`,
 		},
 		{
-			name:   "query_numbers_eq",
+			test:   "query_numbers_eq",
 			left:   SingularQuery(true, Name("x")),
 			right:  SingularQuery(true, Name("y")),
 			root:   map[string]any{"x": 42, "y": 42},
@@ -331,7 +331,7 @@ func TestComparisonExpr(t *testing.T) {
 			str:    `$["x"] %v $["y"]`,
 		},
 		{
-			name:    "query_numbers_lt",
+			test:    "query_numbers_lt",
 			left:    SingularQuery(false, Name("x")),
 			right:   SingularQuery(false, Name("y")),
 			current: map[string]any{"x": 42, "y": 43},
@@ -339,7 +339,7 @@ func TestComparisonExpr(t *testing.T) {
 			str:     `@["x"] %v @["y"]`,
 		},
 		{
-			name:   "query_string_gt",
+			test:   "query_string_gt",
 			left:   SingularQuery(true, Name("y")),
 			right:  SingularQuery(true, Name("x")),
 			root:   map[string]any{"x": "x", "y": "y"},
@@ -347,7 +347,7 @@ func TestComparisonExpr(t *testing.T) {
 			str:    `$["y"] %v $["x"]`,
 		},
 		{
-			name: "func_numbers_eq",
+			test: "func_numbers_eq",
 			left: &FuncExpr{
 				args: []FuncExprArg{SingularQuery(true, Name("x"))},
 				fn:   newValueFunc(1),
@@ -361,7 +361,7 @@ func TestComparisonExpr(t *testing.T) {
 			str:    `__val($["x"]) %v __val($["y"])`,
 		},
 		{
-			name: "func_numbers_lt",
+			test: "func_numbers_lt",
 			left: &FuncExpr{
 				args: []FuncExprArg{SingularQuery(true, Name("x"))},
 				fn:   newValueFunc(1),
@@ -375,7 +375,7 @@ func TestComparisonExpr(t *testing.T) {
 			str:    `__val($["x"]) %v __val($["y"])`,
 		},
 		{
-			name: "func_strings_gt",
+			test: "func_strings_gt",
 			left: &FuncExpr{
 				args: []FuncExprArg{Query(false, Child(Name("y")))},
 				fn:   newValueFunc(42),
@@ -389,10 +389,10 @@ func TestComparisonExpr(t *testing.T) {
 			str:     `__val(@["y"]) %v __val(@["x"])`,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			for i, op := range []struct {
-				name string
+				text string
 				op   CompOp
 			}{
 				{"eq", EqualTo},
@@ -402,7 +402,7 @@ func TestComparisonExpr(t *testing.T) {
 				{"le", LessThanEqualTo},
 				{"ge", GreaterThanEqualTo},
 			} {
-				t.Run(op.name, func(t *testing.T) {
+				t.Run(op.text, func(t *testing.T) {
 					t.Parallel()
 					a := assert.New(t)
 

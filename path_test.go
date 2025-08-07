@@ -26,7 +26,7 @@ func TestParseSpecExamples(t *testing.T) {
 	books, _ := store["book"].([]any)
 
 	for _, tc := range []struct {
-		name string
+		test string
 		path string
 		exp  NodeList
 		loc  LocatedNodeList
@@ -34,7 +34,7 @@ func TestParseSpecExamples(t *testing.T) {
 		rand bool
 	}{
 		{
-			name: "example_1",
+			test: "example_1",
 			path: `$.store.book[*].author`,
 			exp:  NodeList{"Nigel Rees", "Evelyn Waugh", "Herman Melville", "J. R. R. Tolkien"},
 			loc: LocatedNodeList{
@@ -45,7 +45,7 @@ func TestParseSpecExamples(t *testing.T) {
 			},
 		},
 		{
-			name: "example_2",
+			test: "example_2",
 			path: `$..author`,
 			exp:  NodeList{"Nigel Rees", "Evelyn Waugh", "Herman Melville", "J. R. R. Tolkien"},
 			loc: LocatedNodeList{
@@ -56,7 +56,7 @@ func TestParseSpecExamples(t *testing.T) {
 			},
 		},
 		{
-			name: "example_3",
+			test: "example_3",
 			path: `$.store.*`,
 			exp:  NodeList{store["book"], store["bicycle"]},
 			loc: LocatedNodeList{
@@ -66,7 +66,7 @@ func TestParseSpecExamples(t *testing.T) {
 			rand: true,
 		},
 		{
-			name: "example_4",
+			test: "example_4",
 			path: `$.store..price`,
 			exp:  NodeList{399., 8.95, 12.99, 8.99, 22.99},
 			loc: LocatedNodeList{
@@ -79,19 +79,19 @@ func TestParseSpecExamples(t *testing.T) {
 			rand: true,
 		},
 		{
-			name: "example_5",
+			test: "example_5",
 			path: `$..book[2]`,
 			exp:  NodeList{books[2]},
 			loc:  []*spec.LocatedNode{{Path: book(2), Node: books[2]}},
 		},
 		{
-			name: "example_6",
+			test: "example_6",
 			path: `$..book[-1]`,
 			exp:  NodeList{books[3]},
 			loc:  []*spec.LocatedNode{{Path: book(3), Node: books[3]}},
 		},
 		{
-			name: "example_7",
+			test: "example_7",
 			path: `$..book[0,1]`,
 			exp:  NodeList{books[0], books[1]},
 			loc: LocatedNodeList{
@@ -100,7 +100,7 @@ func TestParseSpecExamples(t *testing.T) {
 			},
 		},
 		{
-			name: "example_8",
+			test: "example_8",
 			path: `$..book[?(@.isbn)]`,
 			exp:  NodeList{books[2], books[3]},
 			loc: LocatedNodeList{
@@ -109,7 +109,7 @@ func TestParseSpecExamples(t *testing.T) {
 			},
 		},
 		{
-			name: "example_9",
+			test: "example_9",
 			path: `$..book[?(@.price<10)]`,
 			exp:  NodeList{books[0], books[2]},
 			loc: LocatedNodeList{
@@ -118,13 +118,13 @@ func TestParseSpecExamples(t *testing.T) {
 			},
 		},
 		{
-			name: "example_10",
+			test: "example_10",
 			path: `$..*`,
 			size: 27,
 			rand: true,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 			r := require.New(t)
@@ -229,7 +229,7 @@ func TestParseCompliance(t *testing.T) {
 
 	//nolint:tagliatelle
 	type testCase struct {
-		Name            string     `json:"name"`
+		Test            string     `json:"name"`
 		Selector        string     `json:"selector"`
 		Document        any        `json:"document"`
 		Result          NodeList   `json:"result"`
@@ -256,7 +256,7 @@ func TestParseCompliance(t *testing.T) {
 			a := assert.New(t)
 			r := require.New(t)
 
-			description := fmt.Sprintf("%v: `%v`", tc.Name, tc.Selector)
+			description := fmt.Sprintf("%v: `%v`", tc.Test, tc.Selector)
 			p, err := p.Parse(tc.Selector)
 			if tc.InvalidSelector {
 				r.Error(err, description)
@@ -301,30 +301,30 @@ func TestParser(t *testing.T) {
 	reg := registry.New()
 
 	for _, tc := range []struct {
-		name string
+		test string
 		path string
 		reg  *registry.Registry
 		exp  *Path
 		err  string
 	}{
 		{
-			name: "root",
+			test: "root",
 			path: "$",
 			exp:  MustParse("$"),
 		},
 		{
-			name: "root_reg",
+			test: "root_reg",
 			path: "$",
 			reg:  reg,
 			exp:  MustParse("$"),
 		},
 		{
-			name: "parse_error",
+			test: "parse_error",
 			path: "lol",
 			err:  "jsonpath: unexpected identifier at position 1",
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 			r := require.New(t)
@@ -399,31 +399,31 @@ func TestNodeList(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name string
+		test string
 		list NodeList
 	}{
 		{
-			name: "empty",
+			test: "empty",
 			list: NodeList{},
 		},
 		{
-			name: "one_node",
+			test: "one_node",
 			list: NodeList{true},
 		},
 		{
-			name: "two_nodes",
+			test: "two_nodes",
 			list: NodeList{true, "hi"},
 		},
 		{
-			name: "dupe_nodes",
+			test: "dupe_nodes",
 			list: NodeList{"hi", "hi"},
 		},
 		{
-			name: "many_nodes",
+			test: "many_nodes",
 			list: NodeList{"hi", true, nil, "hi", 42, 98.6, []any{99}, map[string]any{"hi": "go"}},
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 
@@ -441,7 +441,7 @@ func TestLocatedNodeList(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name  string
+		test  string
 		list  LocatedNodeList
 		nodes []any
 		paths []spec.NormalizedPath
@@ -449,13 +449,13 @@ func TestLocatedNodeList(t *testing.T) {
 		sort  LocatedNodeList
 	}{
 		{
-			name: "empty",
+			test: "empty",
 			list: LocatedNodeList{},
 			uniq: LocatedNodeList{},
 			sort: LocatedNodeList{},
 		},
 		{
-			name:  "one_node",
+			test:  "one_node",
 			list:  LocatedNodeList{{Path: norm("foo"), Node: 42}},
 			nodes: []any{42},
 			paths: []spec.NormalizedPath{norm("foo")},
@@ -463,7 +463,7 @@ func TestLocatedNodeList(t *testing.T) {
 			sort:  LocatedNodeList{{Path: norm("foo"), Node: 42}},
 		},
 		{
-			name: "two_names",
+			test: "two_names",
 			list: LocatedNodeList{
 				{Path: norm("foo", "bar"), Node: true},
 			},
@@ -477,7 +477,7 @@ func TestLocatedNodeList(t *testing.T) {
 			},
 		},
 		{
-			name: "two_nodes",
+			test: "two_nodes",
 			list: LocatedNodeList{
 				{Path: norm("foo"), Node: 42},
 				{Path: norm("bar"), Node: true},
@@ -495,7 +495,7 @@ func TestLocatedNodeList(t *testing.T) {
 			},
 		},
 		{
-			name: "three_nodes",
+			test: "three_nodes",
 			list: LocatedNodeList{
 				{Path: norm("foo"), Node: 42},
 				{Path: norm("bar"), Node: true},
@@ -516,7 +516,7 @@ func TestLocatedNodeList(t *testing.T) {
 			},
 		},
 		{
-			name: "two_nodes_diff_lengths",
+			test: "two_nodes_diff_lengths",
 			list: LocatedNodeList{
 				{Path: norm("foo"), Node: 42},
 				{Path: norm("bar", "baz"), Node: true},
@@ -534,7 +534,7 @@ func TestLocatedNodeList(t *testing.T) {
 			},
 		},
 		{
-			name: "two_nodes_diff_lengths_reverse",
+			test: "two_nodes_diff_lengths_reverse",
 			list: LocatedNodeList{
 				{Path: norm("foo", "baz"), Node: 42},
 				{Path: norm("bar"), Node: true},
@@ -552,7 +552,7 @@ func TestLocatedNodeList(t *testing.T) {
 			},
 		},
 		{
-			name: "dupe_nodes",
+			test: "dupe_nodes",
 			list: LocatedNodeList{
 				{Path: norm("foo"), Node: 42},
 				{Path: norm("bar"), Node: true},
@@ -571,7 +571,7 @@ func TestLocatedNodeList(t *testing.T) {
 			},
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 

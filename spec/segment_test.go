@@ -10,75 +10,75 @@ func TestSegmentString(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name string
+		test string
 		seg  *Segment
 		str  string
 		sing bool
 	}{
 		{
-			name: "no_selectors",
+			test: "no_selectors",
 			seg:  Child(),
 			str:  "[]",
 		},
 		{
-			name: "descendant_no_selectors",
+			test: "descendant_no_selectors",
 			seg:  Descendant(),
 			str:  "..[]",
 		},
 		{
-			name: "name",
+			test: "name",
 			seg:  Child(Name("hi")),
 			str:  `["hi"]`,
 			sing: true,
 		},
 		{
-			name: "index",
+			test: "index",
 			seg:  Child(Index(2)),
 			str:  `[2]`,
 			sing: true,
 		},
 		{
-			name: "wildcard",
+			test: "wildcard",
 			seg:  Child(Wildcard()),
 			str:  `[*]`,
 		},
 		{
-			name: "slice",
+			test: "slice",
 			seg:  Child(Slice(2)),
 			str:  `[2:]`,
 		},
 		{
-			name: "multiples",
+			test: "multiples",
 			seg:  Child(Slice(2), Name("hi"), Index(3)),
 			str:  `[2:,"hi",3]`,
 		},
 		{
-			name: "descendant_multiples",
+			test: "descendant_multiples",
 			seg:  Descendant(Slice(2), Name("hi"), Index(3)),
 			str:  `..[2:,"hi",3]`,
 		},
 		{
-			name: "wildcard_override",
+			test: "wildcard_override",
 			seg:  Child(Slice(2), Name("hi"), Index(3), Wildcard()),
 			str:  `[2:,"hi",3,*]`,
 		},
 		{
-			name: "descendant_wildcard_override",
+			test: "descendant_wildcard_override",
 			seg:  Descendant(Slice(2), Name("hi"), Index(3), Wildcard()),
 			str:  `..[2:,"hi",3,*]`,
 		},
 		{
-			name: "dupes",
+			test: "dupes",
 			seg:  Child(Slice(2), Name("hi"), Slice(2), Slice(2), Name("hi"), Index(3), Name("go"), Index(3)),
 			str:  `[2:,"hi",2:,2:,"hi",3,"go",3]`,
 		},
 		{
-			name: "descendant_dupes",
+			test: "descendant_dupes",
 			seg:  Descendant(Slice(2), Name("hi"), Slice(2), Slice(2), Name("hi"), Index(3), Name("go"), Index(3)),
 			str:  `..[2:,"hi",2:,2:,"hi",3,"go",3]`,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 
@@ -93,7 +93,7 @@ func TestSegmentSelect(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name string
+		test string
 		seg  *Segment
 		src  any
 		exp  []any
@@ -102,14 +102,14 @@ func TestSegmentSelect(t *testing.T) {
 		sing bool
 	}{
 		{
-			name: "no_selectors",
+			test: "no_selectors",
 			seg:  Child(),
 			src:  []any{1, 3},
 			exp:  []any{},
 			loc:  []*LocatedNode{},
 		},
 		{
-			name: "name",
+			test: "name",
 			seg:  Child(Name("hi")),
 			src:  map[string]any{"hi": 42, "go": 98.6, "x": true},
 			exp:  []any{42},
@@ -119,7 +119,7 @@ func TestSegmentSelect(t *testing.T) {
 			sing: true,
 		},
 		{
-			name: "two_names",
+			test: "two_names",
 			seg:  Child(Name("hi"), Name("go")),
 			src:  map[string]any{"hi": 42, "go": 98.6, "x": true},
 			exp:  []any{42, 98.6},
@@ -130,7 +130,7 @@ func TestSegmentSelect(t *testing.T) {
 			rand: true,
 		},
 		{
-			name: "dupe_name",
+			test: "dupe_name",
 			seg:  Child(Name("hi"), Name("hi")),
 			src:  map[string]any{"hi": 42, "go": 98.6, "x": true},
 			exp:  []any{42, 42},
@@ -141,7 +141,7 @@ func TestSegmentSelect(t *testing.T) {
 			rand: true,
 		},
 		{
-			name: "three_names",
+			test: "three_names",
 			seg:  Child(Name("hi"), Name("go"), Name("x")),
 			src:  map[string]any{"hi": 42, "go": 98.6, "x": true},
 			exp:  []any{42, 98.6, true},
@@ -153,7 +153,7 @@ func TestSegmentSelect(t *testing.T) {
 			rand: true,
 		},
 		{
-			name: "name_and_others",
+			test: "name_and_others",
 			seg:  Child(Name("hi"), Index(1), Slice()),
 			src:  map[string]any{"hi": 42, "go": 98.6, "x": true},
 			exp:  []any{42},
@@ -162,7 +162,7 @@ func TestSegmentSelect(t *testing.T) {
 			},
 		},
 		{
-			name: "index",
+			test: "index",
 			seg:  Child(Index(1)),
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{42},
@@ -172,7 +172,7 @@ func TestSegmentSelect(t *testing.T) {
 			sing: true,
 		},
 		{
-			name: "two_indexes",
+			test: "two_indexes",
 			seg:  Child(Index(1), Index(4)),
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{42, "x"},
@@ -182,7 +182,7 @@ func TestSegmentSelect(t *testing.T) {
 			},
 		},
 		{
-			name: "dupe_index",
+			test: "dupe_index",
 			seg:  Child(Index(1), Index(1)),
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{42, 42},
@@ -192,7 +192,7 @@ func TestSegmentSelect(t *testing.T) {
 			},
 		},
 		{
-			name: "three_indexes",
+			test: "three_indexes",
 			seg:  Child(Index(1), Index(4), Index(0)),
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{42, "x", "hi"},
@@ -203,7 +203,7 @@ func TestSegmentSelect(t *testing.T) {
 			},
 		},
 		{
-			name: "index_and_name",
+			test: "index_and_name",
 			seg:  Child(Name("hi"), Index(2)),
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{"go"},
@@ -212,7 +212,7 @@ func TestSegmentSelect(t *testing.T) {
 			},
 		},
 		{
-			name: "slice",
+			test: "slice",
 			seg:  Child(Slice(1, 3)),
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{42, "go"},
@@ -222,7 +222,7 @@ func TestSegmentSelect(t *testing.T) {
 			},
 		},
 		{
-			name: "two_slices",
+			test: "two_slices",
 			seg:  Child(Slice(1, 3), Slice(0, 1)),
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{42, "go", "hi"},
@@ -233,7 +233,7 @@ func TestSegmentSelect(t *testing.T) {
 			},
 		},
 		{
-			name: "overlapping_slices",
+			test: "overlapping_slices",
 			seg:  Child(Slice(1, 3), Slice(0, 3)),
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{42, "go", "hi", 42, "go"},
@@ -246,7 +246,7 @@ func TestSegmentSelect(t *testing.T) {
 			},
 		},
 		{
-			name: "slice_plus_index",
+			test: "slice_plus_index",
 			seg:  Child(Slice(1, 3), Index(0)),
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{42, "go", "hi"},
@@ -257,7 +257,7 @@ func TestSegmentSelect(t *testing.T) {
 			},
 		},
 		{
-			name: "slice_plus_overlapping_indexes",
+			test: "slice_plus_overlapping_indexes",
 			seg:  Child(Slice(1, 3), Index(0), Index(1)),
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{42, "go", "hi", 42},
@@ -269,7 +269,7 @@ func TestSegmentSelect(t *testing.T) {
 			},
 		},
 		{
-			name: "slice_and_others",
+			test: "slice_and_others",
 			seg:  Child(Name("hi"), Index(1), Slice()),
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{42, "hi", 42, "go", 98.6, "x", true},
@@ -284,7 +284,7 @@ func TestSegmentSelect(t *testing.T) {
 			},
 		},
 		{
-			name: "wildcard_array",
+			test: "wildcard_array",
 			seg:  Child(Wildcard()),
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{"hi", 42, "go", 98.6, "x", true},
@@ -298,7 +298,7 @@ func TestSegmentSelect(t *testing.T) {
 			},
 		},
 		{
-			name: "wildcard_object",
+			test: "wildcard_object",
 			seg:  Child(Wildcard()),
 			src:  map[string]any{"hi": 42, "go": 98.6, "x": true},
 			exp:  []any{42, 98.6, true},
@@ -310,7 +310,7 @@ func TestSegmentSelect(t *testing.T) {
 			rand: true,
 		},
 		{
-			name: "wildcard_others_array",
+			test: "wildcard_others_array",
 			seg:  Child(Wildcard(), Slice(1, 3), Index(0), Name("go")),
 			src:  []any{"hi", 42, "go", 98.6, "x", true},
 			exp:  []any{"hi", 42, "go", 98.6, "x", true, 42, "go", "hi"},
@@ -327,7 +327,7 @@ func TestSegmentSelect(t *testing.T) {
 			},
 		},
 		{
-			name: "wildcard_others_object",
+			test: "wildcard_others_object",
 			seg:  Child(Wildcard(), Slice(1, 3), Index(0), Name("go")),
 			src:  map[string]any{"hi": 42, "go": 98.6, "x": true},
 			exp:  []any{42, 98.6, true, 98.6},
@@ -340,7 +340,7 @@ func TestSegmentSelect(t *testing.T) {
 			rand: true,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 
@@ -362,7 +362,7 @@ func TestDescendantSegmentSelect(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name string
+		test string
 		seg  *Segment
 		src  any
 		exp  []any
@@ -370,14 +370,14 @@ func TestDescendantSegmentSelect(t *testing.T) {
 		rand bool
 	}{
 		{
-			name: "no_selectors",
+			test: "no_selectors",
 			seg:  Descendant(),
 			src:  []any{1, 3, []any{3, 5, []any{42, 98.6, true}}},
 			exp:  []any{},
 			loc:  []*LocatedNode{},
 		},
 		{
-			name: "root_name",
+			test: "root_name",
 			seg:  Descendant(Name("hi")),
 			src:  map[string]any{"hi": 42, "go": map[string]any{"x": 98.6}},
 			exp:  []any{42},
@@ -387,7 +387,7 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			rand: true,
 		},
 		{
-			name: "name",
+			test: "name",
 			seg:  Descendant(Name("hi")),
 			src: map[string]any{
 				"hi": 42, "go": map[string]any{
@@ -403,7 +403,7 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			rand: true,
 		},
 		{
-			name: "name_in_name",
+			test: "name_in_name",
 			seg:  Descendant(Name("hi")),
 			src: map[string]any{
 				"hi": 42, "go": map[string]any{
@@ -419,7 +419,7 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			rand: true,
 		},
 		{
-			name: "name_under_array",
+			test: "name_under_array",
 			seg:  Descendant(Name("hi")),
 			src: []any{
 				map[string]any{
@@ -434,7 +434,7 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			rand: true,
 		},
 		{
-			name: "two_names",
+			test: "two_names",
 			seg:  Descendant(Name("hi"), Name("x")),
 			src: map[string]any{
 				"hi": 42, "go": map[string]any{
@@ -454,7 +454,7 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			rand: true,
 		},
 		{
-			name: "root_index",
+			test: "root_index",
 			seg:  Descendant(Index(1)),
 			src:  []any{1, 3, []any{3}},
 			exp:  []any{3},
@@ -463,7 +463,7 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			},
 		},
 		{
-			name: "index",
+			test: "index",
 			seg:  Descendant(Index(1)),
 			src:  []any{1, 3, []any{3, 5, []any{42, 98.6, true}}},
 			exp:  []any{3, 5, 98.6},
@@ -474,7 +474,7 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			},
 		},
 		{
-			name: "two_indexes",
+			test: "two_indexes",
 			seg:  Descendant(Index(1), Index(0)),
 			src:  []any{1, 3, []any{3, 5, []any{42, 98.6, true}}},
 			exp:  []any{3, 1, 5, 3, 98.6, 42},
@@ -488,7 +488,7 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			},
 		},
 		{
-			name: "index_under_object",
+			test: "index_under_object",
 			seg:  Descendant(Index(1)),
 			src:  map[string]any{"x": 1, "y": 3, "z": []any{3, 5, []any{42, 98.6, true}}},
 			exp:  []any{5, 98.6},
@@ -498,7 +498,7 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			},
 		},
 		{
-			name: "root_slice",
+			test: "root_slice",
 			seg:  Descendant(Slice(1, 3)),
 			src:  []any{1, 3, 4, []any{3}},
 			exp:  []any{3, 4},
@@ -508,7 +508,7 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			},
 		},
 		{
-			name: "slice",
+			test: "slice",
 			seg:  Descendant(Slice(1, 2)),
 			src:  []any{1, 3, 4, []any{3, 5, "x", []any{42, 98.6, "y", "z", true}}},
 			exp:  []any{3, 5, 98.6},
@@ -519,7 +519,7 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			},
 		},
 		{
-			name: "two_more_slices",
+			test: "two_more_slices",
 			seg:  Descendant(Slice(1, 2), Slice(3, 4)),
 			src:  []any{1, 3, 4, []any{3, 5, "x", []any{42, 98.6, "y", "z", true}}},
 			exp: []any{
@@ -540,7 +540,7 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			},
 		},
 		{
-			name: "slice_and_index",
+			test: "slice_and_index",
 			seg:  Descendant(Slice(1, 2), Index(3)),
 			src:  []any{1, 3, 4, []any{3, 5, "x", []any{42, 98.6, "y", "z", true}}},
 			exp: []any{
@@ -561,7 +561,7 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			},
 		},
 		{
-			name: "slice_under_object",
+			test: "slice_under_object",
 			seg:  Descendant(Slice(1, 2)),
 			src:  map[string]any{"x": []any{3, 5, "x", []any{42, 98.6, "y", "z", true}}},
 			exp:  []any{5, 98.6},
@@ -571,7 +571,7 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			},
 		},
 		{
-			name: "root_wildcard_array",
+			test: "root_wildcard_array",
 			seg:  Descendant(Wildcard()),
 			src:  []any{1, 3, 4},
 			exp:  []any{1, 3, 4},
@@ -582,7 +582,7 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			},
 		},
 		{
-			name: "root_wildcard_object",
+			test: "root_wildcard_object",
 			seg:  Descendant(Wildcard()),
 			src:  map[string]any{"x": 42, "y": true},
 			exp:  []any{42, true},
@@ -593,7 +593,7 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			rand: true,
 		},
 		{
-			name: "wildcard_nested_array",
+			test: "wildcard_nested_array",
 			seg:  Descendant(Wildcard()),
 			src:  []any{1, 3, []any{4, 5}},
 			exp:  []any{1, 3, []any{4, 5}, 4, 5},
@@ -606,7 +606,7 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			},
 		},
 		{
-			name: "wildcard_nested_object",
+			test: "wildcard_nested_object",
 			seg:  Descendant(Wildcard()),
 			src:  map[string]any{"x": 42, "y": map[string]any{"z": "hi"}},
 			exp:  []any{42, map[string]any{"z": "hi"}, "hi"},
@@ -618,7 +618,7 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			rand: true,
 		},
 		{
-			name: "wildcard_mixed",
+			test: "wildcard_mixed",
 			seg:  Descendant(Wildcard()),
 			src:  []any{1, 3, map[string]any{"z": "hi"}},
 			exp:  []any{1, 3, map[string]any{"z": "hi"}, "hi"},
@@ -631,7 +631,7 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			rand: true,
 		},
 		{
-			name: "wildcard_mixed_index",
+			test: "wildcard_mixed_index",
 			seg:  Descendant(Wildcard(), Index(0)),
 			src:  []any{1, 3, map[string]any{"z": "hi"}},
 			exp:  []any{1, 3, map[string]any{"z": "hi"}, 1, "hi"},
@@ -644,7 +644,7 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			},
 		},
 		{
-			name: "wildcard_mixed_name",
+			test: "wildcard_mixed_name",
 			seg:  Descendant(Wildcard(), Name("z")),
 			src:  []any{1, 3, map[string]any{"z": "hi", "y": "x"}},
 			exp:  []any{1, 3, map[string]any{"z": "hi", "y": "x"}, "hi", "x", "hi"},
@@ -659,7 +659,7 @@ func TestDescendantSegmentSelect(t *testing.T) {
 			rand: true,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 

@@ -20,29 +20,29 @@ func TestFuncType(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name  string
+		test  string
 		fType FuncType
 	}{
 		{
-			name:  "Value",
+			test:  "Value",
 			fType: FuncValue,
 		},
 		{
-			name:  "Nodes",
+			test:  "Nodes",
 			fType: FuncNodes,
 		},
 		{
-			name:  "Logical",
+			test:  "Logical",
 			fType: FuncLogical,
 		},
 		{
-			name:  "FuncType(16)",
+			test:  "FuncType(16)",
 			fType: FuncType(16),
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tc.name, tc.fType.String())
+			assert.Equal(t, tc.test, tc.fType.String())
 		})
 	}
 }
@@ -51,7 +51,7 @@ func TestNodesType(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name string
+		test string
 		from PathValue
 		exp  NodesType
 		str  string
@@ -63,7 +63,7 @@ func TestNodesType(t *testing.T) {
 		{"logical", LogicalTrue, nil, "", "cannot convert LogicalType to NodesType"},
 		{"unknown", newValueType{}, nil, "", "unexpected argument of type spec.newValueType"},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 
@@ -83,7 +83,7 @@ func TestLogicalType(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name    string
+		test    string
 		from    PathValue
 		exp     LogicalType
 		boolean bool
@@ -99,7 +99,7 @@ func TestLogicalType(t *testing.T) {
 		{"value", Value(1), LogicalFalse, false, "cannot convert ValueType to LogicalType", ""},
 		{"unknown", newValueType{}, LogicalFalse, false, "unexpected argument of type spec.newValueType", ""},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 
@@ -126,7 +126,7 @@ func TestValueType(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name string
+		test string
 		val  any
 		exp  bool
 	}{
@@ -166,7 +166,7 @@ func TestValueType(t *testing.T) {
 		{"array", []any{}, true},
 		{"struct", struct{}{}, true},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 
@@ -184,7 +184,7 @@ func TestValueFrom(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name string
+		test string
 		val  PathValue
 		exp  *ValueType
 		err  string
@@ -195,7 +195,7 @@ func TestValueFrom(t *testing.T) {
 		{"nodes", Nodes(1), nil, "cannot convert NodesType to ValueType"},
 		{"unknown", newValueType{}, nil, "unexpected argument of type spec.newValueType"},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 
@@ -213,7 +213,7 @@ func TestPathValueInterface(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name     string
+		test     string
 		pathVal  any
 		funcType FuncType
 		str      string
@@ -222,7 +222,7 @@ func TestPathValueInterface(t *testing.T) {
 		{"logical", LogicalType(1), FuncLogical, "true"},
 		{"value", &ValueType{}, FuncValue, "<nil>"},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 
@@ -239,7 +239,7 @@ func TestJsonFuncExprArgInterface(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name string
+		test string
 		expr any
 	}{
 		{"literal", &LiteralArg{}},
@@ -248,7 +248,7 @@ func TestJsonFuncExprArgInterface(t *testing.T) {
 		{"logical_or", &LogicalOr{}},
 		{"func_expr", &FuncExpr{}},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			assert.Implements(t, (*FuncExprArg)(nil), tc.expr)
 		})
@@ -259,14 +259,14 @@ func TestJSONComparableValInterface(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name string
+		test string
 		expr any
 	}{
 		{"literal", &LiteralArg{}},
 		{"singular_query", &SingularQueryExpr{}},
 		{"func_expr", &FuncExpr{}},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			assert.Implements(t, (*CompVal)(nil), tc.expr)
 		})
@@ -277,7 +277,7 @@ func TestLiteralArg(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name    string
+		test    string
 		literal any
 		str     string
 	}{
@@ -287,7 +287,7 @@ func TestLiteralArg(t *testing.T) {
 		{"false", false, "false"},
 		{"null", nil, "null"},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 
@@ -309,55 +309,55 @@ func TestSingularQuery(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name      string
+		test      string
 		selectors []Selector
 		input     any
 		exp       PathValue
 		str       string
 	}{
 		{
-			name:      "one_name",
+			test:      "one_name",
 			selectors: []Selector{Name("x")},
 			input:     map[string]any{"x": 42},
 			exp:       Value(42),
 			str:       `["x"]`,
 		},
 		{
-			name:      "two_names",
+			test:      "two_names",
 			selectors: []Selector{Name("x"), Name("y")},
 			input:     map[string]any{"x": map[string]any{"y": 98.6}},
 			exp:       Value(98.6),
 			str:       `["x"]["y"]`,
 		},
 		{
-			name:      "one_index",
+			test:      "one_index",
 			selectors: []Selector{Index(1)},
 			input:     []any{"x", 42},
 			exp:       Value(42),
 			str:       `[1]`,
 		},
 		{
-			name:      "two_indexes",
+			test:      "two_indexes",
 			selectors: []Selector{Index(1), Index(0)},
 			input:     []any{"x", []any{true}},
 			exp:       Value(true),
 			str:       `[1][0]`,
 		},
 		{
-			name:      "one_of_each",
+			test:      "one_of_each",
 			selectors: []Selector{Index(1), Name("x")},
 			input:     []any{"x", map[string]any{"x": 12}},
 			exp:       Value(12),
 			str:       `[1]["x"]`,
 		},
 		{
-			name:      "nonexistent",
+			test:      "nonexistent",
 			selectors: []Selector{Name("x")},
 			input:     map[string]any{"y": 42},
 			str:       `["x"]`,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 
@@ -386,7 +386,7 @@ func TestFilterQuery(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name     string
+		test     string
 		query    *PathQuery
 		current  any
 		root     any
@@ -394,42 +394,42 @@ func TestFilterQuery(t *testing.T) {
 		typeKind FuncType
 	}{
 		{
-			name:     "root_name",
+			test:     "root_name",
 			query:    Query(true, Child(Name("x"))),
 			root:     map[string]any{"x": 42},
 			exp:      []any{42},
 			typeKind: FuncValue,
 		},
 		{
-			name:     "current_name",
+			test:     "current_name",
 			query:    Query(false, Child(Name("x"))),
 			current:  map[string]any{"x": 42},
 			exp:      []any{42},
 			typeKind: FuncValue,
 		},
 		{
-			name:     "root_name_index",
+			test:     "root_name_index",
 			query:    Query(true, Child(Name("x")), Child(Index(1))),
 			root:     map[string]any{"x": []any{19, 234}},
 			exp:      []any{234},
 			typeKind: FuncValue,
 		},
 		{
-			name:     "root_slice",
+			test:     "root_slice",
 			query:    Query(true, Child(Slice(0, 2))),
 			root:     []any{13, 2, 5},
 			exp:      []any{13, 2},
 			typeKind: FuncNodes,
 		},
 		{
-			name:     "current_wildcard",
+			test:     "current_wildcard",
 			query:    Query(false, Child(Wildcard())),
 			current:  []any{13, 2, []any{4}},
 			exp:      []any{13, 2, []any{4}},
 			typeKind: FuncNodes,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 
@@ -508,14 +508,14 @@ func TestFunc(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name string
+		test string
 		fn   *FuncExtension
 		args []PathValue
 		err  error
 		exp  PathValue
 	}{
 		{
-			name: "valid_err_value",
+			test: "valid_err_value",
 			fn: Extension(
 				"xyz", FuncValue,
 				func([]FuncExprArg) error { return errors.New("oops") },
@@ -526,7 +526,7 @@ func TestFunc(t *testing.T) {
 			err:  errors.New("oops"),
 		},
 		{
-			name: "no_valid_err_nodes",
+			test: "no_valid_err_nodes",
 			fn: Extension(
 				"abc", FuncNodes,
 				func([]FuncExprArg) error { return nil },
@@ -536,7 +536,7 @@ func TestFunc(t *testing.T) {
 			exp:  Nodes("hi"),
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 
@@ -551,7 +551,7 @@ func TestFuncExpr(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
-		name    string
+		test    string
 		fn      *FuncExtension
 		args    []FuncExprArg
 		current any
@@ -561,7 +561,7 @@ func TestFuncExpr(t *testing.T) {
 		str     string
 	}{
 		{
-			name:    "val",
+			test:    "val",
 			fn:      newValueFunc(42),
 			args:    []FuncExprArg{SingularQuery(true, Name("x"))},
 			root:    map[string]any{"x": "xyz"},
@@ -570,7 +570,7 @@ func TestFuncExpr(t *testing.T) {
 			str:     `__val($["x"])`,
 		},
 		{
-			name:    "__mk_nodes",
+			test:    "__mk_nodes",
 			fn:      newNodesFunc(),
 			args:    []FuncExprArg{Literal(42), Literal(99)},
 			exp:     Nodes(42, 99),
@@ -578,7 +578,7 @@ func TestFuncExpr(t *testing.T) {
 			str:     `__mk_nodes(42, 99)`,
 		},
 		{
-			name:    "__mk_nodes_empty",
+			test:    "__mk_nodes_empty",
 			fn:      newNodesFunc(),
 			args:    []FuncExprArg{},
 			exp:     Nodes([]any{}...),
@@ -586,7 +586,7 @@ func TestFuncExpr(t *testing.T) {
 			str:     `__mk_nodes()`,
 		},
 		{
-			name:    "__true",
+			test:    "__true",
 			fn:      newTrueFunc(),
 			args:    []FuncExprArg{},
 			exp:     LogicalTrue,
@@ -594,7 +594,7 @@ func TestFuncExpr(t *testing.T) {
 			str:     `__true()`,
 		},
 		{
-			name:    "__new_type",
+			test:    "__new_type",
 			fn:      newTypeFunc(),
 			args:    []FuncExprArg{},
 			exp:     newValueType{},
@@ -602,7 +602,7 @@ func TestFuncExpr(t *testing.T) {
 			str:     `__new_type()`,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
+		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 
