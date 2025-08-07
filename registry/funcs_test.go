@@ -11,7 +11,6 @@ import (
 
 func TestLengthFunc(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -102,6 +101,8 @@ func TestLengthFunc(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			if tc.err != "" {
 				a.PanicsWithValue(tc.err, func() {
 					lengthFunc(tc.vals)
@@ -120,7 +121,6 @@ func TestLengthFunc(t *testing.T) {
 
 func TestCheckSingularFuncArgs(t *testing.T) {
 	t.Parallel()
-	r := require.New(t)
 	reg := New()
 
 	for _, tc := range []struct {
@@ -177,6 +177,8 @@ func TestCheckSingularFuncArgs(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			r := require.New(t)
+
 			// Test length args
 			err := checkLengthArgs(tc.expr)
 			switch {
@@ -215,7 +217,6 @@ func TestCheckSingularFuncArgs(t *testing.T) {
 
 func TestCheckRegexFuncArgs(t *testing.T) {
 	t.Parallel()
-	r := require.New(t)
 	reg := New()
 
 	for _, tc := range []struct {
@@ -297,6 +298,8 @@ func TestCheckRegexFuncArgs(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			r := require.New(t)
+
 			// Test match args
 			err := checkMatchArgs(tc.expr)
 			if tc.err == "" {
@@ -318,7 +321,6 @@ func TestCheckRegexFuncArgs(t *testing.T) {
 
 func TestCountFunc(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -333,6 +335,8 @@ func TestCountFunc(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			if tc.err != "" {
 				a.PanicsWithValue(tc.err, func() { countFunc(tc.vals) })
 				return
@@ -349,7 +353,6 @@ func TestCountFunc(t *testing.T) {
 
 func TestValueFunc(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -366,6 +369,8 @@ func TestValueFunc(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			if tc.err != "" {
 				a.PanicsWithValue(tc.err, func() { valueFunc(tc.vals) })
 				return
@@ -377,7 +382,6 @@ func TestValueFunc(t *testing.T) {
 
 func TestRegexFuncs(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name   string
@@ -438,6 +442,8 @@ func TestRegexFuncs(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			a.Equal(spec.Logical(tc.match), matchFunc([]spec.PathValue{tc.input, tc.regex}))
 			a.Equal(spec.Logical(tc.search), searchFunc([]spec.PathValue{tc.input, tc.regex}))
 		})
@@ -446,7 +452,6 @@ func TestRegexFuncs(t *testing.T) {
 
 func TestExecRegexFuncs(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name   string
@@ -474,6 +479,8 @@ func TestExecRegexFuncs(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			if tc.err == "" {
 				a.Equal(matchFunc(tc.vals), spec.Logical(tc.match))
 				a.Equal(searchFunc(tc.vals), spec.Logical(tc.search))

@@ -8,7 +8,6 @@ import (
 
 func TestQueryRoot(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -36,14 +35,13 @@ func TestQueryRoot(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			q := Query(false)
-			a.Equal([]any{tc.val}, q.Select(tc.val, nil))
+			assert.Equal(t, []any{tc.val}, q.Select(tc.val, nil))
 		})
 	}
 }
 
 func TestQueryString(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -83,6 +81,8 @@ func TestQueryString(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			q := Query(false, tc.segs...)
 			a.Equal("@"+tc.str, q.String())
 			a.Equal("@"+tc.str, bufString(q))
@@ -127,7 +127,6 @@ func (tc queryTestCase) run(a *assert.Assertions) {
 
 func TestQueryObject(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []queryTestCase{
 		{
@@ -292,14 +291,13 @@ func TestQueryObject(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			tc.run(a)
+			tc.run(assert.New(t))
 		})
 	}
 }
 
 func TestQueryArray(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []queryTestCase{
 		{
@@ -636,14 +634,13 @@ func TestQueryArray(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			tc.run(a)
+			tc.run(assert.New(t))
 		})
 	}
 }
 
 func TestQuerySlice(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []queryTestCase{
 		{
@@ -1110,14 +1107,13 @@ func TestQuerySlice(t *testing.T) {
 			if tc.resType == 0 {
 				tc.resType = FuncNodes
 			}
-			tc.run(a)
+			tc.run(assert.New(t))
 		})
 	}
 }
 
 func TestQueryDescendants(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 	json := map[string]any{
 		"o": map[string]any{"j": 1, "k": 2},
 		"a": []any{5, 3, []any{map[string]any{"j": 4}, map[string]any{"k": 6}}},
@@ -1280,7 +1276,7 @@ func TestQueryDescendants(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			tc.resType = FuncNodes
-			tc.run(a)
+			tc.run(assert.New(t))
 		})
 	}
 }
@@ -1315,7 +1311,6 @@ func TestQueryInputs(t *testing.T) {
 
 func TestSingularExpr(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name  string
@@ -1355,6 +1350,8 @@ func TestSingularExpr(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			if tc.sing == nil {
 				a.False(tc.query.isSingular())
 				a.Nil(tc.query.Singular())

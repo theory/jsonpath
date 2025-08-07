@@ -9,7 +9,6 @@ import (
 
 func TestExpressionInterface(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -28,14 +27,13 @@ func TestExpressionInterface(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			a.Implements((*BasicExpr)(nil), tc.tok)
+			assert.Implements(t, (*BasicExpr)(nil), tc.tok)
 		})
 	}
 }
 
 func TestLogicalAndExpr(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name    string
@@ -93,6 +91,8 @@ func TestLogicalAndExpr(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			andExpr := LogicalAnd(tc.expr)
 			a.Equal(tc.exp, andExpr.testFilter(tc.current, tc.root))
 			a.Equal(tc.str, bufString(andExpr))
@@ -102,7 +102,6 @@ func TestLogicalAndExpr(t *testing.T) {
 
 func TestLogicalOrExpr(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name    string
@@ -176,6 +175,8 @@ func TestLogicalOrExpr(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			orExpr := LogicalOr(tc.expr)
 			a.Equal(FuncLogical, orExpr.ResultType())
 			a.Equal(tc.exp, orExpr.testFilter(tc.current, tc.root))
@@ -200,7 +201,6 @@ func TestLogicalOrExpr(t *testing.T) {
 
 func TestExistExpr(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name    string
@@ -236,6 +236,7 @@ func TestExistExpr(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
 
 			// Test existExpr.
 			exist := ExistExpr{tc.query}

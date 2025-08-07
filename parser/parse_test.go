@@ -24,8 +24,6 @@ func TestParseRoot(t *testing.T) {
 
 func TestParseSimple(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
-	r := require.New(t)
 	reg := registry.New()
 
 	for _, tc := range []struct {
@@ -179,6 +177,9 @@ func TestParseSimple(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+			r := require.New(t)
+
 			q, err := Parse(reg, tc.path)
 			if tc.err == "" {
 				r.NoError(err)
@@ -194,8 +195,6 @@ func TestParseSimple(t *testing.T) {
 
 func TestParseFilter(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
-	r := require.New(t)
 	reg := registry.New()
 	_ = reg.Register(
 		"__true",
@@ -809,6 +808,9 @@ func TestParseFilter(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+			r := require.New(t)
+
 			parser := &parser{lex: newLexer(tc.query), reg: reg}
 			filter, err := parser.parseFilter()
 			if tc.err == "" {
@@ -825,8 +827,6 @@ func TestParseFilter(t *testing.T) {
 
 func TestParseSelectors(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
-	r := require.New(t)
 	reg := registry.New()
 
 	for _, tc := range []struct {
@@ -1224,6 +1224,9 @@ func TestParseSelectors(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+			r := require.New(t)
+
 			q, err := Parse(reg, tc.path)
 			if tc.err == "" {
 				r.NoError(err)
@@ -1239,10 +1242,11 @@ func TestParseSelectors(t *testing.T) {
 
 func TestMakeNumErr(t *testing.T) {
 	t.Parallel()
-	r := require.New(t)
 
 	t.Run("parse_int", func(t *testing.T) {
 		t.Parallel()
+		r := require.New(t)
+
 		_, numErr := strconv.ParseInt("170141183460469231731687303715884105727", 10, 64)
 		r.Error(numErr)
 		tok := token{invalid, "", 6}
@@ -1256,6 +1260,8 @@ func TestMakeNumErr(t *testing.T) {
 
 	t.Run("parse_float", func(t *testing.T) {
 		t.Parallel()
+		r := require.New(t)
+
 		_, numErr := strconv.ParseFloat("99e+1234", 64)
 		r.Error(numErr)
 		tok := token{invalid, "", 12}
@@ -1269,6 +1275,8 @@ func TestMakeNumErr(t *testing.T) {
 
 	t.Run("other error", func(t *testing.T) {
 		t.Parallel()
+		r := require.New(t)
+
 		myErr := errors.New("oops")
 		tok := token{invalid, "", 19}
 		err := makeNumErr(tok, myErr)
@@ -1279,8 +1287,6 @@ func TestMakeNumErr(t *testing.T) {
 
 func TestParsePathInt(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
-	r := require.New(t)
 
 	for _, tc := range []struct {
 		name  string
@@ -1309,6 +1315,9 @@ func TestParsePathInt(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+			r := require.New(t)
+
 			num, err := parsePathInt(token{integer, tc.input, 3})
 			if tc.err == "" {
 				r.NoError(err)
@@ -1324,8 +1333,6 @@ func TestParsePathInt(t *testing.T) {
 
 func TestParseLiteral(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
-	r := require.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -1381,6 +1388,9 @@ func TestParseLiteral(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+			r := require.New(t)
+
 			lit, err := parseLiteral(tc.tok)
 			if tc.err == "" {
 				r.NoError(err)

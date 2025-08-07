@@ -21,8 +21,6 @@ func book(idx int) spec.NormalizedPath {
 
 func TestParseSpecExamples(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
-	r := require.New(t)
 	val := specExampleJSON(t)
 	store, _ := val["store"].(map[string]any)
 	books, _ := store["book"].([]any)
@@ -128,6 +126,8 @@ func TestParseSpecExamples(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+			r := require.New(t)
 
 			// Test parsing.
 			p := MustParse(tc.path)
@@ -225,8 +225,6 @@ func specExampleJSON(t *testing.T) map[string]any {
 
 func TestParseCompliance(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
-	r := require.New(t)
 	p := NewParser()
 
 	//nolint:tagliatelle
@@ -244,7 +242,7 @@ func TestParseCompliance(t *testing.T) {
 	rawJSON, err := os.ReadFile(
 		filepath.Join("jsonpath-compliance-test-suite", "cts.json"),
 	)
-	r.NoError(err)
+	require.NoError(t, err)
 	var ts struct {
 		Tests []testCase `json:"tests"`
 	}
@@ -255,6 +253,9 @@ func TestParseCompliance(t *testing.T) {
 	for i, tc := range ts.Tests {
 		t.Run(fmt.Sprintf("test_%03d", i), func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+			r := require.New(t)
+
 			description := fmt.Sprintf("%v: `%v`", tc.Name, tc.Selector)
 			p, err := p.Parse(tc.Selector)
 			if tc.InvalidSelector {
@@ -297,8 +298,6 @@ func TestParseCompliance(t *testing.T) {
 
 func TestParser(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
-	r := require.New(t)
 	reg := registry.New()
 
 	for _, tc := range []struct {
@@ -327,6 +326,8 @@ func TestParser(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+			r := require.New(t)
 
 			// Construct a parser.
 			var parser *Parser
@@ -396,7 +397,6 @@ func norm(sel ...any) spec.NormalizedPath {
 
 func TestNodeList(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -425,6 +425,8 @@ func TestNodeList(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			// Test iterators.
 			if len(tc.list) == 0 {
 				a.Nil(slices.Collect(tc.list.All()))
@@ -437,7 +439,6 @@ func TestNodeList(t *testing.T) {
 
 func TestLocatedNodeList(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name  string
@@ -572,6 +573,7 @@ func TestLocatedNodeList(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
 
 			// Test iterators.
 			if len(tc.list) == 0 {

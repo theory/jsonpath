@@ -10,8 +10,6 @@ import (
 
 func TestRegistry(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
-	r := require.New(t)
 
 	for _, tc := range []struct {
 		name  string
@@ -59,6 +57,9 @@ func TestRegistry(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+			r := require.New(t)
+
 			reg := New()
 			a.Len(reg.funcs, 5)
 
@@ -73,7 +74,6 @@ func TestRegistry(t *testing.T) {
 
 func TestRegisterErr(t *testing.T) {
 	t.Parallel()
-	r := require.New(t)
 	reg := New()
 
 	for _, tc := range []struct {
@@ -102,6 +102,8 @@ func TestRegisterErr(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			r := require.New(t)
+
 			err := reg.Register(tc.fnName, spec.FuncValue, tc.valid, tc.eval)
 			r.ErrorIs(err, ErrRegister, tc.name)
 			r.EqualError(err, tc.err, tc.name)

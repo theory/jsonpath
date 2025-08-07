@@ -12,7 +12,6 @@ import (
 
 func TestScanString(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -167,6 +166,7 @@ func TestScanString(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
 
 			// Test double-quoted.
 			lex := newLexer(`"` + tc.in + `"`)
@@ -201,6 +201,8 @@ func TestScanString(t *testing.T) {
 	// Test unclosed strings.
 	t.Run("unclosed", func(t *testing.T) {
 		t.Parallel()
+		a := assert.New(t)
+
 		a.Equal(rune(invalid), newLexer(`"food`).scanString().tok)
 		a.Equal(rune(invalid), newLexer(`'food`).scanString().tok)
 	})
@@ -208,7 +210,6 @@ func TestScanString(t *testing.T) {
 
 func TestScanIdentifier(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -279,15 +280,13 @@ func TestScanIdentifier(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			lex := newLexer(tc.in)
-			a.Equal(tc.tok, lex.scanIdentifier())
+			assert.Equal(t, tc.tok, lex.scanIdentifier())
 		})
 	}
 }
 
 func TestScanNumber(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
-	r := require.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -518,6 +517,9 @@ func TestScanNumber(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+			r := require.New(t)
+
 			lex := newLexer(tc.in)
 			tok := lex.scanNumber()
 			a.Equal(tc.tok, tok)
@@ -550,7 +552,6 @@ func TestScanNumber(t *testing.T) {
 
 func TestScanBlankSpace(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -651,6 +652,8 @@ func TestScanBlankSpace(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			lex := newLexer(tc.in)
 			a.Equal(tc.tok, lex.scanBlankSpace())
 			lex = newLexer(tc.in)
@@ -662,7 +665,6 @@ func TestScanBlankSpace(t *testing.T) {
 
 func TestScanTokens(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name   string
@@ -747,6 +749,8 @@ func TestScanTokens(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			lex := newLexer(tc.in)
 			a.Equal(token{}, lex.prev)
 			tokens := make([]token, 0, len(tc.tokens))
@@ -761,8 +765,6 @@ func TestScanTokens(t *testing.T) {
 
 func TestToken(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
-	r := require.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -889,6 +891,9 @@ func TestToken(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+			r := require.New(t)
+
 			a.Equal(tc.id, tc.tok.name())
 			a.Equal(tc.str, tc.tok.String())
 			err := tc.tok.err()

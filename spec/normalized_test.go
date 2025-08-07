@@ -11,7 +11,6 @@ import (
 
 func TestNormalSelector(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -70,6 +69,8 @@ func TestNormalSelector(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			buf := new(strings.Builder)
 			tc.elem.writeNormalizedTo(buf)
 			a.Equal(tc.str, buf.String())
@@ -82,7 +83,6 @@ func TestNormalSelector(t *testing.T) {
 
 func TestNormalizedPath(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -141,6 +141,8 @@ func TestNormalizedPath(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			a.Equal(tc.str, tc.path.String())
 			a.Equal(tc.ptr, tc.path.Pointer())
 		})
@@ -149,7 +151,6 @@ func TestNormalizedPath(t *testing.T) {
 
 func TestNormalizedPathCompare(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -254,15 +255,13 @@ func TestNormalizedPathCompare(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			a.Equal(tc.exp, tc.p1.Compare(tc.p2))
+			assert.Equal(t, tc.exp, tc.p1.Compare(tc.p2))
 		})
 	}
 }
 
 func TestLocatedNode(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
-	r := require.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -287,9 +286,10 @@ func TestLocatedNode(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+
 			json, err := json.Marshal(tc.node)
-			r.NoError(err)
-			a.JSONEq(tc.exp, string(json))
+			require.NoError(t, err)
+			assert.JSONEq(t, tc.exp, string(json))
 		})
 	}
 }

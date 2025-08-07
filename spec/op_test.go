@@ -10,7 +10,6 @@ import (
 
 func TestCompOp(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		op  CompOp
@@ -23,13 +22,12 @@ func TestCompOp(t *testing.T) {
 		{GreaterThan, ">"},
 		{GreaterThanEqualTo, ">="},
 	} {
-		a.Equal(tc.str, tc.op.String())
+		assert.Equal(t, tc.str, tc.op.String())
 	}
 }
 
 func TestEqualTo(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name  string
@@ -95,6 +93,8 @@ func TestEqualTo(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			a.Equal(tc.exp, valueEqualTo(tc.left, tc.right))
 			a.Equal(tc.exp, equalTo(Value(tc.left), Value(tc.right)))
 		})
@@ -102,6 +102,8 @@ func TestEqualTo(t *testing.T) {
 
 	t.Run("not_comparable", func(t *testing.T) {
 		t.Parallel()
+		a := assert.New(t)
+
 		a.False(valueEqualTo(42, "x"))
 		a.False(equalTo(nil, Value(42)))
 		a.False(equalTo(Value(42), nil))
@@ -111,7 +113,6 @@ func TestEqualTo(t *testing.T) {
 
 func TestLessThan(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name  string
@@ -166,6 +167,8 @@ func TestLessThan(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			a.Equal(tc.exp, valueLessThan(tc.left, tc.right))
 			a.Equal(tc.exp, lessThan(Value(tc.left), Value(tc.right)))
 		})
@@ -173,6 +176,8 @@ func TestLessThan(t *testing.T) {
 
 	t.Run("not_comparable", func(t *testing.T) {
 		t.Parallel()
+		a := assert.New(t)
+
 		a.False(lessThan(LogicalFalse, Value(".")))
 		a.False(lessThan(Value("x"), LogicalFalse))
 		a.False(valueLessThan(42, "x"))
@@ -182,7 +187,6 @@ func TestLessThan(t *testing.T) {
 
 func TestSameType(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name  string
@@ -259,14 +263,13 @@ func TestSameType(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			a.Equal(tc.exp, sameType(tc.left, tc.right))
+			assert.Equal(t, tc.exp, sameType(tc.left, tc.right))
 		})
 	}
 }
 
 func TestComparisonExpr(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name    string
@@ -401,6 +404,8 @@ func TestComparisonExpr(t *testing.T) {
 			} {
 				t.Run(op.name, func(t *testing.T) {
 					t.Parallel()
+					a := assert.New(t)
+
 					cmp := Comparison(tc.left, op.op, tc.right)
 					a.Equal(tc.expect[i], cmp.testFilter(tc.current, tc.root))
 					a.Equal(fmt.Sprintf(tc.str, op.op), bufString(cmp))
@@ -410,6 +415,8 @@ func TestComparisonExpr(t *testing.T) {
 
 		t.Run("unknown_op", func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			cmp := Comparison(tc.left, CompOp(16), tc.right)
 			a.Equal(fmt.Sprintf(tc.str, cmp.op), bufString(cmp))
 			a.PanicsWithValue("Unknown operator CompOp(16)", func() {

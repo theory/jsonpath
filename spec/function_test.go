@@ -18,7 +18,6 @@ func bufString(sw stringWriter) string {
 
 func TestFuncType(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name  string
@@ -43,14 +42,13 @@ func TestFuncType(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			a.Equal(tc.name, tc.fType.String())
+			assert.Equal(t, tc.name, tc.fType.String())
 		})
 	}
 }
 
 func TestNodesType(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -67,6 +65,8 @@ func TestNodesType(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			if tc.err != "" {
 				a.PanicsWithValue(tc.err, func() { NodesFrom(tc.from) })
 				return
@@ -81,7 +81,6 @@ func TestNodesType(t *testing.T) {
 
 func TestLogicalType(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name    string
@@ -102,6 +101,8 @@ func TestLogicalType(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			if tc.err != "" {
 				a.PanicsWithValue(tc.err, func() { LogicalFrom(tc.from) })
 				return
@@ -123,7 +124,6 @@ func TestLogicalType(t *testing.T) {
 
 func TestValueType(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -168,6 +168,8 @@ func TestValueType(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			val := Value(tc.val)
 			a.Equal(FuncValue, val.FuncType())
 			a.Equal(tc.val, val.Value())
@@ -180,7 +182,6 @@ func TestValueType(t *testing.T) {
 
 func TestValueFrom(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -196,6 +197,8 @@ func TestValueFrom(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			if tc.err != "" {
 				a.PanicsWithValue(tc.err, func() { ValueFrom(tc.val) })
 				return
@@ -208,7 +211,6 @@ func TestValueFrom(t *testing.T) {
 
 func TestPathValueInterface(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name     string
@@ -222,6 +224,8 @@ func TestPathValueInterface(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			a.Implements((*PathValue)(nil), tc.pathVal)
 			pv, _ := tc.pathVal.(PathValue)
 			a.Equal(tc.funcType, pv.FuncType())
@@ -233,7 +237,6 @@ func TestPathValueInterface(t *testing.T) {
 
 func TestJsonFuncExprArgInterface(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -247,14 +250,13 @@ func TestJsonFuncExprArgInterface(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			a.Implements((*FuncExprArg)(nil), tc.expr)
+			assert.Implements(t, (*FuncExprArg)(nil), tc.expr)
 		})
 	}
 }
 
 func TestJSONComparableValInterface(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -266,14 +268,13 @@ func TestJSONComparableValInterface(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			a.Implements((*CompVal)(nil), tc.expr)
+			assert.Implements(t, (*CompVal)(nil), tc.expr)
 		})
 	}
 }
 
 func TestLiteralArg(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name    string
@@ -288,6 +289,8 @@ func TestLiteralArg(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			lit := Literal(tc.literal)
 			a.Equal(Value(tc.literal), lit.evaluate(nil, nil))
 			a.Equal(Value(tc.literal), lit.asValue(nil, nil))
@@ -304,7 +307,6 @@ func TestLiteralArg(t *testing.T) {
 
 func TestSingularQuery(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name      string
@@ -357,6 +359,8 @@ func TestSingularQuery(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			sq := &SingularQueryExpr{selectors: tc.selectors, relative: false}
 			a.Equal(FuncValue, sq.ResultType())
 			a.True(sq.ConvertsTo(FuncValue))
@@ -380,7 +384,6 @@ func TestSingularQuery(t *testing.T) {
 
 func TestFilterQuery(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name     string
@@ -428,6 +431,8 @@ func TestFilterQuery(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			fq := tc.query
 			a.Equal(tc.typeKind, fq.ResultType())
 			a.Equal(NodesType(tc.exp), fq.evaluate(tc.current, tc.root))
@@ -501,7 +506,6 @@ func newTypeFunc() *FuncExtension {
 
 func TestFunc(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -534,6 +538,8 @@ func TestFunc(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			a.Equal(tc.fn.name, tc.fn.Name())
 			a.Equal(tc.err, tc.fn.Validate(nil))
 			a.Equal(tc.exp, tc.fn.Evaluate(tc.args))
@@ -543,7 +549,6 @@ func TestFunc(t *testing.T) {
 
 func TestFuncExpr(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name    string
@@ -599,6 +604,8 @@ func TestFuncExpr(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			fe := Function(tc.fn, tc.args...)
 			a.Equal(tc.fn.ReturnType(), fe.ResultType())
 			a.Equal(tc.exp, fe.evaluate(tc.current, tc.root))

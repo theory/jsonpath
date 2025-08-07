@@ -11,7 +11,6 @@ import (
 
 func TestSelectorInterface(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -25,14 +24,13 @@ func TestSelectorInterface(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			a.Implements((*Selector)(nil), tc.tok)
+			assert.Implements(t, (*Selector)(nil), tc.tok)
 		})
 	}
 }
 
 func TestSelectorString(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -181,6 +179,8 @@ func TestSelectorString(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			a.Equal(tc.sing, tc.tok.isSingular())
 			buf := new(strings.Builder)
 			tc.tok.writeTo(buf)
@@ -192,7 +192,6 @@ func TestSelectorString(t *testing.T) {
 
 func TestSliceBounds(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	json := []any{"a", "b", "c", "d", "e", "f", "g"}
 
@@ -317,6 +316,8 @@ func TestSliceBounds(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			a.False(tc.slice.isSingular())
 			for _, lc := range tc.cases {
 				lower, upper := tc.slice.Bounds(lc.length)
@@ -351,7 +352,6 @@ func TestSlicePanic(t *testing.T) {
 
 func TestNameSelect(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -391,6 +391,8 @@ func TestNameSelect(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			a.Equal(tc.exp, tc.sel.Select(tc.src, nil))
 			a.Equal(tc.loc, tc.sel.SelectLocated(tc.src, nil, Normalized()))
 		})
@@ -399,7 +401,6 @@ func TestNameSelect(t *testing.T) {
 
 func TestIndexSelect(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -460,6 +461,8 @@ func TestIndexSelect(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			a.Equal(tc.exp, tc.sel.Select(tc.src, nil))
 			a.Equal(tc.loc, tc.sel.SelectLocated(tc.src, nil, Normalized()))
 		})
@@ -468,7 +471,6 @@ func TestIndexSelect(t *testing.T) {
 
 func TestWildcardSelect(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -504,6 +506,8 @@ func TestWildcardSelect(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			if _, ok := tc.src.(map[string]any); ok {
 				a.ElementsMatch(tc.exp, Wildcard().Select(tc.src, nil))
 				a.ElementsMatch(tc.loc, Wildcard().SelectLocated(tc.src, nil, Normalized()))
@@ -517,7 +521,6 @@ func TestWildcardSelect(t *testing.T) {
 
 func TestSliceSelect(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -655,6 +658,8 @@ func TestSliceSelect(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			a.Equal(tc.exp, tc.sel.Select(tc.src, nil))
 			a.Equal(tc.loc, tc.sel.SelectLocated(tc.src, nil, Normalized()))
 		})
@@ -663,7 +668,6 @@ func TestSliceSelect(t *testing.T) {
 
 func TestFilterSelector(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name    string
@@ -764,6 +768,8 @@ func TestFilterSelector(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			if tc.rand {
 				a.ElementsMatch(tc.exp, tc.filter.Select(tc.current, tc.root))
 				a.ElementsMatch(tc.loc, tc.filter.SelectLocated(tc.current, tc.root, Normalized()))

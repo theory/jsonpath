@@ -8,7 +8,6 @@ import (
 
 func TestSegmentString(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -81,6 +80,8 @@ func TestSegmentString(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			a.Equal(tc.str, tc.seg.String())
 			a.Equal(tc.sing, tc.seg.isSingular())
 			a.Equal(tc.seg.descendant, tc.seg.IsDescendant())
@@ -90,7 +91,6 @@ func TestSegmentString(t *testing.T) {
 
 func TestSegmentSelect(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -342,6 +342,8 @@ func TestSegmentSelect(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			a.Equal(tc.seg.selectors, tc.seg.Selectors())
 			a.Equal(tc.sing, tc.seg.isSingular())
 			a.Equal(tc.seg.descendant, tc.seg.IsDescendant())
@@ -358,7 +360,6 @@ func TestSegmentSelect(t *testing.T) {
 
 func TestDescendantSegmentSelect(t *testing.T) {
 	t.Parallel()
-	a := assert.New(t)
 
 	for _, tc := range []struct {
 		name string
@@ -660,6 +661,8 @@ func TestDescendantSegmentSelect(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
+			a := assert.New(t)
+
 			a.False(tc.seg.isSingular())
 			a.True(tc.seg.IsDescendant())
 			if tc.rand {
