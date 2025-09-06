@@ -9,6 +9,9 @@ All notable changes to this project will be documented in this file. It uses the
 
 ## [v0.10.1] — Unreleased
 
+### 🐞 Bug Fixes
+
+*   Allow `true`, `false`, and `null` to be used as selectors, e.g., `$.true`.
 
 ### 📔 Notes
 

@@ -114,7 +114,7 @@ func (p *parser) parseQuery(root bool) (*spec.PathQuery, error) {
 // parsed Selector.
 func parseNameOrWildcard(lex *lexer) (spec.Selector, error) {
 	switch tok := lex.scan(); tok.tok {
-	case identifier:
+	case identifier, boolTrue, boolFalse, jsonNull:
 		return spec.Name(tok.val), nil
 	case '*':
 		return spec.Wildcard(), nil

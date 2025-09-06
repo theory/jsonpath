@@ -150,6 +150,30 @@ func TestParseSimple(t *testing.T) {
 			),
 		},
 		{
+			test: "true_for_name",
+			path: `$.true`,
+			exp: spec.Query(
+				true,
+				spec.Child(spec.Name("true")),
+			),
+		},
+		{
+			test: "false_for_name",
+			path: `$.false`,
+			exp: spec.Query(
+				true,
+				spec.Child(spec.Name("false")),
+			),
+		},
+		{
+			test: "null_for_name",
+			path: `$.null`,
+			exp: spec.Query(
+				true,
+				spec.Child(spec.Name("null")),
+			),
+		},
+		{
 			test: "empty_string",
 			path: "",
 			err:  "jsonpath: unexpected end of input",
