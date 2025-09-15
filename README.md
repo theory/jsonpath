@@ -33,6 +33,10 @@ A brief overview of [RFC 9535 JSONPath] syntax:
 | `?<logical-expr>`  | filter selector: selects particular children using a logical expression |
 | `length(@.foo)`    | function extension: invokes  a function in a filter expression          |
 
+## Dependencies
+
+This package has no runtime dependencies, only testing dependencies.
+
 ## Copyright
 
 Copyright © 2024-2025 David E. Wheeler

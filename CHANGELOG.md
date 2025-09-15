@@ -17,8 +17,11 @@ All notable changes to this project will be documented in this file. It uses the
 
 *   Upgraded to `golangci-lint` v2.3.1.
 *   Fixed test name scoping issues with testify objects.
+*   Upgraded the [compliance test suite], now with tests using `true`,
+    `false`, and `null` to be used as selectors.
 
   [v0.10.1]: https://github.com/theory/jsonpath/compare/v0.10.0...v0.10.1
+  [compliance test suite]: https://github.com/jsonpath-standard/jsonpath-compliance-test-suite
 
 ## [v0.10.0] — 2025-07-11
 

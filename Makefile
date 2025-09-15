@@ -9,6 +9,15 @@ cover: $(shell find . -name \*.go)
 	GOTOOLCHAIN=local $(GO) test -v -coverprofile=cover.out -covermode=count ./...
 	@$(GO) tool cover -html=cover.out
 
+compare/regression_suite.yaml:
+	curl -so "$@" https://raw.githubusercontent.com/cburgmer/json-path-comparison/refs/heads/master/regression_suite/regression_suite.yaml
+
+test-compare: compare/regression_suite.yaml
+	GOTOOLCHAIN=local ${GO} test -tags=compare ./compare -count=1
+
+test-all: compare/regression_suite.yaml
+	GOTOOLCHAIN=local ${GO} test -tags=compare ./... -count=1
+
 .PHONY: lint # Lint the project
 lint: .golangci.yaml
 	@pre-commit run --show-diff-on-failure --color=always --all-files

@@ -32,3 +32,6 @@ pub/
 
 # Temp files
 *.tmp
+
+# Generated files.
+/compare/regression_suite.yaml
