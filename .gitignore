@@ -35,3 +35,7 @@ pub/
 
 # Generated files.
 /compare/regression_suite.yaml
+
+# TinyGo stuff on macOS
+.envrc
+_vendor/
