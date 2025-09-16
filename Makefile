@@ -53,3 +53,12 @@ golangci-lint: .golangci.yaml
 .PHONY: clean
 clean:
 	rm -rf $(DST_DIR)
+
+_vendor/tinygo: _vendor/tinygo0.36.0
+	cd _vendor && ln -sF tinygo0.36.0 tinygo
+
+_vendor/tinygo0.36.0:
+	brew install binaryen
+	mkdir -p _vendor
+	curl -L https://github.com/tinygo-org/tinygo/releases/download/v0.36.0/tinygo0.36.0.darwin-arm64.tar.gz | tar zxf -
+	mv tinygo $@
