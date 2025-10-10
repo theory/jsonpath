@@ -48,8 +48,7 @@ const (
 	hex     = 16
 
 	// Token literals.
-	nullByte  = 0x00
-	backslash = '\\'
+	nullByte = 0x00
 
 	// blanks selects blank space characters.
 	blanks = uint64(1<<'\t' | 1<<'\n' | 1<<'\r' | 1<<' ')

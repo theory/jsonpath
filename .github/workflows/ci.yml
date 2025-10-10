@@ -1,4 +1,4 @@
-name: Test and Lint
+name: ✅ Test and Lint
 on:
   push:
     branches-ignore: [wip/**]
@@ -7,7 +7,7 @@ jobs:
     strategy:
       matrix:
         os: [[🐧, Ubuntu], [🍎, macOS], [🪟, Windows]]
-        go: ["1.24", "1.23"]
+        go: ["1.25", "1.24", "1.23"]
     name: ${{ matrix.os[0] }} Test Go ${{ matrix.go }} on ${{ matrix.os[1] }}
     runs-on: ${{ matrix.os[1] }}-latest
     steps:
@@ -21,7 +21,7 @@ jobs:
         run: make test-all
       - name: Setup TinyGo
         uses: acifani/setup-tinygo@v2
-        with: { tinygo-version: 0.37.0 }
+        with: { tinygo-version: 0.39.0 }
       - name: Test WASM
         run: make wasm
   lint:

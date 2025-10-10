@@ -7,6 +7,13 @@ All notable changes to this project will be documented in this file. It uses the
   [Semantic Versioning]: https://semver.org/spec/v2.0.0.html
     "Semantic Versioning 2.0.0"
 
+## [v0.10.2] — Unreleased
+
+### 📔 Notes
+
+*   Upgraded to `golangci-lint` v2.5.0.
+*   Removed unused constant from `parser/lex.go`
+
 ## [v0.10.1] — 2025-09-16
 
 ### 🐞 Bug Fixes

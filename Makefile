@@ -13,7 +13,7 @@ compare/regression_suite.yaml:
 	curl -so "$@" https://raw.githubusercontent.com/cburgmer/json-path-comparison/refs/heads/master/regression_suite/regression_suite.yaml
 
 test-compare: compare/regression_suite.yaml
-	GOTOOLCHAIN=local ${GO} test -tags=compare ./compare -count=1
+	GOTOOLCHAIN=local ${GO} test -v -tags=compare ./compare -count=1
 
 test-all: compare/regression_suite.yaml
 	GOTOOLCHAIN=local ${GO} test -tags=compare ./... -count=1
@@ -47,7 +47,7 @@ brew-lint-depends:
 
 .PHONY: debian-lint-depends # Install linting tools on Debian
 debian-lint-depends:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b /usr/bin v2.4.0
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b /usr/bin v2.5.0
 
 .PHONY: install-generators # Install Go code generators
 install-generators:

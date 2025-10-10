@@ -55,42 +55,38 @@ func TestConsensus(t *testing.T) {
 	t.Parallel()
 
 	skip := map[string]string{
-		"array_slice_with_step_and_leading_zeros": "leading zeros disallowed integers; see RFC 9535 sections 2.3.3.1, 2.3.4.1",
-		"dot_notation_with_number_on_object":      "leading digits disallowed in shorthand names; see RFC 9535 section 2.5.1.1",
-		"dot_notation_with_dash":                  "dash disallowed in shorthand hames; see RFC 9535 section 2.5.1.1",
+		"array_slice_with_step_and_leading_zeros": "RFC 9535 § 2.3.3.1, 2.3.4.1: leading zeros disallowed in integers",
+		"dot_notation_with_number_on_object":      "RFC 9535 § 2.5.1.1: leading digits disallowed in shorthand names",
+		"dot_notation_with_dash":                  "RFC 9535 § 2.5.1.1: dash disallowed in shorthand hames",
 	}
 
 	for _, q := range queries(t) {
 		t.Run(q.ID, func(t *testing.T) {
 			t.Parallel()
 
+			// Skip tests with no consensus.
+			// https://github.com/cburgmer/json-path-comparison/pull/153#issuecomment-3374075044
+			if q.Consensus == nil {
+				t.Skip("No consensus")
+			}
+
+			// Skip tests where the consensus NOT_SUPPORTED.
 			if q.Consensus == "NOT_SUPPORTED" {
 				t.Skip(q.Consensus)
 			}
 
+			// Skip tests that violate RFC 9535.
 			if r, ok := skip[q.ID]; ok {
 				t.Skip(r)
 			}
 
 			path, err := jsonpath.Parse(q.Selector)
-			// XXX Why is consensus empty?
-			if q.Consensus != nil {
-				require.NoError(t, err)
-			}
-			if err != nil {
-				// XXX Why is there an error? TODOs?
-				assert.Nil(t, path)
-				return
-			}
+			require.NoError(t, err)
 			result := []any(path.Select(q.Document))
 
-			switch {
-			case q.Ordered:
+			if q.Ordered {
 				assert.Equal(t, q.Consensus, result)
-			case q.Consensus == nil:
-				// XXX What to do here?
-				// assert.Empty(t, result)
-			default:
+			} else {
 				assert.ElementsMatch(t, q.Consensus, result)
 			}
 		})
