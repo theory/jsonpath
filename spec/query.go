@@ -30,7 +30,7 @@ func (q *PathQuery) String() string {
 	return buf.String()
 }
 
-// writeTo writes a string representation of fq to buf. Defined by
+// writeTo writes a string representation of q to buf. Defined by
 // [stringWriter].
 func (q *PathQuery) writeTo(buf *strings.Builder) {
 	if q.root {
@@ -117,13 +117,13 @@ func (q *PathQuery) Expression() FuncExprArg {
 	return q
 }
 
-// evaluate returns a [NodesType] containing the result of executing fq.
+// evaluate returns a [NodesType] containing the result of executing q.
 // Defined by the [FuncExprArg] interface.
 func (q *PathQuery) evaluate(current, root any) PathValue {
 	return NodesType(q.Select(current, root))
 }
 
-// ResultType returns [FuncValue] if fq is a singular query, and [FuncNodes]
+// ResultType returns [FuncValue] if q is a singular query, and [FuncNodes]
 // if it is not. Defined by the [FuncExprArg] interface.
 func (q *PathQuery) ResultType() FuncType {
 	if q.isSingular() {
@@ -132,7 +132,7 @@ func (q *PathQuery) ResultType() FuncType {
 	return FuncNodes
 }
 
-// ConvertsTo returns true if fq's result can be converted to ft. A singular
+// ConvertsTo returns true if q's result can be converted to ft. A singular
 // query can be converted to either [FuncValue] or [FuncNodes]. All other
 // queries can only be converted to FuncNodes.
 func (q *PathQuery) ConvertsTo(ft FuncType) bool {

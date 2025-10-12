@@ -433,13 +433,13 @@ func TestFilterQuery(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 
-			fq := tc.query
-			a.Equal(tc.typeKind, fq.ResultType())
-			a.Equal(NodesType(tc.exp), fq.evaluate(tc.current, tc.root))
-			a.Equal(tc.query.String(), bufString(fq))
-			a.Equal(tc.typeKind == FuncValue, fq.ConvertsTo(FuncValue))
-			a.True(fq.ConvertsTo(FuncNodes))
-			a.False(fq.ConvertsTo(FuncLogical))
+			q := tc.query
+			a.Equal(tc.typeKind, q.ResultType())
+			a.Equal(NodesType(tc.exp), q.evaluate(tc.current, tc.root))
+			a.Equal(tc.query.String(), bufString(q))
+			a.Equal(tc.typeKind == FuncValue, q.ConvertsTo(FuncValue))
+			a.True(q.ConvertsTo(FuncNodes))
+			a.False(q.ConvertsTo(FuncLogical))
 		})
 	}
 }
