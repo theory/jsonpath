@@ -21,7 +21,7 @@ type BasicExpr interface {
 	stringWriter
 	// testFilter executes the filter expression on current and root and
 	// returns true or false depending on the truthiness of its result.
-	testFilter(current, root any) bool
+	testFilter(current, root, selector any) bool
 }
 
 // LogicalAnd represents a list of one or more expressions ANDed together by
@@ -48,9 +48,9 @@ func (la LogicalAnd) String() string {
 // testFilter returns true if all of la's expressions return true.
 // Short-circuits and returns false for the first expression that returns
 // false. Defined by [BasicExpr].
-func (la LogicalAnd) testFilter(current, root any) bool {
+func (la LogicalAnd) testFilter(current, root, selector any) bool {
 	for _, e := range la {
-		if !e.testFilter(current, root) {
+		if !e.testFilter(current, root, selector) {
 			return false
 		}
 	}
@@ -93,9 +93,9 @@ func (lo LogicalOr) String() string {
 // testFilter returns true if one of lo's expressions return true.
 // Short-circuits and returns true for the first expression that returns true.
 // Defined by [BasicExpr].
-func (lo LogicalOr) testFilter(current, root any) bool {
+func (lo LogicalOr) testFilter(current, root, selector any) bool {
 	for _, e := range lo {
-		if e.testFilter(current, root) {
+		if e.testFilter(current, root, selector) {
 			return true
 		}
 	}
@@ -116,8 +116,8 @@ func (lo LogicalOr) writeTo(buf *strings.Builder) {
 // evaluate evaluates lo and returns LogicalTrue when it returns true and
 // LogicalFalse when it returns false. Defined by the [FuncExprArg]
 // interface.
-func (lo LogicalOr) evaluate(current, root any) PathValue {
-	return Logical(lo.testFilter(current, root))
+func (lo LogicalOr) evaluate(current, root, selector any) PathValue {
+	return Logical(lo.testFilter(current, root, selector))
 }
 
 // ResultType returns [FuncLogical]. Defined by the [FuncExprArg] interface.
@@ -190,8 +190,8 @@ func (np *NotParenExpr) String() string {
 
 // testFilter returns false if the np.LogicalOrExpression returns true and
 // true if it returns false. Defined by [BasicExpr].
-func (np *NotParenExpr) testFilter(current, root any) bool {
-	return !np.LogicalOr.testFilter(current, root)
+func (np *NotParenExpr) testFilter(current, root, selector any) bool {
+	return !np.LogicalOr.testFilter(current, root, selector)
 }
 
 // ExistExpr represents a [PathQuery] used as a filter expression, in which
@@ -211,7 +211,7 @@ func Existence(q *PathQuery) *ExistExpr {
 
 // testFilter returns true if e.Query selects any results from current or
 // root. Defined by [BasicExpr].
-func (e *ExistExpr) testFilter(current, root any) bool {
+func (e *ExistExpr) testFilter(current, root, _ any) bool {
 	return len(e.Select(current, root)) > 0
 }
 
@@ -245,6 +245,6 @@ func (ne NonExistExpr) writeTo(buf *strings.Builder) {
 
 // testFilter returns true if ne.Query selects no results from current or
 // root. Defined by [BasicExpr].
-func (ne NonExistExpr) testFilter(current, root any) bool {
+func (ne NonExistExpr) testFilter(current, root, _ any) bool {
 	return len(ne.Select(current, root)) == 0
 }

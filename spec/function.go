@@ -53,13 +53,25 @@ type PathValue interface {
 // - [fmt.Stringer]
 //
 // [RFC 9535 Section 2.4.1]: https://www.rfc-editor.org/rfc/rfc9535.html#section-2.4.1
-type NodesType []any
+type NodesType []Node
+
+// Node represents a node and the NormalSelector ([spec.Index], [spec.Name],
+// or nil) that selected it.
+type Node struct {
+	any
+
+	sel any
+}
+
+func (n Node) String() string {
+	return fmt.Sprintf("%v", n.any)
+}
 
 // Nodes creates a NodesType that contains val, all of which should be the Go
 // equivalent of the JSON data types: string, integer, float, [json.Number],
 // nil, true, false, []any, or map[string]any.
 func Nodes(val ...any) NodesType {
-	return NodesType(val)
+	return NodesType([]Node{{val, nil}})
 }
 
 // FuncType returns [FuncNodes]. Defined by the [PathValue] interface.
@@ -81,9 +93,9 @@ func NodesFrom(value PathValue) NodesType {
 	case NodesType:
 		return v
 	case *ValueType:
-		return NodesType([]any{v.any})
+		return Nodes(v.any)
 	case nil:
-		return NodesType([]any{})
+		return Nodes()
 	case LogicalType:
 		panic("cannot convert LogicalType to NodesType")
 	default:
@@ -99,7 +111,7 @@ func (nt NodesType) writeTo(buf *strings.Builder) {
 
 // String returns the string representation of nt.
 func (nt NodesType) String() string {
-	return fmt.Sprintf("%v", []any(nt))
+	return fmt.Sprintf("%v", []Node(nt))
 }
 
 // LogicalType encapsulates a true or false value for a function expression
@@ -225,7 +237,7 @@ func ValueFrom(value PathValue) *ValueType {
 
 // Returns true if vt.any is truthy. Defined by the BasicExpr interface.
 // Defined by [BasicExpr].
-func (vt *ValueType) testFilter(_, _ any) bool {
+func (vt *ValueType) testFilter(_, _, _ any) bool {
 	switch v := vt.any.(type) {
 	case nil:
 		return false
@@ -283,7 +295,7 @@ type FuncExprArg interface {
 	stringWriter
 	// evaluate evaluates the function expression against current and root and
 	// returns the resulting PathValue.
-	evaluate(current, root any) PathValue
+	evaluate(current, root, parent any) PathValue
 	// ResultType returns the [FuncType] that defines the type of the return
 	// value of the [FuncExprArg].
 	ResultType() FuncType
@@ -325,7 +337,7 @@ func (la *LiteralArg) String() string {
 
 // evaluate returns a [ValueType] containing the literal value. Defined by the
 // [FuncExprArg] interface.
-func (la *LiteralArg) evaluate(_, _ any) PathValue {
+func (la *LiteralArg) evaluate(_, _, _ any) PathValue {
 	return &ValueType{la.literal}
 }
 
@@ -350,7 +362,7 @@ func (la *LiteralArg) writeTo(buf *strings.Builder) {
 
 // asValue returns la.literal as a [ValueType]. Defined by the [CompVal]
 // interface.
-func (la *LiteralArg) asValue(_, _ any) PathValue {
+func (la *LiteralArg) asValue(_, _, _ any) PathValue {
 	return &ValueType{la.literal}
 }
 
@@ -378,7 +390,7 @@ func SingularQuery(root bool, selectors ...Selector) *SingularQueryExpr {
 
 // evaluate returns a [ValueType] containing the return value of executing sq.
 // Defined by the [FuncExprArg] interface.
-func (sq *SingularQueryExpr) evaluate(current, root any) PathValue {
+func (sq *SingularQueryExpr) evaluate(current, root, _ any) PathValue {
 	target := root
 	if sq.relative {
 		target = current
@@ -408,8 +420,8 @@ func (*SingularQueryExpr) ConvertsTo(ft FuncType) bool {
 
 // asValue returns the result of executing sq.execute against current and
 // root. Defined by the [CompVal] interface.
-func (sq *SingularQueryExpr) asValue(current, root any) PathValue {
-	return sq.evaluate(current, root)
+func (sq *SingularQueryExpr) asValue(current, root, selector any) PathValue {
+	return sq.evaluate(current, root, selector)
 }
 
 // writeTo writes a string representation of sq to buf. Defined by
@@ -539,10 +551,10 @@ func (fe *FuncExpr) String() string {
 // evaluate returns a [PathValue] containing the result of executing each
 // [FuncExprArg] in fe (as passed to [Function]) and passing them to fe's
 // [FuncExtension].
-func (fe *FuncExpr) evaluate(current, root any) PathValue {
+func (fe *FuncExpr) evaluate(current, root, selector any) PathValue {
 	res := []PathValue{}
 	for _, a := range fe.args {
-		res = append(res, a.evaluate(current, root))
+		res = append(res, a.evaluate(current, root, selector))
 	}
 
 	return fe.fn.Evaluate(res)
@@ -561,8 +573,8 @@ func (fe *FuncExpr) ConvertsTo(ft FuncType) bool {
 
 // asValue returns the result of executing fe.evaluate against current and
 // root. Defined by the [CompVal] interface.
-func (fe *FuncExpr) asValue(current, root any) PathValue {
-	return fe.evaluate(current, root)
+func (fe *FuncExpr) asValue(current, root, selector any) PathValue {
+	return fe.evaluate(current, root, selector)
 }
 
 // testFilter executes fe and returns true if the function returns a truthy
@@ -574,12 +586,12 @@ func (fe *FuncExpr) asValue(current, root any) PathValue {
 //   - If the result is [LogicalType], returns the underlying boolean.
 //
 // Returns false in all other cases. Defined by [BasicExpr].
-func (fe *FuncExpr) testFilter(current, root any) bool {
-	switch res := fe.evaluate(current, root).(type) {
+func (fe *FuncExpr) testFilter(current, root, selector any) bool {
+	switch res := fe.evaluate(current, root, selector).(type) {
 	case NodesType:
 		return len(res) > 0
 	case *ValueType:
-		return res.testFilter(current, root)
+		return res.testFilter(current, root, selector)
 	case LogicalType:
 		return res.Bool()
 	default:
@@ -610,6 +622,6 @@ func (nf NotFuncExpr) String() string {
 
 // testFilter returns the inverse of [FuncExpr.testFilter]. Defined by
 // [BasicExpr].
-func (nf NotFuncExpr) testFilter(current, root any) bool {
-	return !nf.FuncExpr.testFilter(current, root)
+func (nf NotFuncExpr) testFilter(current, root, selector any) bool {
+	return !nf.FuncExpr.testFilter(current, root, selector)
 }

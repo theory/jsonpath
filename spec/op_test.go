@@ -407,7 +407,7 @@ func TestComparisonExpr(t *testing.T) {
 					a := assert.New(t)
 
 					cmp := Comparison(tc.left, op.op, tc.right)
-					a.Equal(tc.expect[i], cmp.testFilter(tc.current, tc.root))
+					a.Equal(tc.expect[i], cmp.testFilter(tc.current, tc.root, nil))
 					a.Equal(fmt.Sprintf(tc.str, op.op), bufString(cmp))
 				})
 			}
@@ -420,7 +420,7 @@ func TestComparisonExpr(t *testing.T) {
 			cmp := Comparison(tc.left, CompOp(16), tc.right)
 			a.Equal(fmt.Sprintf(tc.str, cmp.op), bufString(cmp))
 			a.PanicsWithValue("Unknown operator CompOp(16)", func() {
-				cmp.testFilter(tc.current, tc.root)
+				cmp.testFilter(tc.current, tc.root, nil)
 			})
 		})
 	}

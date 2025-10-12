@@ -94,7 +94,7 @@ func TestLogicalAndExpr(t *testing.T) {
 			a := assert.New(t)
 
 			andExpr := LogicalAnd(tc.expr)
-			a.Equal(tc.exp, andExpr.testFilter(tc.current, tc.root))
+			a.Equal(tc.exp, andExpr.testFilter(tc.current, tc.root, nil))
 			a.Equal(tc.str, bufString(andExpr))
 		})
 	}
@@ -179,8 +179,8 @@ func TestLogicalOrExpr(t *testing.T) {
 
 			orExpr := LogicalOr(tc.expr)
 			a.Equal(FuncLogical, orExpr.ResultType())
-			a.Equal(tc.exp, orExpr.testFilter(tc.current, tc.root))
-			a.Equal(Logical(tc.exp), orExpr.evaluate(tc.current, tc.root))
+			a.Equal(tc.exp, orExpr.testFilter(tc.current, tc.root, nil))
+			a.Equal(Logical(tc.exp), orExpr.evaluate(tc.current, tc.root, nil))
 			a.Equal(tc.str, bufString(orExpr))
 			a.True(orExpr.ConvertsTo(FuncLogical))
 			a.False(orExpr.ConvertsTo(FuncValue))
@@ -188,12 +188,12 @@ func TestLogicalOrExpr(t *testing.T) {
 
 			// Test ParenExpr.
 			pExpr := Paren(orExpr...)
-			a.Equal(tc.exp, pExpr.testFilter(tc.current, tc.root))
+			a.Equal(tc.exp, pExpr.testFilter(tc.current, tc.root, nil))
 			a.Equal("("+tc.str+")", bufString(pExpr))
 
 			// Test NotParenExpr.
 			npExpr := NotParen(orExpr...)
-			a.Equal(!tc.exp, npExpr.testFilter(tc.current, tc.root))
+			a.Equal(!tc.exp, npExpr.testFilter(tc.current, tc.root, nil))
 			a.Equal("!("+tc.str+")", bufString(npExpr))
 		})
 	}
@@ -240,14 +240,14 @@ func TestExistExpr(t *testing.T) {
 
 			// Test existExpr.
 			exist := ExistExpr{tc.query}
-			a.Equal(tc.exp, exist.testFilter(tc.current, tc.root))
+			a.Equal(tc.exp, exist.testFilter(tc.current, tc.root, nil))
 			buf := new(strings.Builder)
 			exist.writeTo(buf)
 			a.Equal(tc.query.String(), buf.String())
 
 			// Test NonExistExpr.
 			ne := NonExistExpr{tc.query}
-			a.Equal(!tc.exp, ne.testFilter(tc.current, tc.root))
+			a.Equal(!tc.exp, ne.testFilter(tc.current, tc.root, nil))
 			buf.Reset()
 			ne.writeTo(buf)
 			a.Equal("!"+tc.query.String(), buf.String())

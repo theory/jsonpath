@@ -57,7 +57,7 @@ func TestNodesType(t *testing.T) {
 		str  string
 		err  string
 	}{
-		{"nodes", NodesType([]any{1, 2}), Nodes(1, 2), "[1 2]", ""},
+		{"nodes", Nodes(1, 2), Nodes(1, 2), "[1 2]", ""},
 		{"value", Value(1), Nodes(1), "[1]", ""},
 		{"nil", nil, Nodes([]any{}...), "[]", ""},
 		{"logical", LogicalTrue, nil, "", "cannot convert LogicalType to NodesType"},
@@ -175,7 +175,7 @@ func TestValueType(t *testing.T) {
 			a.Equal(tc.val, val.Value())
 			a.Equal(fmt.Sprintf("%v", tc.val), bufString(val))
 			a.Equal(fmt.Sprintf("%v", tc.val), val.String())
-			a.Equal(tc.exp, val.testFilter(nil, nil))
+			a.Equal(tc.exp, val.testFilter(nil, nil, nil))
 		})
 	}
 }
@@ -292,8 +292,8 @@ func TestLiteralArg(t *testing.T) {
 			a := assert.New(t)
 
 			lit := Literal(tc.literal)
-			a.Equal(Value(tc.literal), lit.evaluate(nil, nil))
-			a.Equal(Value(tc.literal), lit.asValue(nil, nil))
+			a.Equal(Value(tc.literal), lit.evaluate(nil, nil, nil))
+			a.Equal(Value(tc.literal), lit.asValue(nil, nil, nil))
 			a.Equal(tc.literal, lit.Value())
 			a.Equal(FuncValue, lit.ResultType())
 			a.Equal(tc.str, bufString(lit))
@@ -369,14 +369,14 @@ func TestSingularQuery(t *testing.T) {
 
 			// Start with absolute query.
 			a.False(sq.relative)
-			a.Equal(tc.exp, sq.evaluate(nil, tc.input))
-			a.Equal(tc.exp, sq.asValue(nil, tc.input))
+			a.Equal(tc.exp, sq.evaluate(nil, tc.input, nil))
+			a.Equal(tc.exp, sq.asValue(nil, tc.input, nil))
 			a.Equal("$"+tc.str, bufString(sq))
 
 			// Try a relative query.
 			sq.relative = true
-			a.Equal(tc.exp, sq.evaluate(tc.input, nil))
-			a.Equal(tc.exp, sq.asValue(tc.input, nil))
+			a.Equal(tc.exp, sq.evaluate(tc.input, nil, nil))
+			a.Equal(tc.exp, sq.asValue(tc.input, nil, nil))
 			a.Equal("@"+tc.str, bufString(sq))
 		})
 	}
@@ -435,7 +435,7 @@ func TestFilterQuery(t *testing.T) {
 
 			q := tc.query
 			a.Equal(tc.typeKind, q.ResultType())
-			a.Equal(NodesType(tc.exp), q.evaluate(tc.current, tc.root))
+			a.Equal(Nodes(tc.exp), q.evaluate(tc.current, tc.root, nil))
 			a.Equal(tc.query.String(), bufString(q))
 			a.Equal(tc.typeKind == FuncValue, q.ConvertsTo(FuncValue))
 			a.True(q.ConvertsTo(FuncNodes))
@@ -481,7 +481,7 @@ func newNodesFunc() *FuncExtension {
 				if !ok {
 					panic(fmt.Sprintf("unexpected argument of type %T", x))
 				}
-				ret = append(ret, v.any)
+				ret = append(ret, Node{v.any, nil})
 			}
 			return ret
 		},
@@ -608,10 +608,10 @@ func TestFuncExpr(t *testing.T) {
 
 			fe := Function(tc.fn, tc.args...)
 			a.Equal(tc.fn.ReturnType(), fe.ResultType())
-			a.Equal(tc.exp, fe.evaluate(tc.current, tc.root))
-			a.Equal(tc.exp, fe.asValue(tc.current, tc.root))
-			a.Equal(tc.logical, fe.testFilter(tc.current, tc.root))
-			a.Equal(!tc.logical, NotFunction(fe).testFilter(tc.current, tc.root))
+			a.Equal(tc.exp, fe.evaluate(tc.current, tc.root, nil))
+			a.Equal(tc.exp, fe.asValue(tc.current, tc.root, nil))
+			a.Equal(tc.logical, fe.testFilter(tc.current, tc.root, nil))
+			a.Equal(!tc.logical, NotFunction(fe).testFilter(tc.current, tc.root, nil))
 			a.Equal(tc.str, fe.String())
 			a.Equal(tc.fn.ReturnType() == FuncValue, fe.ConvertsTo(FuncValue))
 			a.Equal(tc.fn.ReturnType() == FuncNodes, fe.ConvertsTo(FuncNodes))

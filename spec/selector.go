@@ -479,14 +479,14 @@ func (f *FilterSelector) Select(current, root any) []any {
 	ret := []any{}
 	switch current := current.(type) {
 	case []any:
-		for _, v := range current {
-			if f.Eval(v, root) {
+		for i, v := range current {
+			if f.Eval(v, root, i) {
 				ret = append(ret, v)
 			}
 		}
 	case map[string]any:
-		for _, v := range current {
-			if f.Eval(v, root) {
+		for k, v := range current {
+			if f.Eval(v, root, k) {
 				ret = append(ret, v)
 			}
 		}
@@ -504,13 +504,13 @@ func (f *FilterSelector) SelectLocated(current, root any, parent NormalizedPath)
 	switch current := current.(type) {
 	case []any:
 		for i, v := range current {
-			if f.Eval(v, root) {
+			if f.Eval(v, root, i) {
 				ret = append(ret, newLocatedNode(append(parent, Index(i)), v))
 			}
 		}
 	case map[string]any:
 		for k, v := range current {
-			if f.Eval(v, root) {
+			if f.Eval(v, root, k) {
 				ret = append(ret, newLocatedNode(append(parent, Name(k)), v))
 			}
 		}
@@ -522,8 +522,8 @@ func (f *FilterSelector) SelectLocated(current, root any, parent NormalizedPath)
 // Eval evaluates the f's [LogicalOr] expression against node and root. Uses
 // [FilterSelector.Select] as it iterates over nodes, and always passes the
 // root value($) for filter expressions that reference it.
-func (f *FilterSelector) Eval(node, root any) bool {
-	return f.testFilter(node, root)
+func (f *FilterSelector) Eval(node, root, selector any) bool {
+	return f.testFilter(node, root, selector)
 }
 
 // isSingular returns false because Filters can return more than one value.

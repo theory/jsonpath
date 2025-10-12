@@ -38,7 +38,7 @@ const (
 type CompVal interface {
 	stringWriter
 	// asValue returns the value to be compared.
-	asValue(current, root any) PathValue
+	asValue(current, root, selector any) PathValue
 }
 
 // CompExpr is a filter expression that compares two values, which themselves
@@ -75,9 +75,9 @@ func (ce *CompExpr) String() string {
 
 // testFilter uses ce.Op to compare the values returned by ce.Left and
 // ce.Right relative to current and root. Defined by [BasicExpr].
-func (ce *CompExpr) testFilter(current, root any) bool {
-	left := ce.left.asValue(current, root)
-	right := ce.right.asValue(current, root)
+func (ce *CompExpr) testFilter(current, root, selector any) bool {
+	left := ce.left.asValue(current, root, selector)
+	right := ce.right.asValue(current, root, selector)
 	switch ce.op {
 	case EqualTo:
 		return equalTo(left, right)
@@ -182,7 +182,7 @@ func sameType(left, right PathValue) bool {
 			case *ValueType:
 				return valCompType(left[0], right.any)
 			case LogicalType:
-				_, ok := left[0].(bool)
+				_, ok := left[0].any.(bool)
 				return ok
 			}
 		}
@@ -202,7 +202,7 @@ func sameType(left, right PathValue) bool {
 			return true
 		case NodesType:
 			if len(right) == 1 {
-				_, ok := right[0].(bool)
+				_, ok := right[0].any.(bool)
 				return ok
 			}
 		case *ValueType:

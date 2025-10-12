@@ -119,8 +119,13 @@ func (q *PathQuery) Expression() FuncExprArg {
 
 // evaluate returns a [NodesType] containing the result of executing q.
 // Defined by the [FuncExprArg] interface.
-func (q *PathQuery) evaluate(current, root any) PathValue {
-	return NodesType(q.Select(current, root))
+func (q *PathQuery) evaluate(current, root, selector any) PathValue {
+	vals := q.Select(current, root)
+	nodes := make(NodesType, len(vals))
+	for i, v := range vals {
+		nodes[i] = Node{v, selector}
+	}
+	return nodes
 }
 
 // ResultType returns [FuncValue] if q is a singular query, and [FuncNodes]
