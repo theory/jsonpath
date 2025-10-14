@@ -14,6 +14,17 @@ All notable changes to this project will be documented in this file. It uses the
 *   Upgraded to `golangci-lint` v2.5.0.
 *   Removed unused constant from `parser/lex.go`
 
+### 🐞 Bug Fixes
+
+*   Fixed bug that prevented multiple blank-space delimited ANDed comparison
+    operations from being parsed. For example, `$[@.x=="hi"&&@.y!=3&&@[1]==1]`
+    would parse but `$[@.x == "hi" && @.y !=3 && @[1]==1]` would not. Thanks
+    to @jarangutan for the bug report and @jg-rp for the analysis ([#24]).
+
+  [v0.10.2]: https://github.com/theory/jsonpath/compare/v0.10.1...v0.10.2
+  [#24]: https://github.com/theory/jsonpath/issues/24
+    "theory/jsonpath#24 Filter with 2+ consecutive '&&' operators returns parsing error"
+
 ## [v0.10.1] — 2025-09-16
 
 ### 🐞 Bug Fixes

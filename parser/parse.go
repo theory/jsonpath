@@ -342,6 +342,7 @@ func (p *parser) parseLogicalAndExpr() (spec.LogicalAnd, error) {
 			return nil, err
 		}
 		ors = append(ors, expr)
+		lex.scanBlankSpace()
 	}
 
 	return spec.LogicalAnd(ors), nil

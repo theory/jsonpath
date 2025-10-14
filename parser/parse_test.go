@@ -384,6 +384,43 @@ func TestParseFilter(t *testing.T) {
 			)),
 		},
 		{
+			test:  "multi_logical_and",
+			query: `(@["x", 1] && $["y"] && @["a"])`,
+			filter: spec.Filter(spec.And(
+				spec.Paren(spec.And(
+					spec.Existence(spec.Query(
+						false,
+						spec.Child(spec.Name("x"), spec.Index(1)),
+					)),
+					spec.Existence(spec.Query(
+						true,
+						spec.Child(spec.Name("y")),
+					)),
+					spec.Existence(spec.Query(
+						false,
+						spec.Child(spec.Name("a")),
+					)),
+				)),
+			)),
+		},
+		{
+			test:  "logical_and_short_name",
+			query: `@.x && @.y`,
+			filter: spec.Filter(spec.And(
+				spec.Existence(spec.Query(false, spec.Child(spec.Name("x")))),
+				spec.Existence(spec.Query(false, spec.Child(spec.Name("y")))),
+			)),
+		},
+		{
+			test:  "multi_logical_and_short_name",
+			query: `@.x && @.y && @.z`,
+			filter: spec.Filter(spec.And(
+				spec.Existence(spec.Query(false, spec.Child(spec.Name("x")))),
+				spec.Existence(spec.Query(false, spec.Child(spec.Name("y")))),
+				spec.Existence(spec.Query(false, spec.Child(spec.Name("z")))),
+			)),
+		},
+		{
 			test:  "paren_logical_or",
 			query: `(@["x", 1] || $["y"])`,
 			filter: spec.Filter(spec.And(
@@ -398,6 +435,23 @@ func TestParseFilter(t *testing.T) {
 					))),
 				)),
 			),
+		},
+		{
+			test:  "logical_or_short_name",
+			query: `@.x && @.y`,
+			filter: spec.Filter(spec.And(
+				spec.Existence(spec.Query(false, spec.Child(spec.Name("x")))),
+				spec.Existence(spec.Query(false, spec.Child(spec.Name("y")))),
+			)),
+		},
+		{
+			test:  "multi_logical_and_short_name",
+			query: `@.x && @.y && @.z`,
+			filter: spec.Filter(spec.And(
+				spec.Existence(spec.Query(false, spec.Child(spec.Name("x")))),
+				spec.Existence(spec.Query(false, spec.Child(spec.Name("y")))),
+				spec.Existence(spec.Query(false, spec.Child(spec.Name("z")))),
+			)),
 		},
 		// NotParenExistExpr
 		{
@@ -668,6 +722,106 @@ func TestParseFilter(t *testing.T) {
 					spec.Literal(int64(42)),
 				),
 			)),
+		},
+		{
+			test:  "and_compare",
+			query: `@.x == "hi" && @.y != 3`,
+			filter: spec.Filter(spec.And(
+				spec.Comparison(
+					spec.SingularQuery(false, spec.Name("x")),
+					spec.EqualTo,
+					spec.Literal("hi"),
+				),
+				spec.Comparison(
+					spec.SingularQuery(false, spec.Name("y")),
+					spec.NotEqualTo,
+					spec.Literal(int64(3)),
+				),
+			)),
+		},
+		{
+			test:  "multi_and_compare",
+			query: `@.x == "hi" && @.y != 3 && $[1] == true`,
+			filter: spec.Filter(spec.And(
+				spec.Comparison(
+					spec.SingularQuery(false, spec.Name("x")),
+					spec.EqualTo,
+					spec.Literal("hi"),
+				),
+				spec.Comparison(
+					spec.SingularQuery(false, spec.Name("y")),
+					spec.NotEqualTo,
+					spec.Literal(int64(3)),
+				),
+				spec.Comparison(
+					spec.SingularQuery(true, spec.Index(1)),
+					spec.EqualTo,
+					spec.Literal(true),
+				),
+			)),
+		},
+		{
+			test:  "multi_and_compare_compact",
+			query: `@.x=="hi"&&@.y!=3&&$[1]==true`,
+			filter: spec.Filter(spec.And(
+				spec.Comparison(
+					spec.SingularQuery(false, spec.Name("x")),
+					spec.EqualTo,
+					spec.Literal("hi"),
+				),
+				spec.Comparison(
+					spec.SingularQuery(false, spec.Name("y")),
+					spec.NotEqualTo,
+					spec.Literal(int64(3)),
+				),
+				spec.Comparison(
+					spec.SingularQuery(true, spec.Index(1)),
+					spec.EqualTo,
+					spec.Literal(true),
+				),
+			)),
+		},
+		{
+			test:  "multi_or_compare",
+			query: `@.x == "hi" || @.y != 3 || $[1] == true`,
+			filter: spec.Filter(
+				spec.And(spec.Comparison(
+					spec.SingularQuery(false, spec.Name("x")),
+					spec.EqualTo,
+					spec.Literal("hi"),
+				)),
+				spec.And(spec.Comparison(
+					spec.SingularQuery(false, spec.Name("y")),
+					spec.NotEqualTo,
+					spec.Literal(int64(3)),
+				)),
+				spec.And(spec.Comparison(
+					spec.SingularQuery(true, spec.Index(1)),
+					spec.EqualTo,
+					spec.Literal(true),
+				)),
+			),
+		},
+		{
+			test:  "multi_or_compare_compact",
+			query: `@.x=="hi"||@.y!=3||$[1]==true`,
+			filter: spec.Filter(
+				spec.And(spec.Comparison(
+					spec.SingularQuery(false, spec.Name("x")),
+					spec.EqualTo,
+					spec.Literal("hi"),
+				)),
+				spec.And(spec.Comparison(
+					spec.SingularQuery(false, spec.Name("y")),
+					spec.NotEqualTo,
+					spec.Literal(int64(3)),
+				)),
+				spec.And(spec.Comparison(
+					spec.SingularQuery(true, spec.Index(1)),
+					spec.EqualTo,
+					spec.Literal(true),
+				)),
+			),
 		},
 		{
 			test:  "invalid_logical_or",
