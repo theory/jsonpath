@@ -27,6 +27,7 @@ go.work
 pub/
 _build/
 jsonpath-compliance-test-suite/
+/compare
 
 # OS Stuff
 .DS_Store
