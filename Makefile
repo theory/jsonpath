@@ -2,15 +2,16 @@ GO ?= go
 
 SRC_DIR := src
 DST_DIR := pub
-WASM_EXEC := $(shell tinygo env TINYGOROOT)/targets/wasm_exec.js
-# WASM_EXEC := $(shell go env GOROOT)/misc/wasm/wasm_exec.js
+
+# explicitly build the playground with _vendor/tinygo until
+# https://github.com/tinygo-org/tinygo/issues/4873 fixed.
 
 playground: $(DST_DIR)/play.wasm $(DST_DIR)/index.html $(DST_DIR)/wasm_exec.js $(DST_DIR)/play.css
 
 ROOT_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
-$(DST_DIR)/play.wasm: $(SRC_DIR)/main.go
+$(DST_DIR)/play.wasm: $(SRC_DIR)/main.go _vendor/tinygo/bin/tinygo
 	@mkdir -p $(@D)
-	GOOS=js GOARCH=wasm tinygo build -no-debug -size short -o $@ $<
+	GOOS=js GOARCH=wasm ./_vendor/tinygo/bin/tinygo build -no-debug -size short -o $@ $<
 #	cd $(SRC_DIR); GOOS=js GOARCH=wasm go build -o $(ROOT_DIR)/$@ $$(basename "$<")
 
 $(DST_DIR)/play.css: $(SRC_DIR)/play.css
@@ -21,15 +22,12 @@ $(DST_DIR)/index.html: $(SRC_DIR)/index.html
 	mkdir -p $(@D)
 	version=$$(grep jsonpath go.mod | awk '{print $$3}'); cat $< | sed -e "s!{{version}}!$${version}!g" > $@
 
-$(DST_DIR)/wasm_exec.js: $(WASM_EXEC)
+$(DST_DIR)/wasm_exec.js: _vendor/tinygo/bin/tinygo
 	mkdir -p $(@D)
-	cp $< $@
+	cp $(shell ./_vendor/tinygo/bin/tinygo env TINYGOROOT)/targets/wasm_exec.js $@
 
-# explicitly build the playground with _vendor/tinygo until
-# https://github.com/tinygo-org/tinygo/issues/4873 fixed.
 .PHONY: run
-run: _vendor/tinygo
-	env PATH="$$PWD/_vendor/tinygo/bin:$$PATH" $(MAKE) playground
+run: playground
 	python3 -m http.server --directory $(DST_DIR)
 
 .PHONY: brew-lint-depends # Install linting tools from Homebrew
@@ -57,11 +55,7 @@ golangci-lint: .golangci.yaml
 clean:
 	rm -rf $(DST_DIR)
 
-_vendor/tinygo: _vendor/tinygo0.36.0
-	cd _vendor && ln -sF tinygo0.36.0 tinygo
-
-_vendor/tinygo0.36.0:
+_vendor/tinygo/bin/tinygo:
 	brew install binaryen
 	mkdir -p _vendor
-	curl -L https://github.com/tinygo-org/tinygo/releases/download/v0.36.0/tinygo0.36.0.darwin-arm64.tar.gz | tar zxf -
-	mv tinygo $@
+	cd _vendor && curl -L https://github.com/tinygo-org/tinygo/releases/download/v0.40.1/tinygo0.40.1.darwin-arm64.tar.gz | tar zxf -
