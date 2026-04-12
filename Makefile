@@ -58,4 +58,4 @@ clean:
 _vendor/tinygo/bin/tinygo:
 	brew install binaryen
 	mkdir -p _vendor
-	cd _vendor && curl -L https://github.com/tinygo-org/tinygo/releases/download/v0.40.1/tinygo0.40.1.darwin-arm64.tar.gz | tar zxf -
+	cd _vendor && curl -L https://github.com/tinygo-org/tinygo/releases/download/v0.36.0/tinygo0.36.0.darwin-arm64.tar.gz | tar zxf -

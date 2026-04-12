@@ -4,7 +4,7 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
-github.com/theory/jsonpath v0.11.0 h1:IlzhI/Ui8nFu50SVpnyYHzZVvI0+etEoZLR5LsZJOVc=
-github.com/theory/jsonpath v0.11.0/go.mod h1:vl8nfJyq9MKMbcAiKv+7N9W3jDCH8qPr0mZoZj8wRk8=
+github.com/theory/jsonpath v0.12.0 h1:NQeuE0ohHHhss0DoxU9Xu2IpTTrlx9x4mv4F3pcmDME=
+github.com/theory/jsonpath v0.12.0/go.mod h1:vl8nfJyq9MKMbcAiKv+7N9W3jDCH8qPr0mZoZj8wRk8=
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
 gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
