@@ -17,6 +17,8 @@ linters:
     - wsl
     - wsl_v5
     - noinlineerr
+    - gomodguard # Deprecated, replaced by gomodguard_v2
+    - exhaustruct_v5 # Ignores Go rule that vars default to zero value
   settings:
     dupword:
       ignore:
@@ -45,6 +47,8 @@ linters:
         - spec\.Selector
         - spec\.BasicExpr
         - spec\.CompVal
+    goconst:
+      ignore-tests: true
   exclusions:
     generated: lax
     rules:

@@ -38,9 +38,28 @@ A brief overview of [RFC 9535 JSONPath] syntax:
 
 This package has only test dependencies.
 
+## Strict No LLM/No AI Policy
+
+This software is 100% made by humans for humans and welcomes human
+contributions. That means:
+
+*   No LLM-generated content, whether it be code or prose.
+*   No paraphrasing LLM-generated content.
+*   No LLMs for editing, including fixing spelling or grammatical errors.
+*   No LLMs for translation. English is encouraged, but not required. You are
+    welcome to post in your native language and rely on others to have their
+    own translation tools of choice to interpret your words.
+*   No LLMs for brainstorming and then sharing the results of that
+    brainstorming, even if you create the prose. If you use a chatbot to give
+    you advice on a comment on the issue tracker, that comment is unwelcome.
+*   No LLMs for finding bugs.
+*   No talking about use of chatbot/LLM services.
+
+Borrowed from the [Zig Code of Conduct].
+
 ## Copyright
 
-Copyright © 2024-2025 David E. Wheeler
+Copyright © 2024-2026 David E. Wheeler
 
   [⚖️ MIT]: https://img.shields.io/badge/License-MIT-blue.svg "⚖️ MIT License"
   [mit]: https://opensource.org/license/MIT "⚖️ MIT License"
@@ -60,3 +79,4 @@ Copyright © 2024-2025 David E. Wheeler
   [RFC 9535 JSONPath]: https://www.rfc-editor.org/rfc/rfc9535.html
     "RFC 9535 JSONPath: Query Expressions for JSON"
   [Playground]: https://theory.github.io/jsonpath/ "Go JSONPath Playground"
+  [Zig Code of Conduct]: https://ziglang.org/code-of-conduct/
