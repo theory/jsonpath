@@ -18,5 +18,8 @@
   ],
   "yaml.schemas": {
     "https://json.schemastore.org/github-workflow.json": "file:///Users/david/dev/go/jsontree/.github/workflows/deploy.yml"
-  }
+  },
+  "go.goroot": "${env:HOME}/.goenv/versions/1.26.7",
+  "go.gopath": "${env:HOME}/go/1.26.7",
+  "go.toolsGopath": "${env:HOME}/go/tools"
 }

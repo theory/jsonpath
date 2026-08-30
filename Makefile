@@ -2,16 +2,14 @@ GO ?= go
 
 SRC_DIR := src
 DST_DIR := pub
-
-# explicitly build the playground with _vendor/tinygo until
-# https://github.com/tinygo-org/tinygo/issues/4873 fixed.
+WASM_EXEC := $(shell tinygo env TINYGOROOT)/targets/wasm_exec.js
 
 playground: $(DST_DIR)/play.wasm $(DST_DIR)/index.html $(DST_DIR)/wasm_exec.js $(DST_DIR)/play.css
 
 ROOT_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
-$(DST_DIR)/play.wasm: $(SRC_DIR)/main.go _vendor/tinygo/bin/tinygo
+$(DST_DIR)/play.wasm: $(SRC_DIR)/main.go
 	@mkdir -p $(@D)
-	GOOS=js GOARCH=wasm ./_vendor/tinygo/bin/tinygo build -no-debug -size short -o $@ $<
+	GOOS=js GOARCH=wasm tinygo build -no-debug -size short -o $@ $<
 #	cd $(SRC_DIR); GOOS=js GOARCH=wasm go build -o $(ROOT_DIR)/$@ $$(basename "$<")
 
 $(DST_DIR)/play.css: $(SRC_DIR)/play.css
@@ -22,9 +20,9 @@ $(DST_DIR)/index.html: $(SRC_DIR)/index.html
 	mkdir -p $(@D)
 	version=$$(grep jsonpath go.mod | awk '{print $$3}'); cat $< | sed -e "s!{{version}}!$${version}!g" > $@
 
-$(DST_DIR)/wasm_exec.js: _vendor/tinygo/bin/tinygo
+$(DST_DIR)/wasm_exec.js: $(WASM_EXEC)
 	mkdir -p $(@D)
-	cp $(shell ./_vendor/tinygo/bin/tinygo env TINYGOROOT)/targets/wasm_exec.js $@
+	cp $< $@
 
 .PHONY: run
 run: playground
@@ -36,7 +34,7 @@ brew-lint-depends:
 
 .PHONY: debian-lint-depends # Install linting tools on Debian
 debian-lint-depends:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sudo sh -s -- -b /usr/bin v2.5.0
+	curl -sSfL https://golangci-lint.run/install.sh | sudo sh -s -- -b /usr/bin v2.13.2
 
 .PHONY: lint # Lint the project
 lint: .pre-commit-config.yaml
@@ -54,8 +52,3 @@ golangci-lint: .golangci.yaml
 .PHONY: clean
 clean:
 	rm -rf $(DST_DIR)
-
-_vendor/tinygo/bin/tinygo:
-	brew install binaryen
-	mkdir -p _vendor
-	cd _vendor && curl -L https://github.com/tinygo-org/tinygo/releases/download/v0.36.0/tinygo0.36.0.darwin-arm64.tar.gz | tar zxf -

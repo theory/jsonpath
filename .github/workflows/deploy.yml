@@ -13,10 +13,7 @@ jobs:
         with: { go-version-file: go.mod, check-latest: true }
       - name: Setup TinyGo
         uses: acifani/setup-tinygo@v2
-        # https://github.com/tinygo-org/tinygo/issues/4873
-        with: { tinygo-version: 0.36.0 }
-      - name: Vendor Tinygo
-        run: mkdir -p _vendor/tinygo/bin && ln -s "$(which tinygo)" _vendor/tinygo/bin/tinygo
+        with: { tinygo-version: 0.41.1 }
       - name: Generate App
         run: make playground
       - name: Upload Artifact

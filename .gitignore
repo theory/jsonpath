@@ -14,9 +14,6 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
-# Dependency directories
-vendor/
-
 # Go workspace file
 go.work
 
@@ -37,4 +34,3 @@ jsonpath-compliance-test-suite/
 
 # TinyGo stuff on macOS
 .envrc
-_vendor/
