@@ -39,9 +39,6 @@ func checkLengthArgs(args []spec.FuncExprArg) error {
 //   - For any other value, the result is nil.
 func lengthFunc(jv []spec.PathValue) spec.PathValue {
 	v := spec.ValueFrom(jv[0])
-	if v == nil {
-		return nil
-	}
 	switch v := v.Value().(type) {
 	case string:
 		// Unicode scalar values

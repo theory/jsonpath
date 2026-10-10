@@ -214,7 +214,7 @@ func ValueFrom(value PathValue) *ValueType {
 	case *ValueType:
 		return v
 	case nil:
-		return nil
+		return &ValueType{nil}
 	case LogicalType:
 		panic("cannot convert LogicalType to ValueType")
 	case NodesType:
@@ -519,7 +519,8 @@ func Function(fn *FuncExtension, args ...FuncExprArg) *FuncExpr {
 // writeTo writes the string representation of fe to buf. Defined by
 // [stringWriter].
 func (fe *FuncExpr) writeTo(buf *strings.Builder) {
-	buf.WriteString(fe.fn.Name() + "(")
+	buf.WriteString(fe.fn.Name())
+	buf.WriteString("(")
 	for i, arg := range fe.args {
 		arg.writeTo(buf)
 		if i < len(fe.args)-1 {

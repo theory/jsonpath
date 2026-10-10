@@ -660,3 +660,46 @@ func TestLocatedNodeListIterators(t *testing.T) {
 		slices.Collect(list.Paths()),
 	)
 }
+
+func TestFilterFunctionWithMissingMember(t *testing.T) {
+	t.Parallel()
+	data := []any{
+		map[string]any{"a": "yes"},
+		map[string]any{"b": 1},
+	}
+
+	for _, tc := range []struct {
+		test  string
+		query string
+		exp   string
+	}{
+		{
+			test:  "search",
+			query: `$[?search(@.a, 'y')]`,
+			exp:   `[{"a":"yes"}]`,
+		},
+		{
+			test:  "match",
+			query: `$[?match(@.a, 'yes')]`,
+			exp:   `[{"a":"yes"}]`,
+		},
+		{
+			test:  "search_in_logical_or",
+			query: `$[?search(@.a, 'y') || @.b == 1]`,
+			exp:   `[{"a":"yes"},{"b":1}]`,
+		},
+	} {
+		t.Run(tc.test, func(t *testing.T) {
+			t.Parallel()
+			a := assert.New(t)
+			r := require.New(t)
+
+			path, err := Parse(tc.query)
+			r.NoError(err)
+			var got []byte
+			got, err = json.Marshal(path.Select(data))
+			r.NoError(err)
+			a.JSONEq(tc.exp, string(got))
+		})
+	}
+}

@@ -190,7 +190,7 @@ func TestValueFrom(t *testing.T) {
 		err  string
 	}{
 		{"valueType", Value(42), Value(42), ""},
-		{"nil", nil, nil, ""},
+		{"nil", nil, Value(nil), ""},
 		{"logical", LogicalFalse, nil, "cannot convert LogicalType to ValueType"},
 		{"nodes", Nodes(1), nil, "cannot convert NodesType to ValueType"},
 		{"unknown", newValueType{}, nil, "unexpected argument of type spec.newValueType"},

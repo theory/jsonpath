@@ -7,6 +7,15 @@ All notable changes to this project will be documented in this file. It uses the
   [Semantic Versioning]: https://semver.org/spec/v2.0.0.html
     "Semantic Versioning 2.0.0"
 
+## [v0.12.2] — 2026-10-10
+
+### 🐞 Bug Fixes
+
+*   Fixed a nil pointer dereference panic when using functions passed a path
+    that doesn't exist. Thanks to Stephen Hood for the report (#29)!
+
+  [v0.12.2]: https://github.com/theory/jsonpath/compare/v0.12.1...v0.12.2
+
 ## [v0.12.1] — 2026-08-30
 
 ### 📚 Documentation
