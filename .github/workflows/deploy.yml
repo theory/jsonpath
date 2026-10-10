@@ -7,18 +7,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with: { go-version-file: go.mod, check-latest: true }
       - name: Setup TinyGo
-        uses: acifani/setup-tinygo@v2
-        with: { tinygo-version: 0.42.0 }
+        uses: acifani/setup-tinygo@v3
+        with: { tinygo-version: 0.43.0 }
       - name: Generate App
         run: make playground
       - name: Upload Artifact
         if: github.ref == 'refs/heads/playground'
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with: { path: ./pub }
 
   deploy:
@@ -36,4 +36,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

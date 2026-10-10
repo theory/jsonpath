@@ -7,7 +7,7 @@ WASM_EXEC := $(shell tinygo env TINYGOROOT)/targets/wasm_exec.js
 playground: $(DST_DIR)/play.wasm $(DST_DIR)/index.html $(DST_DIR)/wasm_exec.js $(DST_DIR)/play.css
 
 ROOT_DIR := $(dir $(realpath $(lastword $(MAKEFILE_LIST))))
-$(DST_DIR)/play.wasm: $(SRC_DIR)/main.go
+$(DST_DIR)/play.wasm: $(SRC_DIR)/main.go go.*
 	@mkdir -p $(@D)
 	GOOS=js GOARCH=wasm tinygo build -no-debug -size short -o $@ $<
 #	cd $(SRC_DIR); GOOS=js GOARCH=wasm go build -o $(ROOT_DIR)/$@ $$(basename "$<")
