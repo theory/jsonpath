@@ -665,7 +665,7 @@ func TestFilterFunctionWithMissingMember(t *testing.T) {
 	t.Parallel()
 	data := []any{
 		map[string]any{"a": "yes"},
-		map[string]any{"b": 1},
+		map[string]any{"b": 1, "c": nil},
 	}
 
 	for _, tc := range []struct {
@@ -679,14 +679,24 @@ func TestFilterFunctionWithMissingMember(t *testing.T) {
 			exp:   `[{"a":"yes"}]`,
 		},
 		{
+			test:  "search_null",
+			query: `$[?search(@.c, 'xxx')]`,
+			exp:   `[]`,
+		},
+		{
 			test:  "match",
 			query: `$[?match(@.a, 'yes')]`,
 			exp:   `[{"a":"yes"}]`,
 		},
 		{
+			test:  "match_null",
+			query: `$[?match(@.c, 'xxx')]`,
+			exp:   `[]`,
+		},
+		{
 			test:  "search_in_logical_or",
 			query: `$[?search(@.a, 'y') || @.b == 1]`,
-			exp:   `[{"a":"yes"},{"b":1}]`,
+			exp:   `[{"a":"yes"},{"b":1,"c":null}]`,
 		},
 	} {
 		t.Run(tc.test, func(t *testing.T) {

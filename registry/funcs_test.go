@@ -465,7 +465,14 @@ func TestRegexFuncs(t *testing.T) {
 			search: false,
 		},
 		{
-			test:   "nil_input",
+			test:   "no_input",
+			input:  nil,
+			regex:  spec.Value("."),
+			match:  false,
+			search: false,
+		},
+		{
+			test:   "null_input",
 			input:  spec.Value(nil),
 			regex:  spec.Value("."),
 			match:  false,

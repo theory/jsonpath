@@ -39,6 +39,9 @@ func checkLengthArgs(args []spec.FuncExprArg) error {
 //   - For any other value, the result is nil.
 func lengthFunc(jv []spec.PathValue) spec.PathValue {
 	v := spec.ValueFrom(jv[0])
+	if v == nil {
+		return nil
+	}
 	switch v := v.Value().(type) {
 	case string:
 		// Unicode scalar values
@@ -138,7 +141,11 @@ func checkMatchArgs(args []spec.FuncExprArg) error {
 // a match and LogicalFalse for no match. Returns LogicalFalse if either jv value
 // is not a string or if jv[1] fails to compile.
 func matchFunc(jv []spec.PathValue) spec.PathValue {
-	if v, ok := spec.ValueFrom(jv[0]).Value().(string); ok {
+	v := spec.ValueFrom(jv[0])
+	if v == nil {
+		return spec.LogicalFalse
+	}
+	if v, ok := v.Value().(string); ok {
 		if r, ok := spec.ValueFrom(jv[1]).Value().(string); ok {
 			if rc := compileRegex(`\A` + r + `\z`); rc != nil {
 				return spec.Logical(rc.MatchString(v))
@@ -172,7 +179,11 @@ func checkSearchArgs(args []spec.FuncExprArg) error {
 // match. Returns LogicalFalse if either value is not a string, or if jv[1]
 // fails to compile.
 func searchFunc(jv []spec.PathValue) spec.PathValue {
-	if val, ok := spec.ValueFrom(jv[0]).Value().(string); ok {
+	v := spec.ValueFrom(jv[0])
+	if v == nil {
+		return spec.LogicalFalse
+	}
+	if val, ok := v.Value().(string); ok {
 		if r, ok := spec.ValueFrom(jv[1]).Value().(string); ok {
 			if rc := compileRegex(r); rc != nil {
 				return spec.Logical(rc.MatchString(val))

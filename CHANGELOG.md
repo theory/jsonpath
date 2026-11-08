@@ -7,6 +7,19 @@ All notable changes to this project will be documented in this file. It uses the
   [Semantic Versioning]: https://semver.org/spec/v2.0.0.html
     "Semantic Versioning 2.0.0"
 
+## [v0.12.3] — 2026-11-08
+
+### 🐞 Bug Fixes
+
+*   Improved the fix for the nil pointer dereference panic when using
+    functions passed a path that doesn't exist. v0.12.2 changed
+    `spec.ValueFrom` to return a `spec.ValueType` containing a `nil` when
+    there is no value, which is the same as a JSON `null`. Restored returning
+    a `nil` `spec.ValueType` and checking for `nil` in `length()`, then
+    teaches `match()` and `search()` to check for a `nil`.
+
+  [v0.12.3]: https://github.com/theory/jsonpath/compare/v0.12.2...v0.12.3
+
 ## [v0.12.2] — 2026-10-10
 
 ### 🐞 Bug Fixes

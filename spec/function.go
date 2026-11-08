@@ -214,7 +214,7 @@ func ValueFrom(value PathValue) *ValueType {
 	case *ValueType:
 		return v
 	case nil:
-		return &ValueType{nil}
+		return nil
 	case LogicalType:
 		panic("cannot convert LogicalType to ValueType")
 	case NodesType:
