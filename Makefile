@@ -34,7 +34,7 @@ brew-lint-depends:
 
 .PHONY: debian-lint-depends # Install linting tools on Debian
 debian-lint-depends:
-	curl -sSfL https://golangci-lint.run/install.sh | sudo sh -s -- -b /usr/bin v2.13.2
+	curl -sSfL https://golangci-lint.run/install.sh | sudo sh -s -- -b /usr/bin v2.15.0
 
 .PHONY: lint # Lint the project
 lint: .pre-commit-config.yaml

@@ -13,7 +13,7 @@ jobs:
         with: { go-version-file: go.mod, check-latest: true }
       - name: Setup TinyGo
         uses: acifani/setup-tinygo@v3
-        with: { tinygo-version: 0.43.0 }
+        with: { tinygo-version: 0.44.0 }
       - name: Generate App
         run: make playground
       - name: Upload Artifact
