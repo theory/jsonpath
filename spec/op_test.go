@@ -3,7 +3,11 @@ package spec
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
+	"reflect"
+	"slices"
 	"testing"
+	"unsafe"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -26,8 +30,43 @@ func TestCompOp(t *testing.T) {
 	}
 }
 
+type TestInterface interface {
+	X()
+}
+
+type TestInterfaceImpl struct {
+	Num int
+}
+
+func (*TestInterfaceImpl) X() {}
+
+//nolint:ireturn
+func NilTestInterface() TestInterface { return nil }
+
+//nolint:ireturn
+func NumTestInterface(n int) TestInterface { return &TestInterfaceImpl{n} }
+
 func TestEqualTo(t *testing.T) {
 	t.Parallel()
+
+	aSlice := []int{0, 1, 4}
+	cycle := []any{1, 2, nil}
+	cycle[2] = cycle
+	pointer := &TestInterfaceImpl{42}
+	aMap := map[string]int{"hi": 2}
+	cycleMap := map[string]any{}
+	cycleMap["x"] = cycleMap
+	ptr := NumTestInterface(42)
+	var (
+		nilSlice []any
+		nilMap   map[string]any
+		nilFunc  func()
+		nilChan  chan int
+		nilFace  any
+		face     any = 1
+		face1    any = 1
+		face2    any = 2
+	)
 
 	for _, tc := range []struct {
 		test  string
@@ -74,6 +113,7 @@ func TestEqualTo(t *testing.T) {
 		{"json_number_eq", json.Number("0"), json.Number("0.0"), true},
 		{"json_number_ne", json.Number("1024"), json.Number("0.0"), false},
 		{"json_number_invalid", json.Number("not a number"), json.Number("0.0"), false},
+		{"json_number_invalid_ref", json.Number("0.0"), json.Number("not a number"), false},
 		{"int_float_true", int64(10), float64(10), true},
 		{"int_float_false", int64(10), float64(11), false},
 		{"empty_strings", "", "", true},
@@ -83,13 +123,94 @@ func TestEqualTo(t *testing.T) {
 		{"emoji_strings", "hi 😀", "hi 😀", true},
 		{"trues", true, true, true},
 		{"true_false", true, false, false},
-		{"arrays_equal", []any{1, 2, 3}, []any{1, 2, 3}, true},
-		{"arrays_ne", []any{1, 2, 3}, []any{1, 2, 3, 4}, false},
+		{"slices_equal", []any{1, 2, 3}, []any{1, 2, 3}, true},
+		{"slices_ne_len", []any{1, 2, 3}, []any{1, 2, 3, 4}, false},
+		{"slices_ne", []any{1, 2, 3}, []any{1, 2, 4}, false},
+		{"slice_numbers", []any{1, 2, 3}, []any{1.0, 2, 3.0}, true},
+		{"slice_diff_types", []int{1, 2, 3}, []float32{1.0, 2, 3.0}, true},
+		{"arrays_equal", [3]any{1, 2, 3}, [3]any{1, 2, 3}, true},
+		{"arrays_ne_len", [3]any{1, 2, 3}, [4]any{1, 2, 3, 4}, false},
+		{"arrays_ne", [3]any{1, 2, 3}, [3]any{1, 2, 4}, false},
+		{"array_numbers", [3]any{1, 2, 3}, [3]any{1.0, 2, 3.0}, true},
+		{"array_diff_types", [3]int{1, 2, 3}, [3]float32{1.0, 2, 3.0}, true},
 		{"nils", nil, nil, true},
+		{"nil_slices", nilSlice, nilSlice, true},
+		{"nested_nil_slices", []any{nilSlice, nilSlice}, []any{nilSlice, nilSlice}, true},
+		{"nil_maps", nilMap, nilMap, true},
+		{"nested_nil_maps", []any{nilMap, nilMap}, []any{nilMap, nilMap}, true},
 		{"nil_not_nil", nil, 2, false},
 		{"objects_eq", map[string]any{"x": 1, "y": 2}, map[string]any{"x": 1, "y": 2}, true},
 		{"object_keys_ne", map[string]any{"x": 1, "y": 2}, map[string]any{"x": 1, "z": 2}, false},
 		{"object_vals_ne", map[string]any{"x": 1, "y": 2}, map[string]any{"x": 1, "y": 3}, false},
+		{"object_lens_ne", map[string]any{"x": 1, "y": 2}, map[string]any{"x": 1}, false},
+		{"object_numbers", map[string]any{"x": 1, "y": 2}, map[string]any{"x": 1.0, "y": 2.0}, true},
+		{
+			"nested_numbers",
+			map[string]any{"x": []int{42, 99}, "y": map[string]int{"a": 6, "b": 7}},
+			map[string]any{"x": []float32{42, 99}, "y": map[string]float32{"a": 6.0, "b": 7.0}},
+			true,
+		},
+		{"repeat_slices", []any{aSlice, aSlice}, []any{aSlice, aSlice}, true},
+		{"cycle_slices", cycle, cycle, true},
+		{"nested_cycles_eq", []any{cycle, cycle}, []any{cycle, cycle}, true},
+		{"multi_nested_cycle_slices", map[string]any{"x": cycle}, map[string]any{"x": cycle}, true},
+		{"repeat_maps", []any{aMap, aMap}, []any{aMap, aMap}, true},
+		{"cycle_maps", cycleMap, cycleMap, true},
+		{"nested_cycle_maps", []any{1, cycleMap}, []any{1, cycleMap}, true},
+		{"multi_nested_cycle_maps", []any{cycleMap, cycleMap}, []any{cycleMap, cycleMap}, true},
+		{"nils", nil, nil, true},
+		{"nil_ptrs", NilTestInterface(), NilTestInterface(), true},
+		{"one_nil_ptrs", NilTestInterface(), NumTestInterface(1), false},
+		{"ptrs", NumTestInterface(1), NumTestInterface(1), true},
+		{"ptrs_ne", NumTestInterface(1), NumTestInterface(2), false},
+		{"nested_nil_ptrs", []any{NilTestInterface()}, []any{NilTestInterface()}, true},
+		{"nested_one_nil_ptrs", []any{NilTestInterface()}, []any{NumTestInterface(1)}, false},
+		{"nested_ptrs_eq", []any{NumTestInterface(1)}, []any{NumTestInterface(1)}, true},
+		{"same_ptrs", ptr, ptr, true},
+		{"same_nested_ptrs", []any{ptr, ptr}, []any{ptr, ptr}, true},
+		{"empty_structs", TestInterfaceImpl{}, TestInterfaceImpl{}, true},
+		{"same_structs", TestInterfaceImpl{1}, TestInterfaceImpl{1}, true},
+		{"diff_structs", TestInterfaceImpl{1}, TestInterfaceImpl{2}, false},
+		{"empty_p_structs", &TestInterfaceImpl{}, &TestInterfaceImpl{}, true},
+		{"same_p_structs", &TestInterfaceImpl{1}, &TestInterfaceImpl{1}, true},
+		{"diff_p_structs", &TestInterfaceImpl{1}, &TestInterfaceImpl{2}, false},
+		{"struct_private", reflect.ValueOf(cycle).Index(0), reflect.ValueOf(cycle).Index(0), false},
+		{"diff_struct_private", reflect.ValueOf(cycle).Index(0), reflect.ValueOf(cycle).Index(1), false},
+		{"same_pointer", pointer, pointer, true},
+		{"same_nested_pointer", []*TestInterfaceImpl{pointer}, []*TestInterfaceImpl{pointer}, true},
+		{"repeated_pointer", []any{pointer, pointer}, []any{pointer, pointer}, true},
+		{"same_map", aMap, aMap, true},
+		{"string_num", "string", 0, false},
+		{"num_string", 0, "string", false},
+		{"array_slice_eq", []any{1, true}, [2]any{1, true}, true},
+		{"array_slice_ne", []any{1, true}, [2]any{1, false}, false},
+		{"array_slice_len_ne", []any{1, true}, [3]any{1, true}, false},
+		{"slice_array_eq", [2]any{1, true}, []any{1, true}, true},
+		{"slice_array_ne", [2]any{1, true}, []any{1, false}, false},
+		{"slice_array_len_ne", [3]any{1, true}, []any{1, true}, false},
+		{"complex", complex(22, 3), complex(22, 3), true},
+		{"complex_ne", complex(22, 3), complex(22, 2), false},
+		{"complex64", complex64(22), complex64(22), true},
+		{"complex64_ne", complex64(22), complex64(12), false},
+		{"complex128", complex128(22), complex128(22), true},
+		{"complex128_ne", complex128(22), complex128(12), false},
+		{"nil_funcs", nilFunc, nilFunc, true},
+		{"nested_nil_funcs", []any{nilFunc, nilFunc}, []any{nilFunc, nilFunc}, true},
+		{"nil_channels", nilChan, nilChan, true},
+		{"nested_nil_channels", []any{nilChan, nilChan}, []any{nilChan, nilChan}, true},
+		{"funcs", TestEqualTo, TestEqualTo, false},
+		{"chans", make(chan int), make(chan int), false},
+		//nolint:gosec // disable G103
+		{"unsafe_pointers_eq", unsafe.Pointer(t), unsafe.Pointer(t), true},
+		//nolint:gosec // disable G103
+		{"unsafe_pointers_ne", unsafe.Pointer(t), unsafe.Pointer(pointer), false},
+		{"nested_repeat_slices", []any{aSlice, aSlice}, []any{aSlice, aSlice}, true},
+		{"nil_interfaces", nilFace, nilFace, true},
+		{"nested_nil_interfaces", []any{nilFace, nilFace}, []any{nilFace, nilFace}, true},
+		{"same_interfaces", face, face, true},
+		{"same_nested_interfaces", []any{face, face}, []any{face, face}, true},
+		{"dif_nested_interfaces_ne", []any{face, face2}, []any{face, face}, false},
+		{"same_nested_interfaces_eq", []any{face, face1}, []any{face, face}, true},
 	} {
 		t.Run(tc.test, func(t *testing.T) {
 			t.Parallel()
@@ -104,7 +225,7 @@ func TestEqualTo(t *testing.T) {
 		t.Parallel()
 		a := assert.New(t)
 
-		a.False(valueEqualTo(42, "x"))
+		a.False(valueEqualTo(reflect.ValueOf(42), reflect.ValueOf("x")))
 		a.False(equalTo(nil, Value(42)))
 		a.False(equalTo(Value(42), nil))
 		a.False(equalTo(LogicalFalse, LogicalFalse))
@@ -422,6 +543,91 @@ func TestComparisonExpr(t *testing.T) {
 			a.PanicsWithValue("Unknown operator CompOp(16)", func() {
 				cmp.testFilter(tc.current, tc.root)
 			})
+		})
+	}
+}
+
+func TestFloat(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		test string
+		val  any
+		exp  float64
+		ok   bool
+	}{
+		{"int", int(42), 42.0, true},
+		{"int8", int8(42), 42.0, true},
+		{"int16", int16(42), 42.0, true},
+		{"int32", int32(42), 42.0, true},
+		{"int364", int64(42), 42.0, true},
+		{"neg_int", -42, -42.0, true},
+		{"neg_int8", int8(-42), -42.0, true},
+		{"neg_int16", int16(-42), -42.0, true},
+		{"neg_int32", int32(-42), -42.0, true},
+		{"neg_int364", int64(-42), -42.0, true},
+		{"uint", uint(42), 42.0, true},
+		{"uint8", uint8(42), 42.0, true},
+		{"uint16", uint16(42), 42.0, true},
+		{"uint32", uint32(42), 42.0, true},
+		{"uint64", uint64(42), 42.0, true},
+		{"float32", float32(98.6), float64(float32(98.6)), true},
+		{"float64", float64(98.6), 98.6, true},
+		{"json_number_int", json.Number("42"), 42, true},
+		{"json_number_float", json.Number("98.6"), 98.6, true},
+		// Invalid values.
+		{"invalid_json_number", json.Number(""), 0, false},
+		{"string", "42", 0, false},
+		{"map", map[string]any{"x": 42}, 0, false},
+		{"slice", []int{42}, 0, false},
+		{"bool", true, 0, false},
+	} {
+		t.Run(tc.test, func(t *testing.T) {
+			t.Parallel()
+			a := assert.New(t)
+
+			got, ok := toFloat(tc.val)
+			//nolint:testifylint // Disable float-compare: equivalence assured
+			a.Equal(tc.exp, got)
+			a.Equal(tc.ok, ok)
+		})
+	}
+}
+
+func TestPointerFor(t *testing.T) {
+	t.Parallel()
+	v := reflect.ValueOf([]any{1, 1})
+	aSlice := []any{1, true}
+	aMap := map[string]any{"x": true, "y": 1}
+	ptr := &TestInterfaceImpl{}
+
+	for _, tc := range []struct {
+		test   string
+		first  reflect.Value
+		second reflect.Value
+		kind   reflect.Kind
+		equal  bool
+	}{
+		{"same_internal_interface_pointer", v.Index(0), v.Index(0), reflect.Interface, true},
+		{"diff_internal_interface_pointer", v.Index(0), v.Index(1), reflect.Interface, false},
+		{"same_slice", reflect.ValueOf(aSlice), reflect.ValueOf(aSlice), reflect.Slice, true},
+		{"diff_slice", reflect.ValueOf(aSlice), reflect.ValueOf(slices.Clone(aSlice)), reflect.Slice, false},
+		{"same_map", reflect.ValueOf(aMap), reflect.ValueOf(aMap), reflect.Map, true},
+		{"diff_map", reflect.ValueOf(aMap), reflect.ValueOf(maps.Clone(aMap)), reflect.Map, false},
+		{"same_pointer", reflect.ValueOf(ptr), reflect.ValueOf(ptr), reflect.Pointer, true},
+		{"diff_pointer", reflect.ValueOf(ptr), reflect.ValueOf(&TestInterfaceImpl{}), reflect.Pointer, false},
+	} {
+		t.Run(tc.test, func(t *testing.T) {
+			t.Parallel()
+			a := assert.New(t)
+
+			a.Equal(tc.kind, tc.first.Kind())
+			a.Equal(tc.kind, tc.second.Kind())
+			if tc.equal {
+				a.Equal(pointerFor(tc.first), pointerFor(tc.second))
+			} else {
+				a.NotEqual(pointerFor(tc.first), pointerFor(tc.second))
+			}
 		})
 	}
 }
