@@ -7,6 +7,15 @@ All notable changes to this project will be documented in this file. It uses the
   [Semantic Versioning]: https://semver.org/spec/v2.0.0.html
     "Semantic Versioning 2.0.0"
 
+## [v0.13.0] — Unreleased
+
+### 🐞 Bug Fixes
+
+*   Fixed comparison of values in a filter to properly compare nested numbers
+    of different types. Thanks to @ondrejsvojse for the report (#32)!
+
+  [v0.13.0]: https://github.com/theory/jsonpath/compare/v0.12.3...v0.13.0
+
 ## [v0.12.3] — 2026-11-08
 
 ### 🐞 Bug Fixes

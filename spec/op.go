@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"unsafe"
 )
 
 // CompOp defines the JSONPath [filter comparison operators].
@@ -147,16 +148,192 @@ func toFloat(val any) (float64, bool) {
 	}
 }
 
-// valueEqualTo returns true if left and right are equal.
-func valueEqualTo(left, right any) bool {
-	if left, ok := toFloat(left); ok {
-		if right, ok := toFloat(right); ok {
-			return left == right
+// During deepValueEqual, must keep track of checks that are in progress. The
+// comparison algorithm assumes that all checks in progress are true when it
+// reencounters them. Visited comparisons are stored in a map indexed by
+// visit.
+type visit struct {
+	a1  unsafe.Pointer
+	a2  unsafe.Pointer
+	typ reflect.Type
+}
+
+func valueEqualTo(x, y any) bool {
+	if x == nil || y == nil {
+		return x == y
+	}
+	return deepEqual(reflect.ValueOf(x), reflect.ValueOf(y), make(map[visit]bool))
+}
+
+func deepEqualSlices(v1, v2 reflect.Value, visited map[visit]bool) bool {
+	if v1.Len() != v2.Len() {
+		return false
+	}
+	if v1.Kind() == reflect.Slice && v2.Kind() == reflect.Slice && v1.UnsafePointer() == v2.UnsafePointer() {
+		return true
+	}
+	for i := range v1.Len() {
+		if !deepEqual(v1.Index(i), v2.Index(i), visited) {
+			return false
 		}
+	}
+	return true
+}
+
+// Unfortunately, reflect.Value will not share the interface pointer.
+func pointerFor(v reflect.Value) unsafe.Pointer {
+	switch v.Kind() {
+	case reflect.Interface:
+		// Source - https://stackoverflow.com/a/57698257
+		// Posted by Laevus Dexter, modified by community. See post 'Timeline' for change history
+		// Retrieved 2026-11-25, License - CC BY-SA 4.0
+		type face struct {
+			typ, val unsafe.Pointer
+		}
+		//nolint:gosec // disable G103
+		return (*face)(unsafe.Pointer(&v)).val
+	default:
+		return v.UnsafePointer()
+	}
+}
+
+func seen(v1, v2 reflect.Value, visited map[visit]bool) bool {
+	// Nil pointers cannot be cyclic. Avoid putting them in the visited map.
+	if v1.IsNil() || v2.IsNil() {
+		return false
+	}
+	addr1 := pointerFor(v1)
+	addr2 := pointerFor(v2)
+	if uintptr(addr1) > uintptr(addr2) {
+		// Canonicalize order to reduce number of entries in visited.
+		// Assumes non-moving garbage collector.
+		addr1, addr2 = addr2, addr1
+	}
+
+	// Short circuit if references are already seen.
+	typ := v1.Type()
+	v := visit{addr1, addr2, typ}
+	if visited[v] {
+		return true
+	}
+
+	// Remember for later.
+	visited[v] = true
+
+	return false
+}
+
+// valueEqualTo tests for deep equality using reflected types. The map
+// argument tracks comparisons that have already been seen, which allows short
+// circuiting on recursive types. Based on [reflect.DeepEqual], but compares
+// numeric, slice, and map values of any type.
+func deepEqual(v1, v2 reflect.Value, visited map[visit]bool) bool {
+	if !v1.IsValid() || !v2.IsValid() {
+		return v1.IsValid() == v2.IsValid()
+	}
+
+	// Handle cases where different kinds are acceptable.
+	if v1.Kind() != v2.Kind() {
+		// Numbers must compare as floats.
+		if left, ok := toFloat(v1.Interface()); ok {
+			if right, ok := toFloat(v2.Interface()); ok {
+				return left == right
+			}
+			return false
+		}
+
+		// Can compare any kind of array or slice.
+		if (v1.Kind() == reflect.Array || v1.Kind() == reflect.Slice) &&
+			(v2.Kind() == reflect.Array || v2.Kind() == reflect.Slice) {
+			return deepEqualSlices(v1, v2, visited)
+		}
+
 		return false
 	}
 
-	return reflect.DeepEqual(left, right)
+	// Everything else must be the same kind.
+	switch v1.Kind() {
+	case reflect.Array:
+		return deepEqualSlices(v1, v2, visited)
+	case reflect.Slice:
+		if seen(v1, v2, visited) {
+			return true
+		}
+		return deepEqualSlices(v1, v2, visited)
+	case reflect.Interface:
+		if seen(v1, v2, visited) {
+			return true
+		}
+		if v1.IsNil() || v2.IsNil() {
+			return v1.IsNil() == v2.IsNil()
+		}
+		return deepEqual(v1.Elem(), v2.Elem(), visited)
+	case reflect.Pointer:
+		if seen(v1, v2, visited) {
+			return true
+		}
+		if v1.UnsafePointer() == v2.UnsafePointer() {
+			return true
+		}
+		return deepEqual(v1.Elem(), v2.Elem(), visited)
+	case reflect.Struct:
+		for i := range v1.NumField() {
+			if !deepEqual(v1.Field(i), v2.Field(i), visited) {
+				return false
+			}
+		}
+		return true
+	case reflect.Map:
+		if seen(v1, v2, visited) {
+			return true
+		}
+		if v1.Len() != v2.Len() {
+			return false
+		}
+		if v1.UnsafePointer() == v2.UnsafePointer() {
+			return true
+		}
+		iter := v1.MapRange()
+		for iter.Next() {
+			val1 := iter.Value()
+			val2 := v2.MapIndex(iter.Key())
+			if !deepEqual(val1, val2, visited) {
+				return false
+			}
+		}
+		return true
+	case reflect.String:
+		// Handle supported numeric interfaces (json.Number).
+		if f64Left, ok := toFloat(v1.Interface()); ok {
+			if f64Right, ok := toFloat(v2.Interface()); ok {
+				return f64Left == f64Right
+			}
+			return false
+		}
+		return v1.String() == v2.String()
+	case reflect.Bool:
+		return v1.Bool() == v2.Bool()
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return v1.Int() == v2.Int()
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		return v1.Uint() == v2.Uint()
+	case reflect.Float32, reflect.Float64:
+		return v1.Float() == v2.Float()
+	case reflect.Complex64, reflect.Complex128:
+		return v1.Complex() == v2.Complex()
+	case reflect.Chan, reflect.Func:
+		if v1.IsNil() && v2.IsNil() {
+			return true
+		}
+		// Not comparable.
+		return false
+	default:
+		if v1.CanInterface() {
+			// Normal equality suffices.
+			return v1.Interface() == v2.Interface()
+		}
+		return false
+	}
 }
 
 // lessThan returns true if left and right are both ValueTypes and
